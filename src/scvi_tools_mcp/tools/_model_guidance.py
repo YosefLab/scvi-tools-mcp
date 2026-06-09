@@ -2,15 +2,8 @@ from __future__ import annotations
 from typing import Literal
 from pydantic import BaseModel
 from scvi_tools_mcp.tools import utils
+from scvi_tools_mcp.tools._constants import MODEL_NAMES  # noqa: F401 — re-exported
 from scvi_tools_mcp.mcp import mcp
-
-MODEL_NAMES = Literal[
-    "amortizedlda","autozi","cellassign","contrastivevi","cytovi",
-    "decipher","destvi","diagvi","gimvi","linearscvi","methylanvi",
-    "methylvi","mrvi","multivi","peakvi","poissonvi","resolvi",
-    "scanvi","scar","scbasset","scvi","scviva","solo","stereoscope",
-    "sysvi","tangram","totalanvi","totalvi","velovi"
-]
 
 TASK_MODEL_MAP: dict[str, list[str]] = {
     "batch_integration": ["scvi", "scanvi", "sysvi", "linearscvi"],
