@@ -119,7 +119,8 @@ def get_model_overview(
         knowledge_dir = utils.get_knowledge_dir()
         model_file = knowledge_dir / "models" / f"{model_name}.md"
         if not model_file.exists():
-            available = sorted(p.stem for p in (knowledge_dir / "models").glob("*.md"))
+            models_dir = knowledge_dir / "models"
+            available = sorted(p.stem for p in models_dir.glob("*.md")) if models_dir.exists() else []
             return ModelGuidanceResult(
                 error=f"Model '{model_name}' not found. Available: {', '.join(available)}"
             )
