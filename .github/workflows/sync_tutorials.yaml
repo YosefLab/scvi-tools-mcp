@@ -41,7 +41,7 @@ jobs:
           echo "Fetched $(wc -l < /tmp/notebook_paths.txt) notebooks"
 
       - name: Convert notebooks to markdown
-        run: python scripts/convert_notebooks.py /tmp/scvi-notebooks src/scvi_tools_mcp/knowledge/tutorials
+        run: python scripts/convert_notebooks.py --src /tmp/scvi-notebooks --dst src/scvi_tools_mcp/knowledge/tutorials
 
       - name: Check for changes
         id: diff
