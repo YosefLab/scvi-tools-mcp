@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "scvi-tools-mcp"
+version = "0.1.0"
+description = "MCP server for scvi-tools - deep probabilistic analysis of single-cell omics data"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+    "fastmcp>=3.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+scvi = ["scvi-tools>=1.0"]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.1",
+    "pre-commit",
+    "nbconvert>=7.0",
+    "requests>=2.28",
+]
+
+[project.scripts]
+scvi-tools-mcp = "scvi_tools_mcp.main:run_app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scvi_tools_mcp"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
