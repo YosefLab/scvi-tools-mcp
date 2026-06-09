@@ -9,7 +9,12 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 @pytest.fixture
 def mock_knowledge(tmp_path):
-    """Copy fixture knowledge files into a temp dir and patch get_knowledge_dir."""
+    """Copy fixture knowledge files into a temp dir and patch get_knowledge_dir.
+
+    # IMPORTANT: All tool modules must call get_knowledge_dir() via the module,
+    # not via a local import (e.g. use `from scvi_tools_mcp.tools import utils; utils.get_knowledge_dir()`
+    # or import it at call time). Direct local-name imports bypass this patch.
+    """
     k = tmp_path / "knowledge"
     shutil.copytree(FIXTURES / "knowledge", k)
     # Add minimal model files needed by tools

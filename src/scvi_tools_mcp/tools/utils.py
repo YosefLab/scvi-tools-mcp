@@ -41,6 +41,9 @@ def truncate(content: str, max_chars: int = 4000) -> TruncateResult:
 
 
 def paginate(lines: list[str], page: int = 1, page_size: int = 200) -> PaginateResult:
+    if page_size < 1:
+        raise ValueError("page_size must be >= 1")
+    page = max(1, page)
     total_pages = max(1, math.ceil(len(lines) / page_size))
     start = (page - 1) * page_size
     end = start + page_size
