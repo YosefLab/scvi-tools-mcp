@@ -1,5 +1,8 @@
+from scvi_tools_mcp.mcp import mcp
+
+
 def run_app() -> None:
-    raise NotImplementedError("Server not yet implemented — run after Task 3 is complete.")
+    mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
