@@ -158,3 +158,23 @@ def test_search_knowledge_no_match(mock_knowledge):
     result = search_knowledge(query="xyzabcnonexistentterm12345")
     assert result.error is None
     assert result.content is not None
+
+
+# --- Task 13: smoke test — all tools registered ---
+
+import pytest
+
+@pytest.mark.asyncio
+async def test_all_tools_registered():
+    from scvi_tools_mcp.mcp import mcp
+    tools = await mcp.list_tools()
+    names = {t.name for t in tools}
+    expected = {
+        "recommend_model", "get_model_overview", "get_model_parameters",
+        "get_setup_anndata_guide", "validate_data_requirements",
+        "list_tutorials", "get_tutorial", "search_tutorials",
+        "get_api_reference", "search_api",
+        "get_workflow_template", "get_downstream_guide",
+        "get_faq", "search_knowledge",
+    }
+    assert expected == names, f"Missing: {expected - names}, Extra: {names - expected}"
