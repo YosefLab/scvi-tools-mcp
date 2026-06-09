@@ -1,0 +1,72 @@
+name: Sync Tutorials
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Fetch + convert new notebooks from scvi-tools
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Fetch scvi-tools notebooks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/scvi-notebooks
+          gh api repos/scverse/scvi-tools/git/trees/main?recursive=1 \
+            --jq '.tree[] | select(.path | startswith("docs/tutorials/notebooks/")) | select(.path | endswith(".ipynb")) | .path' \
+            > /tmp/notebook_paths.txt
+          while IFS= read -r path; do
+            dest="/tmp/scvi-notebooks/${path#docs/tutorials/notebooks/}"
+            mkdir -p "$(dirname "$dest")"
+            gh api "repos/scverse/scvi-tools/contents/$path" --jq '.content' \
+              | base64 -d > "$dest"
+          done < /tmp/notebook_paths.txt
+          echo "Fetched $(wc -l < /tmp/notebook_paths.txt) notebooks"
+
+      - name: Convert notebooks to markdown
+        run: python scripts/convert_notebooks.py /tmp/scvi-notebooks src/scvi_tools_mcp/knowledge/tutorials
+
+      - name: Check for changes
+        id: diff
+        run: |
+          git diff --quiet src/scvi_tools_mcp/knowledge/tutorials/ && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Get scvi-tools version
+        if: steps.diff.outputs.changed == 'true'
+        id: version
+        run: |
+          VER=$(gh api repos/scverse/scvi-tools/releases/latest --jq '.tag_name')
+          echo "tag=$VER" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: sync tutorials from scvi-tools ${{ steps.version.outputs.tag }}"
+          branch: chore/sync-tutorials-${{ github.run_id }}
+          title: "chore: sync tutorials from scvi-tools ${{ steps.version.outputs.tag }}"
+          body: |
+            Monthly automated sync of tutorial notebooks from scvi-tools ${{ steps.version.outputs.tag }}.
+
+            Notebooks are converted to Markdown with outputs stripped (code + prose only).
+          labels: automated
