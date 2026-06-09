@@ -59,6 +59,18 @@ def test_validate_data_requirements_missing_model(mock_knowledge):
     )
     assert result.error is not None
 
+def test_validate_data_requirements_has_raw_warning(mock_knowledge):
+    from scvi_tools_mcp.tools._data_prep import validate_data_requirements
+    result = validate_data_requirements(
+        model_name="scanvi",
+        obs_keys=["labels_key"],
+        var_keys=[],
+        has_raw=False,
+    )
+    assert result.error is None
+    assert "adata.raw" in result.content
+    assert "MISSING" in result.content
+    assert "ACTION REQUIRED" in result.content
 
 # --- Task 9: _tutorials ---
 

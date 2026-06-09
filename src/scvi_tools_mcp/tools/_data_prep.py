@@ -17,8 +17,9 @@ MODEL_REQUIREMENTS: dict[str, dict] = {
         "required_obs": ["labels_key (cell type column, unlabeled cells use 'Unknown')"],
         "optional_obs": ["batch_key"],
         "required_var": [],
+        "needs_raw": True,
         "setup_call": "SCANVI.setup_anndata(adata, labels_key='cell_type', unlabeled_category='Unknown', batch_key='batch')",
-        "notes": "Requires at least some labeled cells. Works best with >100 labeled cells per type.",
+        "notes": "Requires at least some labeled cells. Works best with >100 labeled cells per type. Store raw counts in adata.raw before normalization.",
     },
     "totalvi": {
         "required_obs": ["batch_key recommended"],
@@ -142,6 +143,9 @@ def validate_data_requirements(
             field = req.split(" ")[0]
             passed = field in var_keys or "column in" in req
             checks.append((passed, f"var requirement '{req}': {'OK' if passed else 'CHECK — may be needed'}"))
+        if reqs.get("needs_raw", False):
+            raw_ok = has_raw
+            checks.append((raw_ok, "adata.raw: PRESENT" if raw_ok else "adata.raw: MISSING — this model requires adata.raw to be set"))
         lines = [f"# Data Requirements — {model_name.upper()}", ""]
         all_pass = all(p for p, _ in checks)
         lines.append("**Status: PASS ✓**" if all_pass else "**Status: ACTION REQUIRED**")
