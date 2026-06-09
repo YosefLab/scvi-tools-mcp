@@ -10,3 +10,7 @@ build/
 *.h5ad
 *.h5
 .ipynb_checkpoints/
+*.log
+.DS_Store
+htmlcov/
+.coverage
