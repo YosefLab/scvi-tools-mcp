@@ -84,10 +84,7 @@ scvi.model.SCVI.prepare_query_anndata(adata_query, reference_model)
 ```python
 # Create query model from reference
 # This initializes with reference weights
-query_model = scvi.model.SCVI.load_query_data(
-    adata_query,
-    reference_model
-)
+query_model = scvi.model.SCVI.load_query_data(adata_query, reference_model)
 
 # The query model inherits:
 # - Reference architecture
@@ -102,13 +99,11 @@ query_model = scvi.model.SCVI.load_query_data(
 # This adjusts decoder weights for query-specific effects
 query_model.train(
     max_epochs=200,
-    plan_kwargs={
-        "weight_decay": 0.0  # Less regularization for fine-tuning
-    }
+    plan_kwargs={"weight_decay": 0.0},  # Less regularization for fine-tuning
 )
 
 # Check training
-query_model.history['elbo_train'].plot()
+query_model.history["elbo_train"].plot()
 ```
 
 ### Step 6: Get Query Representation
@@ -121,7 +116,7 @@ adata_query.obsm["X_scVI"] = query_model.get_latent_representation()
 # Visualize
 sc.pp.neighbors(adata_query, use_rep="X_scVI")
 sc.tl.umap(adata_query)
-sc.pl.umap(adata_query, color=['cell_type', 'batch'])
+sc.pl.umap(adata_query, color=["cell_type", "batch"])
 ```
 
 ## Workflow 2: scANVI Query Mapping with Label Transfer
@@ -136,7 +131,7 @@ reference_scanvi = scvi.model.SCANVI.load("scanvi_reference/")
 
 # Check available labels
 print("Reference cell types:")
-print(reference_scanvi.adata.obs['cell_type'].value_counts())
+print(reference_scanvi.adata.obs["cell_type"].value_counts())
 ```
 
 ### Step 2: Prepare and Map Query
@@ -149,16 +144,10 @@ adata_query = adata_query[:, reference_scanvi.adata.var_names].copy()
 scvi.model.SCANVI.prepare_query_anndata(adata_query, reference_scanvi)
 
 # Create query model
-query_scanvi = scvi.model.SCANVI.load_query_data(
-    adata_query,
-    reference_scanvi
-)
+query_scanvi = scvi.model.SCANVI.load_query_data(adata_query, reference_scanvi)
 
 # Fine-tune
-query_scanvi.train(
-    max_epochs=100,
-    plan_kwargs={"weight_decay": 0.0}
-)
+query_scanvi.train(max_epochs=100, plan_kwargs={"weight_decay": 0.0})
 ```
 
 ### Step 3: Get Predictions
@@ -178,22 +167,26 @@ adata_query.obsm["X_scANVI"] = query_scanvi.get_latent_representation()
 # Visualize predictions
 sc.pp.neighbors(adata_query, use_rep="X_scANVI")
 sc.tl.umap(adata_query)
-sc.pl.umap(adata_query, color=['predicted_cell_type', 'prediction_confidence'])
+sc.pl.umap(adata_query, color=["predicted_cell_type", "prediction_confidence"])
 ```
 
 ### Step 4: Evaluate Predictions
 
 ```python
 # Distribution of predictions
-print(adata_query.obs['predicted_cell_type'].value_counts())
+print(adata_query.obs["predicted_cell_type"].value_counts())
 
 # Confidence statistics
 print(f"Mean confidence: {adata_query.obs['prediction_confidence'].mean():.3f}")
-print(f"Low confidence (<0.5): {(adata_query.obs['prediction_confidence'] < 0.5).sum()}")
+print(
+    f"Low confidence (<0.5): {(adata_query.obs['prediction_confidence'] < 0.5).sum()}"
+)
 
 # Filter low-confidence predictions
-high_conf = adata_query[adata_query.obs['prediction_confidence'] >= 0.7].copy()
-print(f"High confidence cells: {len(high_conf)} ({len(high_conf)/len(adata_query)*100:.1f}%)")
+high_conf = adata_query[adata_query.obs["prediction_confidence"] >= 0.7].copy()
+print(
+    f"High confidence cells: {len(high_conf)} ({len(high_conf)/len(adata_query)*100:.1f}%)"
+)
 ```
 
 ## Workflow 3: Model Surgery (Extending Reference)
@@ -233,11 +226,7 @@ extended_model.train(max_epochs=200)
 
 # Option B: Retrain with combined data (if query is large)
 # This doesn't preserve reference exactly but may give better results
-scvi.model.SCVI.setup_anndata(
-    adata_combined,
-    layer="counts",
-    batch_key="dataset"
-)
+scvi.model.SCVI.setup_anndata(adata_combined, layer="counts", batch_key="dataset")
 new_model = scvi.model.SCVI(adata_combined, n_latent=30)
 new_model.train(max_epochs=200)
 ```
@@ -262,6 +251,7 @@ sc.tl.umap(adata_combined)
 
 # Visualize
 import matplotlib.pyplot as plt
+
 fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 
 sc.pl.umap(adata_combined, color="source", ax=axes[0], show=False, title="Source")
@@ -282,7 +272,7 @@ from huggingface_hub import hf_hub_download
 model_dir = hf_hub_download(
     repo_id="scvi-tools/model-name",  # Replace with actual repo
     filename="model.pt",
-    local_dir="./downloaded_model/"
+    local_dir="./downloaded_model/",
 )
 
 # Load model
@@ -310,7 +300,7 @@ def map_query_to_reference(
     reference_model_path,
     model_type="scanvi",
     max_epochs=100,
-    confidence_threshold=0.5
+    confidence_threshold=0.5,
 ):
     """
     Map query data to pre-trained reference model.
@@ -352,10 +342,7 @@ def map_query_to_reference(
     query_model = ModelClass.load_query_data(adata_query, reference_model)
 
     # Fine-tune
-    query_model.train(
-        max_epochs=max_epochs,
-        plan_kwargs={"weight_decay": 0.0}
-    )
+    query_model.train(max_epochs=max_epochs, plan_kwargs={"weight_decay": 0.0})
 
     # Get results
     rep_key = "X_scANVI" if model_type == "scanvi" else "X_scVI"
@@ -365,7 +352,9 @@ def map_query_to_reference(
         adata_query.obs["predicted_cell_type"] = query_model.predict()
         soft = query_model.predict(soft=True)
         adata_query.obs["prediction_confidence"] = soft.max(axis=1)
-        adata_query.obs["confident"] = adata_query.obs["prediction_confidence"] >= confidence_threshold
+        adata_query.obs["confident"] = (
+            adata_query.obs["prediction_confidence"] >= confidence_threshold
+        )
 
     # Compute UMAP
     sc.pp.neighbors(adata_query, use_rep=rep_key)
@@ -376,13 +365,11 @@ def map_query_to_reference(
 
 # Usage
 adata_mapped, model = map_query_to_reference(
-    adata_query,
-    "reference_scanvi_model/",
-    model_type="scanvi"
+    adata_query, "reference_scanvi_model/", model_type="scanvi"
 )
 
 # Visualize
-sc.pl.umap(adata_mapped, color=['predicted_cell_type', 'prediction_confidence'])
+sc.pl.umap(adata_mapped, color=["predicted_cell_type", "prediction_confidence"])
 ```
 
 ## Troubleshooting

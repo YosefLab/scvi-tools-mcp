@@ -70,7 +70,7 @@ print(f"Batches: {adata.obs['batch'].value_counts()}")
 
 ```python
 # Check if coordinates exist
-if 'chr' not in adata.var.columns:
+if "chr" not in adata.var.columns:
     # Parse from peak names (format: chr1:1000-2000)
     split_interval = adata.var_names.str.split(":", expand=True)
     adata.var["chr"] = split_interval[0]
@@ -82,7 +82,7 @@ if 'chr' not in adata.var.columns:
 print(f"Chromosomes found: {adata.var['chr'].nunique()}")
 
 # Filter to standard chromosomes
-mask = adata.var["chr"].str.match(r'^chr[0-9XY]+$')
+mask = adata.var["chr"].str.match(r"^chr[0-9XY]+$")
 print(f"Peaks before chromosome filter: {adata.n_vars}")
 adata = adata[:, mask].copy()
 print(f"Peaks after chromosome filter: {adata.n_vars}")
@@ -94,8 +94,8 @@ print(f"Peaks after chromosome filter: {adata.n_vars}")
 
 ```python
 # Calculate peak detection frequency
-adata.var['n_cells'] = np.array((adata.X > 0).sum(axis=0)).flatten()
-adata.var['detection_rate'] = adata.var['n_cells'] / adata.n_obs
+adata.var["n_cells"] = np.array((adata.X > 0).sum(axis=0)).flatten()
+adata.var["detection_rate"] = adata.var["n_cells"] / adata.n_obs
 
 # Filter peaks: keep those detected in at least 5% of cells
 min_detection = 0.05
@@ -107,7 +107,7 @@ print(f"Peaks after filtering (>{min_detection*100}% detection): {adata.n_vars}"
 
 # Check batch balance in remaining data
 print("\nCells per batch after filtering:")
-print(adata.obs['batch'].value_counts())
+print(adata.obs["batch"].value_counts())
 ```
 
 ---
@@ -126,7 +126,7 @@ scvi.data.add_dna_sequence(
     genome_dir=genome_dir,
     chr_var_key="chr",
     start_var_key="start",
-    end_var_key="end"
+    end_var_key="end",
 )
 
 print(f"DNA codes added: {adata.varm['dna_code'].shape}")
@@ -160,7 +160,7 @@ scvi.external.SCBASSET.setup_anndata(
     bdata,
     layer="binary",
     dna_code_key="dna_code",
-    batch_key="batch"  # CRITICAL: specify batch key
+    batch_key="batch",  # CRITICAL: specify batch key
 )
 
 print("AnnData registered for scBasset with batch correction")
@@ -178,8 +178,7 @@ print(f"Number of batches: {bdata.var['batch'].nunique()}")
 # Initialize model with L2 regularization for integration
 # This is the KEY parameter for batch correction
 model = scvi.external.SCBASSET(
-    bdata,
-    l2_reg_cell_embedding=1e-8  # CRITICAL: enables batch integration
+    bdata, l2_reg_cell_embedding=1e-8  # CRITICAL: enables batch integration
 )
 
 print(f"L2 regularization: {model.module.l2_reg_cell_embedding}")
@@ -191,26 +190,26 @@ model.train(precision=16)
 plt.figure(figsize=(12, 4))
 
 plt.subplot(1, 3, 1)
-plt.plot(model.history['train_loss_epoch'].values)
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training Loss')
+plt.plot(model.history["train_loss_epoch"].values)
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("Training Loss")
 
 plt.subplot(1, 3, 2)
-if 'auroc_train' in model.history:
-    plt.plot(model.history['auroc_train'].values, label='Train')
-if 'auroc_validation' in model.history:
-    plt.plot(model.history['auroc_validation'].values, label='Validation')
-plt.xlabel('Epoch')
-plt.ylabel('AUROC')
+if "auroc_train" in model.history:
+    plt.plot(model.history["auroc_train"].values, label="Train")
+if "auroc_validation" in model.history:
+    plt.plot(model.history["auroc_validation"].values, label="Validation")
+plt.xlabel("Epoch")
+plt.ylabel("AUROC")
 plt.legend()
-plt.title('AUROC')
+plt.title("AUROC")
 
 plt.subplot(1, 3, 3)
 cell_bias = model.get_cell_bias()
 plt.hist(cell_bias, bins=50)
-plt.xlabel('Cell Bias')
-plt.title('Cell Bias Distribution')
+plt.xlabel("Cell Bias")
+plt.title("Cell Bias Distribution")
 
 plt.tight_layout()
 plt.show()
@@ -247,7 +246,7 @@ fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 sc.pl.umap(adata, color="batch", ax=axes[0], show=False, title="Batch Distribution")
 
 # Plot 2: Clustering (if cell type labels exist)
-if 'cell_type' in adata.obs.columns:
+if "cell_type" in adata.obs.columns:
     sc.pl.umap(adata, color="cell_type", ax=axes[1], show=False, title="Cell Types")
 else:
     # Cluster and plot
@@ -275,7 +274,7 @@ try:
 
     # Calculate integration metrics
     # Note: requires cell type labels for full assessment
-    if 'cell_type' in adata.obs.columns:
+    if "cell_type" in adata.obs.columns:
         # Calculate various metrics
         print("Calculating integration metrics...")
 
@@ -287,21 +286,22 @@ except ImportError:
     print("scib-metrics not installed. Using visual assessment.")
 
 # Visual batch mixing check per cluster
-if 'leiden_scbasset' in adata.obs.columns:
+if "leiden_scbasset" in adata.obs.columns:
     # Cross-tabulation of batch vs cluster
     import pandas as pd
-    ct = pd.crosstab(adata.obs['leiden_scbasset'], adata.obs['batch'])
+
+    ct = pd.crosstab(adata.obs["leiden_scbasset"], adata.obs["batch"])
     ct_norm = ct.div(ct.sum(axis=1), axis=0)
 
     print("\nBatch composition per cluster:")
     print(ct_norm.round(2))
 
     # Plot
-    ct_norm.plot(kind='bar', stacked=True, figsize=(10, 5))
-    plt.ylabel('Proportion')
-    plt.xlabel('Cluster')
-    plt.title('Batch Composition per Cluster')
-    plt.legend(title='Batch', bbox_to_anchor=(1.02, 1))
+    ct_norm.plot(kind="bar", stacked=True, figsize=(10, 5))
+    plt.ylabel("Proportion")
+    plt.xlabel("Cluster")
+    plt.title("Batch Composition per Cluster")
+    plt.legend(title="Batch", bbox_to_anchor=(1.02, 1))
     plt.tight_layout()
     plt.show()
 ```
@@ -335,9 +335,9 @@ if tf_cols:
     # Compare TF activity across batches
     for tf_col in tf_cols:
         fig, ax = plt.subplots(figsize=(8, 4))
-        adata.obs.boxplot(column=tf_col, by='batch', ax=ax)
-        plt.suptitle('')
-        plt.title(f'{tf_col} by Batch')
+        adata.obs.boxplot(column=tf_col, by="batch", ax=ax)
+        plt.suptitle("")
+        plt.title(f"{tf_col} by Batch")
         plt.tight_layout()
         plt.show()
 ```
@@ -356,10 +356,10 @@ adata.write_h5ad("atac_integrated_scbasset.h5ad")
 
 # Export integration metrics
 integration_summary = {
-    'n_cells': adata.n_obs,
-    'n_peaks': adata.n_vars,
-    'n_batches': adata.obs['batch'].nunique(),
-    'l2_regularization': 1e-8,
+    "n_cells": adata.n_obs,
+    "n_peaks": adata.n_vars,
+    "n_batches": adata.obs["batch"].nunique(),
+    "l2_regularization": 1e-8,
 }
 print("\nIntegration Summary:")
 for k, v in integration_summary.items():
@@ -415,16 +415,16 @@ import scib
 
 # Batch mixing metrics
 batch_metrics = [
-    'kBET',           # k-nearest neighbor batch effect test
-    'graph_conn',     # Graph connectivity
-    'silhouette_batch'  # Batch silhouette
+    "kBET",  # k-nearest neighbor batch effect test
+    "graph_conn",  # Graph connectivity
+    "silhouette_batch",  # Batch silhouette
 ]
 
 # Biology preservation metrics
 bio_metrics = [
-    'NMI_cluster',    # Normalized mutual information
-    'ARI_cluster',    # Adjusted Rand index
-    'ASW_cell_type'   # Cell type silhouette
+    "NMI_cluster",  # Normalized mutual information
+    "ARI_cluster",  # Adjusted Rand index
+    "ASW_cell_type",  # Cell type silhouette
 ]
 ```
 
@@ -457,12 +457,12 @@ model_strong = scvi.external.SCBASSET(bdata, l2_reg_cell_embedding=1e-7)
 # Assumes batches represent different conditions
 
 condition_map = {
-    'batch1': 'control',
-    'batch2': 'control',
-    'batch3': 'treatment',
-    'batch4': 'treatment'
+    "batch1": "control",
+    "batch2": "control",
+    "batch3": "treatment",
+    "batch4": "treatment",
 }
-adata.obs['condition'] = adata.obs['batch'].map(condition_map)
+adata.obs["condition"] = adata.obs["batch"].map(condition_map)
 
 # Statistical test for TF activity differences
 from scipy.stats import mannwhitneyu
@@ -471,22 +471,25 @@ tf_cols = [c for c in adata.obs.columns if c.startswith("TF_")]
 results = []
 
 for tf_col in tf_cols:
-    ctrl = adata.obs.loc[adata.obs['condition'] == 'control', tf_col]
-    treat = adata.obs.loc[adata.obs['condition'] == 'treatment', tf_col]
+    ctrl = adata.obs.loc[adata.obs["condition"] == "control", tf_col]
+    treat = adata.obs.loc[adata.obs["condition"] == "treatment", tf_col]
 
-    stat, pval = mannwhitneyu(ctrl, treat, alternative='two-sided')
-    results.append({
-        'TF': tf_col,
-        'control_mean': ctrl.mean(),
-        'treatment_mean': treat.mean(),
-        'fold_change': treat.mean() / (ctrl.mean() + 1e-10),
-        'p_value': pval
-    })
+    stat, pval = mannwhitneyu(ctrl, treat, alternative="two-sided")
+    results.append(
+        {
+            "TF": tf_col,
+            "control_mean": ctrl.mean(),
+            "treatment_mean": treat.mean(),
+            "fold_change": treat.mean() / (ctrl.mean() + 1e-10),
+            "p_value": pval,
+        }
+    )
 
 import pandas as pd
+
 results_df = pd.DataFrame(results)
-results_df['p_adj'] = results_df['p_value'] * len(results_df)  # Bonferroni
-print(results_df.sort_values('p_value'))
+results_df["p_adj"] = results_df["p_value"] * len(results_df)  # Bonferroni
+print(results_df.sort_values("p_value"))
 ```
 
 ### Iterative Integration Refinement

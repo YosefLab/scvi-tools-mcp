@@ -40,7 +40,7 @@ adata = sc.concat([adata1, adata2], label="batch")
 
 # Ensure we have raw counts
 # If data is normalized, recover from .raw
-if hasattr(adata, 'raw') and adata.raw is not None:
+if hasattr(adata, "raw") and adata.raw is not None:
     adata = adata.raw.to_adata()
 
 # Store counts
@@ -52,11 +52,7 @@ adata.layers["counts"] = adata.X.copy()
 ```python
 # Select HVGs considering batch
 sc.pp.highly_variable_genes(
-    adata,
-    n_top_genes=2000,
-    flavor="seurat_v3",
-    batch_key="batch",
-    layer="counts"
+    adata, n_top_genes=2000, flavor="seurat_v3", batch_key="batch", layer="counts"
 )
 
 # Subset to HVGs
@@ -67,26 +63,19 @@ adata = adata[:, adata.var["highly_variable"]].copy()
 
 ```python
 # Register data with scVI
-scvi.model.SCVI.setup_anndata(
-    adata,
-    layer="counts",
-    batch_key="batch"
-)
+scvi.model.SCVI.setup_anndata(adata, layer="counts", batch_key="batch")
 
 # Create model
 model = scvi.model.SCVI(
     adata,
-    n_latent=30,          # Latent dimensions
-    n_layers=2,           # Encoder/decoder depth
-    gene_likelihood="nb"  # negative binomial (or "zinb")
+    n_latent=30,  # Latent dimensions
+    n_layers=2,  # Encoder/decoder depth
+    gene_likelihood="nb",  # negative binomial (or "zinb")
 )
 
 # Train
 model.train(
-    max_epochs=200,
-    early_stopping=True,
-    early_stopping_patience=10,
-    batch_size=128
+    max_epochs=200, early_stopping=True, early_stopping_patience=10, batch_size=128
 )
 
 # Plot training history
@@ -140,18 +129,11 @@ adata.obs["cell_type_scanvi"] = adata.obs["cell_type"].copy()
 ```python
 # Setup for scANVI
 scvi.model.SCANVI.setup_anndata(
-    adata,
-    layer="counts",
-    batch_key="batch",
-    labels_key="cell_type"
+    adata, layer="counts", batch_key="batch", labels_key="cell_type"
 )
 
 # Create model
-scanvi_model = scvi.model.SCANVI(
-    adata,
-    n_latent=30,
-    n_layers=2
-)
+scanvi_model = scvi.model.SCANVI(adata, n_latent=30, n_layers=2)
 
 # Train
 scanvi_model.train(max_epochs=200)
@@ -169,7 +151,7 @@ scvi_model.train(max_epochs=200)
 scanvi_model = scvi.model.SCANVI.from_scvi_model(
     scvi_model,
     labels_key="cell_type",
-    unlabeled_category="Unknown"  # For partially labeled data
+    unlabeled_category="Unknown",  # For partially labeled data
 )
 
 # Fine-tune scANVI (fewer epochs needed)
@@ -232,7 +214,7 @@ bm = Benchmarker(
     adata,
     batch_key="batch",
     label_key="cell_type",
-    embedding_obsm_keys=["X_pca", "X_scVI", "X_scANVI"]
+    embedding_obsm_keys=["X_pca", "X_scVI", "X_scANVI"],
 )
 
 bm.benchmark()
@@ -246,15 +228,12 @@ scVI provides differential expression that accounts for batch effects:
 ```python
 # DE between groups
 de_results = model.differential_expression(
-    groupby="cell_type",
-    group1="T cells",
-    group2="B cells"
+    groupby="cell_type", group1="T cells", group2="B cells"
 )
 
 # Filter significant
 de_sig = de_results[
-    (de_results["is_de_fdr_0.05"] == True) &
-    (abs(de_results["lfc_mean"]) > 1)
+    (de_results["is_de_fdr_0.05"] == True) & (abs(de_results["lfc_mean"]) > 1)
 ]
 
 print(de_sig.head(20))
@@ -268,7 +247,7 @@ scvi.model.SCVI.setup_anndata(
     adata,
     layer="counts",
     batch_key="batch",
-    categorical_covariate_keys=["donor", "technology"]
+    categorical_covariate_keys=["donor", "technology"],
 )
 
 model = scvi.model.SCVI(adata, n_latent=30)
@@ -281,10 +260,10 @@ model.train()
 
 ```python
 model.train(
-    max_epochs=100,      # Fewer epochs needed
-    batch_size=256,      # Larger batches
-    train_size=0.9,      # Less validation
-    early_stopping=True
+    max_epochs=100,  # Fewer epochs needed
+    batch_size=256,  # Larger batches
+    train_size=0.9,  # Less validation
+    early_stopping=True,
 )
 ```
 
@@ -293,15 +272,12 @@ model.train(
 ```python
 model = scvi.model.SCVI(
     adata,
-    n_latent=10,         # Smaller latent space
-    n_layers=1,          # Simpler model
-    dropout_rate=0.2     # More regularization
+    n_latent=10,  # Smaller latent space
+    n_layers=1,  # Simpler model
+    dropout_rate=0.2,  # More regularization
 )
 
-model.train(
-    max_epochs=400,
-    batch_size=64
-)
+model.train(max_epochs=400, batch_size=64)
 ```
 
 ### Monitoring Training
@@ -324,15 +300,11 @@ ax.legend()
 
 ```python
 def integrate_datasets(
-    adatas,
-    batch_key="batch",
-    labels_key=None,
-    n_top_genes=2000,
-    n_latent=30
+    adatas, batch_key="batch", labels_key=None, n_top_genes=2000, n_latent=30
 ):
     """
     Integrate multiple scRNA-seq datasets.
-    
+
     Parameters
     ----------
     adatas : dict
@@ -345,44 +317,42 @@ def integrate_datasets(
         Number of HVGs
     n_latent : int
         Latent dimensions
-        
+
     Returns
     -------
     AnnData with integrated representation
     """
     import scvi
     import scanpy as sc
-    
+
     # Add batch labels and concatenate
     for batch_name, adata in adatas.items():
         adata.obs[batch_key] = batch_name
-    
+
     adata = sc.concat(list(adatas.values()), label=batch_key)
-    
+
     # Store counts
     adata.layers["counts"] = adata.X.copy()
-    
+
     # HVG selection
     sc.pp.highly_variable_genes(
         adata,
         n_top_genes=n_top_genes,
         flavor="seurat_v3",
         batch_key=batch_key,
-        layer="counts"
+        layer="counts",
     )
     adata = adata[:, adata.var["highly_variable"]].copy()
-    
+
     # Train model
     if labels_key and labels_key in adata.obs.columns:
         # Use scANVI
         scvi.model.SCVI.setup_anndata(adata, layer="counts", batch_key=batch_key)
         scvi_model = scvi.model.SCVI(adata, n_latent=n_latent)
         scvi_model.train(max_epochs=200)
-        
+
         model = scvi.model.SCANVI.from_scvi_model(
-            scvi_model,
-            labels_key=labels_key,
-            unlabeled_category="Unknown"
+            scvi_model, labels_key=labels_key, unlabeled_category="Unknown"
         )
         model.train(max_epochs=50)
         rep_key = "X_scANVI"
@@ -392,28 +362,26 @@ def integrate_datasets(
         model = scvi.model.SCVI(adata, n_latent=n_latent)
         model.train(max_epochs=200)
         rep_key = "X_scVI"
-    
+
     # Add representation
     adata.obsm[rep_key] = model.get_latent_representation()
-    
+
     # Compute neighbors and UMAP
     sc.pp.neighbors(adata, use_rep=rep_key)
     sc.tl.umap(adata)
     sc.tl.leiden(adata)
-    
+
     return adata, model
+
 
 # Usage
 adatas = {
     "study1": sc.read_h5ad("study1.h5ad"),
     "study2": sc.read_h5ad("study2.h5ad"),
-    "study3": sc.read_h5ad("study3.h5ad")
+    "study3": sc.read_h5ad("study3.h5ad"),
 }
 
-adata_integrated, model = integrate_datasets(
-    adatas,
-    labels_key="cell_type"
-)
+adata_integrated, model = integrate_datasets(adatas, labels_key="cell_type")
 
 sc.pl.umap(adata_integrated, color=["batch", "leiden", "cell_type"])
 ```

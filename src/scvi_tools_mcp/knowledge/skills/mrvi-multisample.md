@@ -110,18 +110,19 @@ For custom analysis workflows, use the modular functions from `scripts/mrvi_core
 ```python
 import anndata as ad
 import sys
-sys.path.append('scripts/')
+
+sys.path.append("scripts/")
 from mrvi_core import (
     setup_anndata_mrvi,
     train_mrvi_model,
     get_latent_representation,
     compute_sample_distances,
     run_differential_expression,
-    run_differential_abundance
+    run_differential_abundance,
 )
 
-adata = ad.read_h5ad('input.h5ad')
-setup_anndata_mrvi(adata, sample_key='patient_id')
+adata = ad.read_h5ad("input.h5ad")
+setup_anndata_mrvi(adata, sample_key="patient_id")
 # ... custom workflow
 ```
 
@@ -146,15 +147,15 @@ From `mrvi_core.py`:
 
 **Example 1: Basic sample distance analysis**
 ```python
-adata = ad.read_h5ad('input.h5ad')
-setup_anndata_mrvi(adata, sample_key='donor')
+adata = ad.read_h5ad("input.h5ad")
+setup_anndata_mrvi(adata, sample_key="donor")
 model = train_mrvi_model(adata, max_epochs=400)
 
 # Get sample-independent embedding
-adata.obsm['X_mrvi_u'] = get_latent_representation(model, adata)
+adata.obsm["X_mrvi_u"] = get_latent_representation(model, adata)
 
 # Compute distances grouped by cell type
-distances = compute_sample_distances(model, groupby='cell_type')
+distances = compute_sample_distances(model, groupby="cell_type")
 
 # Access distances for specific population
 cd8_distances = distances.loc[{"cell_type_name": "CD8 T cells"}]
@@ -164,27 +165,25 @@ cd8_distances = distances.loc[{"cell_type_name": "CD8 T cells"}]
 ```python
 # After training model...
 de_results = run_differential_expression(
-    model,
-    sample_cov_keys=['treatment'],
-    store_lfc=True
+    model, sample_cov_keys=["treatment"], store_lfc=True
 )
 
 # Get effect sizes for treatment
-treatment_effects = de_results.effect_size.sel(covariate='treatment_Treated')
+treatment_effects = de_results.effect_size.sel(covariate="treatment_Treated")
 
 # Get log fold changes for specific gene
-gene_lfc = de_results.lfc.sel(gene='IL6')
+gene_lfc = de_results.lfc.sel(gene="IL6")
 ```
 
 **Example 3: Combined DE and DA analysis**
 ```python
 # Run both analyses
-de_results = run_differential_expression(model, ['disease_status'])
-da_results = run_differential_abundance(model, ['disease_status'])
+de_results = run_differential_expression(model, ["disease_status"])
+da_results = run_differential_abundance(model, ["disease_status"])
 
 # Identify cells with both DE and DA changes
-de_effect = de_results.effect_size.sel(covariate='disease_status_Disease').values
-da_lfc = compute_da_log_ratio(da_results, 'disease_status', 'Disease', 'Healthy')
+de_effect = de_results.effect_size.sel(covariate="disease_status_Disease").values
+da_lfc = compute_da_log_ratio(da_results, "disease_status", "Disease", "Healthy")
 
 # Cells with concordant changes
 concordant = (de_effect > 0.5) & (da_lfc > 0.5)

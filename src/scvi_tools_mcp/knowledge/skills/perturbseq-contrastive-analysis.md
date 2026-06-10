@@ -58,22 +58,22 @@ print(f"Observation columns: {list(adata.obs.columns)}")
 
 ```python
 # If counts are in a layer, ensure they're accessible
-if 'counts' in adata.layers:
-    count_layer = 'counts'
-elif 'count' in adata.layers:
-    count_layer = 'count'
+if "counts" in adata.layers:
+    count_layer = "counts"
+elif "count" in adata.layers:
+    count_layer = "count"
 else:
     # Assume adata.X contains counts, create a layer
-    adata.layers['counts'] = adata.X.copy()
-    count_layer = 'counts'
+    adata.layers["counts"] = adata.X.copy()
+    count_layer = "counts"
 
 # Basic filtering (adjust thresholds as needed)
 sc.pp.filter_cells(adata, min_genes=200)
 sc.pp.filter_genes(adata, min_cells=3)
 
 # Calculate QC metrics
-adata.var['mt'] = adata.var_names.str.startswith('MT-')
-sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], inplace=True)
+adata.var["mt"] = adata.var_names.str.startswith("MT-")
+sc.pp.calculate_qc_metrics(adata, qc_vars=["mt"], inplace=True)
 
 # Filter based on QC (adjust thresholds for your data)
 adata = adata[adata.obs.pct_counts_mt < 20, :].copy()
@@ -90,12 +90,14 @@ Cell cycle is a common confounding factor in Perturb-seq experiments. Scoring ce
 ```python
 import requests
 
+
 def get_cell_cycle_genes():
     """Fetch cell cycle gene lists from Regev lab."""
     url = "https://raw.githubusercontent.com/scverse/scanpy_usage/master/180209_cell_cycle/data/regev_lab_cell_cycle_genes.txt"
     response = requests.get(url)
     cell_cycle_genes = response.text.strip().split("\n")
     return cell_cycle_genes
+
 
 # Get cell cycle genes
 cell_cycle_genes = get_cell_cycle_genes()
@@ -113,9 +115,9 @@ sc.pp.log1p(adata_norm)
 
 # Score cell cycle
 sc.tl.score_genes_cell_cycle(adata_norm, s_genes=s_genes, g2m_genes=g2m_genes)
-adata.obs['S_score'] = adata_norm.obs['S_score']
-adata.obs['G2M_score'] = adata_norm.obs['G2M_score']
-adata.obs['phase'] = adata_norm.obs['phase']
+adata.obs["S_score"] = adata_norm.obs["S_score"]
+adata.obs["G2M_score"] = adata_norm.obs["G2M_score"]
+adata.obs["phase"] = adata_norm.obs["phase"]
 
 print(f"Cell cycle phases:\n{adata.obs['phase'].value_counts()}")
 ```
@@ -127,8 +129,10 @@ print(f"Cell cycle phases:\n{adata.obs['phase'].value_counts()}")
 ```python
 # CRITICAL: Adjust the column name and control label for your data
 # Common column names: 'perturbation', 'gene_program', 'guide_id', 'condition'
-perturbation_col = 'perturbation'  # <-- MODIFY for your data
-control_label = 'Ctrl'  # <-- MODIFY for your data (e.g., 'non-targeting', 'NT', 'control')
+perturbation_col = "perturbation"  # <-- MODIFY for your data
+control_label = (
+    "Ctrl"  # <-- MODIFY for your data (e.g., 'non-targeting', 'NT', 'control')
+)
 
 # Verify the column exists and show available labels
 print(f"Available perturbations:\n{adata.obs[perturbation_col].value_counts()}")
@@ -152,8 +156,7 @@ assert len(target_indices) > 0, "No perturbed cells found! Check perturbation_co
 ```python
 # Setup AnnData for scvi
 scvi.external.ContrastiveVI.setup_anndata(
-    adata,
-    layer=count_layer  # Use the layer containing raw counts
+    adata, layer=count_layer  # Use the layer containing raw counts
 )
 
 # Create model instance
@@ -162,10 +165,7 @@ scvi.external.ContrastiveVI.setup_anndata(
 # - n_background_latent: dimensions for shared variations (default: 10)
 # - use_observed_lib_size: whether to use observed library size (default: False)
 model = scvi.external.ContrastiveVI(
-    adata,
-    n_salient_latent=10,
-    n_background_latent=10,
-    use_observed_lib_size=False
+    adata, n_salient_latent=10, n_background_latent=10, use_observed_lib_size=False
 )
 
 print(model)
@@ -180,16 +180,16 @@ model.train(
     max_epochs=500,
     early_stopping=True,
     early_stopping_patience=20,
-    plan_kwargs={'lr': 1e-3}
+    plan_kwargs={"lr": 1e-3},
 )
 
 # Plot training history
-train_elbo = model.history['elbo_train']
+train_elbo = model.history["elbo_train"]
 plt.figure(figsize=(8, 4))
 plt.plot(train_elbo.index, train_elbo.values)
-plt.xlabel('Epoch')
-plt.ylabel('ELBO')
-plt.title('ContrastiveVI Training')
+plt.xlabel("Epoch")
+plt.ylabel("ELBO")
+plt.title("ContrastiveVI Training")
 plt.tight_layout()
 plt.show()
 ```
@@ -204,29 +204,27 @@ plt.show()
 perturbed_adata = adata[adata.obs[perturbation_col] != control_label].copy()
 
 # Extract salient representation (perturbation-specific)
-perturbed_adata.obsm['salient_rep'] = model.get_latent_representation(
-    perturbed_adata,
-    representation_kind='salient'
+perturbed_adata.obsm["salient_rep"] = model.get_latent_representation(
+    perturbed_adata, representation_kind="salient"
 )
 
 # Extract background representation (shared variations)
-perturbed_adata.obsm['background_rep'] = model.get_latent_representation(
-    perturbed_adata,
-    representation_kind='background'
+perturbed_adata.obsm["background_rep"] = model.get_latent_representation(
+    perturbed_adata, representation_kind="background"
 )
 
 # For the full dataset (control + perturbed)
-adata.obsm['salient_rep'] = model.get_latent_representation(
-    adata,
-    representation_kind='salient'
+adata.obsm["salient_rep"] = model.get_latent_representation(
+    adata, representation_kind="salient"
 )
-adata.obsm['background_rep'] = model.get_latent_representation(
-    adata,
-    representation_kind='background'
+adata.obsm["background_rep"] = model.get_latent_representation(
+    adata, representation_kind="background"
 )
 
 print(f"Salient representation shape: {perturbed_adata.obsm['salient_rep'].shape}")
-print(f"Background representation shape: {perturbed_adata.obsm['background_rep'].shape}")
+print(
+    f"Background representation shape: {perturbed_adata.obsm['background_rep'].shape}"
+)
 ```
 
 ---
@@ -237,26 +235,50 @@ print(f"Background representation shape: {perturbed_adata.obsm['background_rep']
 # BEFORE ContrastiveVI: Standard PCA/UMAP (confounded)
 sc.pp.neighbors(perturbed_adata)
 sc.tl.umap(perturbed_adata)
-perturbed_adata.obsm['X_umap_standard'] = perturbed_adata.obsm['X_umap'].copy()
+perturbed_adata.obsm["X_umap_standard"] = perturbed_adata.obsm["X_umap"].copy()
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-sc.pl.umap(perturbed_adata, color='phase', ax=axes[0], show=False, title='Standard UMAP - Cell Cycle')
-sc.pl.umap(perturbed_adata, color=perturbation_col, ax=axes[1], show=False, title='Standard UMAP - Perturbation')
-plt.suptitle('Before ContrastiveVI (Standard Analysis)', y=1.02)
+sc.pl.umap(
+    perturbed_adata,
+    color="phase",
+    ax=axes[0],
+    show=False,
+    title="Standard UMAP - Cell Cycle",
+)
+sc.pl.umap(
+    perturbed_adata,
+    color=perturbation_col,
+    ax=axes[1],
+    show=False,
+    title="Standard UMAP - Perturbation",
+)
+plt.suptitle("Before ContrastiveVI (Standard Analysis)", y=1.02)
 plt.tight_layout()
 plt.show()
 ```
 
 ```python
 # AFTER ContrastiveVI: Using salient representation
-sc.pp.neighbors(perturbed_adata, use_rep='salient_rep')
+sc.pp.neighbors(perturbed_adata, use_rep="salient_rep")
 sc.tl.umap(perturbed_adata)
-perturbed_adata.obsm['X_umap_salient'] = perturbed_adata.obsm['X_umap'].copy()
+perturbed_adata.obsm["X_umap_salient"] = perturbed_adata.obsm["X_umap"].copy()
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-sc.pl.umap(perturbed_adata, color='phase', ax=axes[0], show=False, title='Salient UMAP - Cell Cycle')
-sc.pl.umap(perturbed_adata, color=perturbation_col, ax=axes[1], show=False, title='Salient UMAP - Perturbation')
-plt.suptitle('After ContrastiveVI (Salient Representation)', y=1.02)
+sc.pl.umap(
+    perturbed_adata,
+    color="phase",
+    ax=axes[0],
+    show=False,
+    title="Salient UMAP - Cell Cycle",
+)
+sc.pl.umap(
+    perturbed_adata,
+    color=perturbation_col,
+    ax=axes[1],
+    show=False,
+    title="Salient UMAP - Perturbation",
+)
+plt.suptitle("After ContrastiveVI (Salient Representation)", y=1.02)
 plt.tight_layout()
 plt.show()
 ```
@@ -269,12 +291,15 @@ plt.show()
 
 ```python
 # Cluster based on salient representation
-sc.pp.neighbors(perturbed_adata, use_rep='salient_rep')
-sc.tl.leiden(perturbed_adata, resolution=0.5, key_added='salient_clusters')
+sc.pp.neighbors(perturbed_adata, use_rep="salient_rep")
+sc.tl.leiden(perturbed_adata, resolution=0.5, key_added="salient_clusters")
 
 # Visualize clusters
-sc.pl.umap(perturbed_adata, color=['salient_clusters', perturbation_col],
-           title=['Salient Clusters', 'Perturbations'])
+sc.pl.umap(
+    perturbed_adata,
+    color=["salient_clusters", perturbation_col],
+    title=["Salient Clusters", "Perturbations"],
+)
 ```
 
 ```python
@@ -283,17 +308,17 @@ import pandas as pd
 
 # Cross-tabulation of clusters vs perturbations
 crosstab = pd.crosstab(
-    perturbed_adata.obs['salient_clusters'],
+    perturbed_adata.obs["salient_clusters"],
     perturbed_adata.obs[perturbation_col],
-    normalize='index'
+    normalize="index",
 )
 
 # Heatmap of perturbation distribution across clusters
 plt.figure(figsize=(12, 6))
-sns.heatmap(crosstab, cmap='viridis', annot=False)
-plt.title('Perturbation Distribution Across Salient Clusters')
-plt.xlabel('Perturbation')
-plt.ylabel('Cluster')
+sns.heatmap(crosstab, cmap="viridis", annot=False)
+plt.title("Perturbation Distribution Across Salient Clusters")
+plt.xlabel("Perturbation")
+plt.ylabel("Cluster")
 plt.tight_layout()
 plt.show()
 ```
@@ -310,7 +335,7 @@ sc.pp.normalize_total(adata_de, target_sum=1e4)
 sc.pp.log1p(adata_de)
 
 # Rank genes by perturbation group
-sc.tl.rank_genes_groups(adata_de, groupby=perturbation_col, method='wilcoxon')
+sc.tl.rank_genes_groups(adata_de, groupby=perturbation_col, method="wilcoxon")
 
 # View top differentially expressed genes
 sc.pl.rank_genes_groups(adata_de, n_genes=10, sharey=False)
@@ -322,6 +347,7 @@ def get_de_results(adata, group, n_genes=50):
     """Extract DE results for a specific perturbation."""
     result = sc.get.rank_genes_groups_df(adata, group=group)
     return result.head(n_genes)
+
 
 # Example: Get DE genes for a specific perturbation
 # perturbation_of_interest = 'GENE_NAME'  # <-- MODIFY

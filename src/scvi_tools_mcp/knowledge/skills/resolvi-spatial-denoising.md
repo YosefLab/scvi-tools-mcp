@@ -53,11 +53,11 @@ print(f"Spatial coordinates available: {'X_spatial' in adata.obsm}")
 
 ```python
 # Ensure counts layer exists
-if 'counts' not in adata.layers:
-    adata.layers['counts'] = adata.X.copy()
+if "counts" not in adata.layers:
+    adata.layers["counts"] = adata.X.copy()
 
 # Verify spatial coordinates key
-spatial_key = 'X_spatial' if 'X_spatial' in adata.obsm else 'spatial'
+spatial_key = "X_spatial" if "X_spatial" in adata.obsm else "spatial"
 print(f"Using spatial key: {spatial_key}")
 ```
 
@@ -68,9 +68,7 @@ print(f"Using spatial key: {spatial_key}")
 ```python
 # Setup for semi-supervised mode (with cell type labels)
 scvi.external.RESOLVI.setup_anndata(
-    adata,
-    layer="counts",
-    labels_key="cell_type"  # Column with cell type annotations
+    adata, layer="counts", labels_key="cell_type"  # Column with cell type annotations
 )
 
 # Alternative: Unsupervised mode (no labels required)
@@ -85,23 +83,19 @@ scvi.external.RESOLVI.setup_anndata(
 
 ```python
 # Create model - semi-supervised mode
-model = scvi.external.RESOLVI(
-    adata,
-    semisupervised=True  # Set False for unsupervised
-)
+model = scvi.external.RESOLVI(adata, semisupervised=True)  # Set False for unsupervised
 
 # Train the model
 model.train(
-    max_epochs=100,  # Use 50 for quick testing, 100+ for production
-    early_stopping=True
+    max_epochs=100, early_stopping=True  # Use 50 for quick testing, 100+ for production
 )
 
 # Plot training history
 plt.figure(figsize=(8, 4))
-plt.plot(model.history['elbo_train'].values)
-plt.xlabel('Epoch')
-plt.ylabel('ELBO')
-plt.title('ResolVI Training')
+plt.plot(model.history["elbo_train"].values)
+plt.xlabel("Epoch")
+plt.ylabel("ELBO")
+plt.title("ResolVI Training")
 plt.show()
 ```
 
@@ -116,7 +110,7 @@ samples_corr = model.sample_posterior(
     return_sites=["px_rate"],
     summary_fun={"post_sample_q50": np.median},
     num_samples=3,
-    summary_frequency=30
+    summary_frequency=30,
 )
 
 # Store corrected expression
@@ -132,16 +126,16 @@ print("Corrected expression stored in adata.layers['corrected_expression']")
 ```python
 # Get cell type predictions (soft probabilities)
 adata.obsm["resolvi_celltypes"] = model.predict(
-    adata,
-    num_samples=3,
-    soft=True  # Returns probability matrix
+    adata, num_samples=3, soft=True  # Returns probability matrix
 )
 
 # Get hard predictions
 adata.obs["resolvi_predicted"] = adata.obsm["resolvi_celltypes"].idxmax(axis=1)
 
 # Compare with original labels
-print(f"Original vs Predicted agreement: {(adata.obs['cell_type'] == adata.obs['resolvi_predicted']).mean():.2%}")
+print(
+    f"Original vs Predicted agreement: {(adata.obs['cell_type'] == adata.obs['resolvi_predicted']).mean():.2%}"
+)
 ```
 
 ---
@@ -171,7 +165,7 @@ samples = model.sample_posterior(
     return_sites=["mixture_proportions"],
     summary_fun={"post_sample_means": np.mean},
     num_samples=3,
-    summary_frequency=100
+    summary_frequency=100,
 )
 
 # Extract proportions
@@ -181,8 +175,12 @@ adata.obs["diffusion_proportion"] = proportions[:, 1]
 adata.obs["background_proportion"] = proportions[:, 2]
 
 # Visualize noise components spatially
-sc.pl.spatial(adata, color=["true_proportion", "diffusion_proportion", "background_proportion"],
-              spot_size=30, ncols=3)
+sc.pl.spatial(
+    adata,
+    color=["true_proportion", "diffusion_proportion", "background_proportion"],
+    spot_size=30,
+    ncols=3,
+)
 ```
 
 ---

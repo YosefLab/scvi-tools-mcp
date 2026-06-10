@@ -92,11 +92,7 @@ adata = scv.utils.merge(adata, ldata)
 
 ```python
 # Filter and normalize
-scv.pp.filter_and_normalize(
-    adata,
-    min_shared_counts=20,
-    n_top_genes=2000
-)
+scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
 
 # Compute moments (for scVelo comparison)
 scv.pp.moments(adata, n_pcs=30, n_neighbors=30)
@@ -109,9 +105,7 @@ scv.pp.moments(adata, n_pcs=30, n_neighbors=30)
 ```python
 # Setup for veloVI
 scvi.model.VELOVI.setup_anndata(
-    adata,
-    spliced_layer="spliced",
-    unspliced_layer="unspliced"
+    adata, spliced_layer="spliced", unspliced_layer="unspliced"
 )
 ```
 
@@ -121,11 +115,7 @@ scvi.model.VELOVI.setup_anndata(
 # Create and train veloVI model
 vae = scvi.model.VELOVI(adata)
 
-vae.train(
-    max_epochs=500,
-    early_stopping=True,
-    batch_size=256
-)
+vae.train(max_epochs=500, early_stopping=True, batch_size=256)
 
 # Check training
 vae.history["elbo_train"].plot()
@@ -156,10 +146,7 @@ scv.tl.velocity_graph(adata, vkey="veloVI_velocity")
 
 # Plot streamlines on UMAP
 scv.pl.velocity_embedding_stream(
-    adata,
-    basis="umap",
-    vkey="veloVI_velocity",
-    color="cell_type"
+    adata, basis="umap", vkey="veloVI_velocity", color="cell_type"
 )
 ```
 
@@ -173,7 +160,7 @@ scv.pl.velocity_embedding(
     vkey="veloVI_velocity",
     arrow_length=3,
     arrow_size=2,
-    color="cell_type"
+    color="cell_type",
 )
 ```
 
@@ -195,13 +182,11 @@ scv.tl.velocity_graph(adata)
 fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
 scv.pl.velocity_embedding_stream(
-    adata, basis="umap", ax=axes[0], 
-    title="scVelo", show=False
+    adata, basis="umap", ax=axes[0], title="scVelo", show=False
 )
 
 scv.pl.velocity_embedding_stream(
-    adata, basis="umap", vkey="veloVI_velocity",
-    ax=axes[1], title="veloVI", show=False
+    adata, basis="umap", vkey="veloVI_velocity", ax=axes[1], title="veloVI", show=False
 )
 
 plt.tight_layout()
@@ -215,12 +200,7 @@ plt.tight_layout()
 # Plot phase portrait for specific genes
 genes = ["SOX2", "PAX6", "DCX", "NEUROD1"]
 
-scv.pl.velocity(
-    adata,
-    var_names=genes,
-    vkey="veloVI_velocity",
-    colorbar=True
-)
+scv.pl.velocity(adata, var_names=genes, vkey="veloVI_velocity", colorbar=True)
 ```
 
 ### Gene Dynamics
@@ -229,14 +209,9 @@ scv.pl.velocity(
 # Plot expression over latent time
 for gene in genes:
     fig, ax = plt.subplots(figsize=(6, 4))
-    
+
     sc.pl.scatter(
-        adata,
-        x="veloVI_latent_time",
-        y=gene,
-        color="cell_type",
-        ax=ax,
-        show=False
+        adata, x="veloVI_latent_time", y=gene, color="cell_type", ax=ax, show=False
     )
     ax.set_xlabel("Latent Time")
     ax.set_ylabel(f"{gene} Expression")
@@ -246,11 +221,7 @@ for gene in genes:
 
 ```python
 # Find genes driving velocity
-scv.tl.rank_velocity_genes(
-    adata,
-    vkey="veloVI_velocity",
-    groupby="cell_type"
-)
+scv.tl.rank_velocity_genes(adata, vkey="veloVI_velocity", groupby="cell_type")
 
 # Get top genes per cluster
 df = scv.get_df(adata, "rank_velocity_genes/names")
@@ -264,9 +235,7 @@ veloVI provides uncertainty estimates:
 ```python
 # Get velocity with uncertainty
 velocity_mean, velocity_std = vae.get_velocity(
-    n_samples=100,
-    return_mean=True,
-    return_numpy=True
+    n_samples=100, return_mean=True, return_numpy=True
 )
 
 # Store uncertainty
@@ -285,11 +254,11 @@ def run_velocity_analysis(
     spliced_layer="spliced",
     unspliced_layer="unspliced",
     n_top_genes=2000,
-    max_epochs=500
+    max_epochs=500,
 ):
     """
     Complete RNA velocity analysis with veloVI.
-    
+
     Parameters
     ----------
     adata : AnnData
@@ -302,7 +271,7 @@ def run_velocity_analysis(
         Number of velocity genes
     max_epochs : int
         Training epochs
-        
+
     Returns
     -------
     AnnData with velocity and model
@@ -310,53 +279,45 @@ def run_velocity_analysis(
     import scvi
     import scvelo as scv
     import scanpy as sc
-    
+
     adata = adata.copy()
-    
+
     # Preprocessing
-    scv.pp.filter_and_normalize(
-        adata,
-        min_shared_counts=20,
-        n_top_genes=n_top_genes
-    )
-    
+    scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=n_top_genes)
+
     # Compute moments (needed for some visualizations)
     scv.pp.moments(adata, n_pcs=30, n_neighbors=30)
-    
+
     # Setup veloVI
     scvi.model.VELOVI.setup_anndata(
-        adata,
-        spliced_layer=spliced_layer,
-        unspliced_layer=unspliced_layer
+        adata, spliced_layer=spliced_layer, unspliced_layer=unspliced_layer
     )
-    
+
     # Train
     model = scvi.model.VELOVI(adata)
     model.train(max_epochs=max_epochs, early_stopping=True)
-    
+
     # Get results
     adata.obs["latent_time"] = model.get_latent_time(n_samples=25)
     adata.layers["velocity"] = model.get_velocity(n_samples=25)
-    
+
     # Compute velocity graph for visualization
     scv.tl.velocity_graph(adata, vkey="velocity")
-    
+
     # Compute UMAP if not present
     if "X_umap" not in adata.obsm:
         sc.pp.neighbors(adata)
         sc.tl.umap(adata)
-    
+
     return adata, model
+
 
 # Usage
 adata_velocity, model = run_velocity_analysis(adata)
 
 # Visualize
 scv.pl.velocity_embedding_stream(
-    adata_velocity,
-    basis="umap",
-    vkey="velocity",
-    color="cell_type"
+    adata_velocity, basis="umap", vkey="velocity", color="cell_type"
 )
 
 sc.pl.umap(adata_velocity, color="latent_time")
@@ -367,10 +328,7 @@ sc.pl.umap(adata_velocity, color="latent_time")
 ```python
 # For multi-batch data, include batch in model
 scvi.model.VELOVI.setup_anndata(
-    adata,
-    spliced_layer="spliced",
-    unspliced_layer="unspliced",
-    batch_key="batch"
+    adata, spliced_layer="spliced", unspliced_layer="unspliced", batch_key="batch"
 )
 
 model = scvi.model.VELOVI(adata)

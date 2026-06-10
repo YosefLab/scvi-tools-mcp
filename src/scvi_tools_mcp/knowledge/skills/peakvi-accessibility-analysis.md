@@ -53,7 +53,7 @@ print(f"Observation columns: {list(adata.obs.columns)}")
 print(f"Variable columns: {list(adata.var.columns)}")
 
 # Verify peak coordinates if available
-if 'chr' in adata.var.columns:
+if "chr" in adata.var.columns:
     print(f"Chromosomes: {adata.var['chr'].unique()[:5]}...")
 ```
 
@@ -69,8 +69,8 @@ if 'chr' in adata.var.columns:
 
 ```python
 # Calculate peak detection frequency
-adata.var['n_cells'] = np.array((adata.X > 0).sum(axis=0)).flatten()
-adata.var['detection_rate'] = adata.var['n_cells'] / adata.n_obs
+adata.var["n_cells"] = np.array((adata.X > 0).sum(axis=0)).flatten()
+adata.var["detection_rate"] = adata.var["n_cells"] / adata.n_obs
 
 # Filter peaks: keep those detected in at least 5% of cells
 min_detection = 0.05
@@ -80,11 +80,11 @@ sc.pp.filter_genes(adata, min_cells=min_cells)
 print(f"Peaks after filtering (>{min_detection*100}% detection): {adata.n_vars}")
 
 # Optional: calculate cell-level QC
-adata.obs['n_peaks'] = np.array((adata.X > 0).sum(axis=1)).flatten()
-adata.obs['total_counts'] = np.array(adata.X.sum(axis=1)).flatten()
+adata.obs["n_peaks"] = np.array((adata.X > 0).sum(axis=1)).flatten()
+adata.obs["total_counts"] = np.array(adata.X.sum(axis=1)).flatten()
 
 # Visualize QC metrics
-sc.pl.violin(adata, ['n_peaks', 'total_counts'], jitter=0.4)
+sc.pl.violin(adata, ["n_peaks", "total_counts"], jitter=0.4)
 ```
 
 ---
@@ -126,19 +126,19 @@ model.train()
 # Check training history
 plt.figure(figsize=(10, 4))
 plt.subplot(1, 2, 1)
-plt.plot(model.history['elbo_train'].values, label='Train')
-if 'elbo_validation' in model.history:
-    plt.plot(model.history['elbo_validation'].values, label='Validation')
-plt.xlabel('Epoch')
-plt.ylabel('ELBO')
+plt.plot(model.history["elbo_train"].values, label="Train")
+if "elbo_validation" in model.history:
+    plt.plot(model.history["elbo_validation"].values, label="Validation")
+plt.xlabel("Epoch")
+plt.ylabel("ELBO")
 plt.legend()
-plt.title('Training Loss')
+plt.title("Training Loss")
 
 plt.subplot(1, 2, 2)
-plt.plot(model.history['reconstruction_loss_train'].values)
-plt.xlabel('Epoch')
-plt.ylabel('Reconstruction Loss')
-plt.title('Reconstruction Loss')
+plt.plot(model.history["reconstruction_loss_train"].values)
+plt.xlabel("Epoch")
+plt.ylabel("Reconstruction Loss")
+plt.title("Reconstruction Loss")
 plt.tight_layout()
 plt.show()
 ```
@@ -178,7 +178,7 @@ sc.tl.leiden(adata, key_added="clusters_peakvi", resolution=0.2)
 sc.pl.umap(adata, color="clusters_peakvi", title="PeakVI Clusters")
 
 # If batch information exists, check batch mixing
-if 'batch' in adata.obs.columns:
+if "batch" in adata.obs.columns:
     sc.pl.umap(adata, color=["clusters_peakvi", "batch"], ncols=2)
 ```
 
@@ -194,8 +194,8 @@ if 'batch' in adata.obs.columns:
 # Method 1: Compare specific clusters
 da_results = model.differential_accessibility(
     groupby="clusters_peakvi",
-    group1="0",           # Target cluster
-    group2="1",           # Reference cluster (or None for vs rest)
+    group1="0",  # Target cluster
+    group2="1",  # Reference cluster (or None for vs rest)
 )
 
 # Method 2: Using cell indices
@@ -233,11 +233,12 @@ def get_cluster_markers(model, adata, cluster_key, n_top=50):
             group2=None,  # vs rest
         )
         # Filter and sort
-        markers = da[da['prob_da'] > 0.8].nlargest(n_top, 'bayes_factor')
+        markers = da[da["prob_da"] > 0.8].nlargest(n_top, "bayes_factor")
         all_markers[cluster] = markers
         print(f"Cluster {cluster}: {len(markers)} marker peaks")
 
     return all_markers
+
 
 markers = get_cluster_markers(model, adata, "clusters_peakvi")
 
@@ -260,9 +261,9 @@ adata.write_h5ad("atac_peakvi_analyzed.h5ad")
 
 # Export marker peaks
 import pandas as pd
+
 all_markers_df = pd.concat(
-    [df.assign(cluster=k) for k, df in markers.items()],
-    ignore_index=False
+    [df.assign(cluster=k) for k, df in markers.items()], ignore_index=False
 )
 all_markers_df.to_csv("marker_peaks.csv")
 
@@ -343,7 +344,7 @@ da_results = model.differential_accessibility(
     groupby="cell_type",
     group1="T_cells",
     group2="B_cells",
-    batch_correction=True  # Sample from all batches
+    batch_correction=True,  # Sample from all batches
 )
 ```
 
@@ -352,16 +353,13 @@ da_results = model.differential_accessibility(
 ```python
 model = scvi.model.PEAKVI(
     adata,
-    n_latent=20,           # More latent dimensions
-    n_hidden=256,          # Larger hidden layers
-    dropout_rate=0.2       # More regularization
+    n_latent=20,  # More latent dimensions
+    n_hidden=256,  # Larger hidden layers
+    dropout_rate=0.2,  # More regularization
 )
 
 model.train(
-    max_epochs=1000,
-    early_stopping=True,
-    early_stopping_patience=20,
-    batch_size=256
+    max_epochs=1000, early_stopping=True, early_stopping_patience=20, batch_size=256
 )
 ```
 
@@ -373,9 +371,9 @@ for cluster in adata.obs["clusters_peakvi"].unique():
     da = model.differential_accessibility(
         groupby="clusters_peakvi",
         group1=str(cluster),
-        group2=None  # Compare to all other cells
+        group2=None,  # Compare to all other cells
     )
-    significant = da[da['is_da_fdr']].index.tolist()
+    significant = da[da["is_da_fdr"]].index.tolist()
     print(f"Cluster {cluster}: {len(significant)} significant peaks")
 ```
 
@@ -526,7 +524,7 @@ Based on answers, adjust parameters accordingly before running.
 # Use external tools like Signac or ArchR
 
 # Motif enrichment on DA peaks
-significant_peaks = da_results[da_results['is_da_fdr']].index
+significant_peaks = da_results[da_results["is_da_fdr"]].index
 # Export to bed format for HOMER/chromVAR
 
 # Integration with scRNA-seq

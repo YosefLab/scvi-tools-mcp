@@ -45,7 +45,7 @@ print(f"Spatial coordinates: {adata_spatial.obsm['spatial'].shape}")
 
 # Basic QC
 sc.pp.calculate_qc_metrics(adata_spatial, inplace=True)
-adata_spatial = adata_spatial[adata_spatial.obs['n_genes_by_counts'] > 200].copy()
+adata_spatial = adata_spatial[adata_spatial.obs["n_genes_by_counts"] > 200].copy()
 
 # Store counts
 adata_spatial.layers["counts"] = adata_spatial.X.copy()
@@ -62,7 +62,7 @@ adata_sc = sc.read_h5ad("reference_scrna.h5ad")
 # - Cell type annotations
 print(f"Reference cells: {adata_sc.n_obs}")
 print(f"Cell types: {adata_sc.obs['cell_type'].nunique()}")
-print(adata_sc.obs['cell_type'].value_counts())
+print(adata_sc.obs["cell_type"].value_counts())
 
 # Store counts
 adata_sc.layers["counts"] = adata_sc.X.copy()
@@ -83,35 +83,22 @@ adata_spatial = adata_spatial[:, common_genes].copy()
 
 ```python
 # Train conditional scVI on reference data
-scvi.model.CondSCVI.setup_anndata(
-    adata_sc,
-    layer="counts",
-    labels_key="cell_type"
-)
+scvi.model.CondSCVI.setup_anndata(adata_sc, layer="counts", labels_key="cell_type")
 
-sc_model = scvi.model.CondSCVI(
-    adata_sc,
-    n_latent=20
-)
+sc_model = scvi.model.CondSCVI(adata_sc, n_latent=20)
 
 sc_model.train(max_epochs=200)
-sc_model.history['elbo_train'].plot()
+sc_model.history["elbo_train"].plot()
 ```
 
 ### Step 5: Train DestVI
 
 ```python
 # Setup spatial data
-scvi.model.DestVI.setup_anndata(
-    adata_spatial,
-    layer="counts"
-)
+scvi.model.DestVI.setup_anndata(adata_spatial, layer="counts")
 
 # Train DestVI using reference model
-spatial_model = scvi.model.DestVI.from_rna_model(
-    adata_spatial,
-    sc_model
-)
+spatial_model = scvi.model.DestVI.from_rna_model(adata_spatial, sc_model)
 
 spatial_model.train(max_epochs=500)
 ```
@@ -123,14 +110,14 @@ spatial_model.train(max_epochs=500)
 proportions = spatial_model.get_proportions()
 
 # Add to adata
-for ct in adata_sc.obs['cell_type'].unique():
-    adata_spatial.obs[f'prop_{ct}'] = proportions[ct]
+for ct in adata_sc.obs["cell_type"].unique():
+    adata_spatial.obs[f"prop_{ct}"] = proportions[ct]
 
 # Visualize
 sq.pl.spatial_scatter(
     adata_spatial,
-    color=[f'prop_{ct}' for ct in adata_sc.obs['cell_type'].unique()[:6]],
-    ncols=3
+    color=[f"prop_{ct}" for ct in adata_sc.obs["cell_type"].unique()[:6]],
+    ncols=3,
 )
 ```
 
@@ -150,19 +137,14 @@ adata = sc.read_visium("spaceranger_output/")
 
 # QC
 sc.pp.calculate_qc_metrics(adata, inplace=True)
-adata = adata[adata.obs['n_genes_by_counts'] > 200].copy()
+adata = adata[adata.obs["n_genes_by_counts"] > 200].copy()
 
 # Store counts
 adata.layers["counts"] = adata.X.copy()
 
 # HVG selection
-sc.pp.highly_variable_genes(
-    adata,
-    n_top_genes=4000,
-    flavor="seurat_v3",
-    layer="counts"
-)
-adata = adata[:, adata.var['highly_variable']].copy()
+sc.pp.highly_variable_genes(adata, n_top_genes=4000, flavor="seurat_v3", layer="counts")
+adata = adata[:, adata.var["highly_variable"]].copy()
 
 # Optional: Get initial cell type predictions (e.g., from a reference)
 # adata.obs["predicted_celltype"] = ...
@@ -175,7 +157,7 @@ adata = adata[:, adata.var['highly_variable']].copy()
 scvi.external.RESOLVI.setup_anndata(
     adata,
     labels_key="predicted_celltype",  # Initial cell type predictions
-    layer="counts"
+    layer="counts",
 )
 
 # Create model (semisupervised=True uses the labels)
@@ -219,10 +201,7 @@ sq.pl.spatial_scatter(adata, color="leiden")
 ```python
 # DE between cell types using resolVI
 de_results = model.differential_expression(
-    adata,
-    groupby="resolvi_celltype",
-    group1="T_cell",
-    group2="Tumor"
+    adata, groupby="resolvi_celltype", group1="T_cell", group2="Tumor"
 )
 
 print(de_results.head(20))
@@ -239,7 +218,7 @@ niche_results = model.differential_niche_abundance(
     groupby="resolvi_celltype",
     group1="T_cell",
     group2="Tumor",
-    neighbor_key="spatial_neighbors"
+    neighbor_key="spatial_neighbors",
 )
 ```
 
@@ -271,16 +250,12 @@ query_labels = query_model.predict(query_adata, num_samples=3, soft=False)
 import matplotlib.pyplot as plt
 
 # Plot multiple cell type proportions
-cell_types = ['T_cell', 'Tumor', 'Fibroblast', 'Macrophage']
+cell_types = ["T_cell", "Tumor", "Fibroblast", "Macrophage"]
 fig, axes = plt.subplots(2, 2, figsize=(12, 12))
 
 for ax, ct in zip(axes.flat, cell_types):
     sq.pl.spatial_scatter(
-        adata_spatial,
-        color=f'prop_{ct}',
-        ax=ax,
-        title=ct,
-        show=False
+        adata_spatial, color=f"prop_{ct}", ax=ax, title=ct, show=False
     )
 
 plt.tight_layout()
@@ -296,16 +271,17 @@ sc.tl.leiden(adata_spatial, resolution=0.5)
 # Compare proportions across regions
 import pandas as pd
 
-cell_types = adata_sc.obs['cell_type'].unique()
-prop_cols = [f'prop_{ct}' for ct in cell_types]
-region_props = adata_spatial.obs.groupby('leiden')[prop_cols].mean()
+cell_types = adata_sc.obs["cell_type"].unique()
+prop_cols = [f"prop_{ct}" for ct in cell_types]
+region_props = adata_spatial.obs.groupby("leiden")[prop_cols].mean()
 print(region_props)
 
 # Heatmap
 import seaborn as sns
+
 plt.figure(figsize=(10, 6))
-sns.heatmap(region_props.T, annot=True, cmap='viridis')
-plt.title('Cell Type Proportions by Region')
+sns.heatmap(region_props.T, annot=True, cmap="viridis")
+plt.title("Cell Type Proportions by Region")
 ```
 
 ### Spatial Cell Type Interactions
@@ -315,13 +291,15 @@ plt.title('Cell Type Proportions by Region')
 sq.gr.spatial_neighbors(adata_spatial)
 
 # Create "dominant cell type" annotation
-prop_cols = [f'prop_{ct}' for ct in cell_types]
-adata_spatial.obs['dominant_type'] = adata_spatial.obs[prop_cols].idxmax(axis=1)
-adata_spatial.obs['dominant_type'] = adata_spatial.obs['dominant_type'].str.replace('prop_', '')
+prop_cols = [f"prop_{ct}" for ct in cell_types]
+adata_spatial.obs["dominant_type"] = adata_spatial.obs[prop_cols].idxmax(axis=1)
+adata_spatial.obs["dominant_type"] = adata_spatial.obs["dominant_type"].str.replace(
+    "prop_", ""
+)
 
 # Co-occurrence analysis
-sq.gr.co_occurrence(adata_spatial, cluster_key='dominant_type')
-sq.pl.co_occurrence(adata_spatial, cluster_key='dominant_type')
+sq.gr.co_occurrence(adata_spatial, cluster_key="dominant_type")
+sq.pl.co_occurrence(adata_spatial, cluster_key="dominant_type")
 ```
 
 ---
@@ -335,7 +313,7 @@ def deconvolve_spatial(
     cell_type_key="cell_type",
     n_latent=20,
     max_epochs_ref=200,
-    max_epochs_spatial=500
+    max_epochs_spatial=500,
 ):
     """
     Perform spatial deconvolution using DestVI.
@@ -374,9 +352,7 @@ def deconvolve_spatial(
 
     # Train reference model
     scvi.model.CondSCVI.setup_anndata(
-        adata_ref,
-        layer="counts",
-        labels_key=cell_type_key
+        adata_ref, layer="counts", labels_key=cell_type_key
     )
 
     ref_model = scvi.model.CondSCVI(adata_ref, n_latent=n_latent)
@@ -385,10 +361,7 @@ def deconvolve_spatial(
     # Train spatial model
     scvi.model.DestVI.setup_anndata(adata_spatial, layer="counts")
 
-    spatial_model = scvi.model.DestVI.from_rna_model(
-        adata_spatial,
-        ref_model
-    )
+    spatial_model = scvi.model.DestVI.from_rna_model(adata_spatial, ref_model)
     spatial_model.train(max_epochs=max_epochs_spatial)
 
     # Get proportions
@@ -396,27 +369,26 @@ def deconvolve_spatial(
 
     cell_types = adata_ref.obs[cell_type_key].unique()
     for ct in cell_types:
-        adata_spatial.obs[f'prop_{ct}'] = proportions[ct]
+        adata_spatial.obs[f"prop_{ct}"] = proportions[ct]
 
     # Add dominant type
-    prop_cols = [f'prop_{ct}' for ct in cell_types]
-    adata_spatial.obs['dominant_type'] = adata_spatial.obs[prop_cols].idxmax(axis=1)
-    adata_spatial.obs['dominant_type'] = adata_spatial.obs['dominant_type'].str.replace('prop_', '')
+    prop_cols = [f"prop_{ct}" for ct in cell_types]
+    adata_spatial.obs["dominant_type"] = adata_spatial.obs[prop_cols].idxmax(axis=1)
+    adata_spatial.obs["dominant_type"] = adata_spatial.obs["dominant_type"].str.replace(
+        "prop_", ""
+    )
 
     return adata_spatial, ref_model, spatial_model
 
+
 # Usage
 adata_spatial, ref_model, spatial_model = deconvolve_spatial(
-    adata_spatial,
-    adata_sc,
-    cell_type_key="cell_type"
+    adata_spatial, adata_sc, cell_type_key="cell_type"
 )
 
 # Visualize
 sq.pl.spatial_scatter(
-    adata_spatial,
-    color=['dominant_type', 'prop_T_cell', 'prop_Tumor'],
-    ncols=3
+    adata_spatial, color=["dominant_type", "prop_T_cell", "prop_Tumor"], ncols=3
 )
 ```
 

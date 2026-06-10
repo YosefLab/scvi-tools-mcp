@@ -94,12 +94,12 @@ adata = sc.read_h5ad("path/to/xenium_data.h5ad")
 
 ```python
 # Ensure raw counts
-if 'counts' not in adata.layers:
-    adata.layers['counts'] = adata.X.copy()
+if "counts" not in adata.layers:
+    adata.layers["counts"] = adata.X.copy()
 
 # Remove mitochondrial genes (recommended for deconvolution)
-adata.var['mt'] = adata.var_names.str.startswith('MT-')
-adata = adata[:, ~adata.var['mt']].copy()
+adata.var["mt"] = adata.var_names.str.startswith("MT-")
+adata = adata[:, ~adata.var["mt"]].copy()
 
 # Basic QC
 sc.pp.filter_cells(adata, min_genes=200)
@@ -127,7 +127,7 @@ samples = model.sample_posterior(
     model=model.module.model_corrected,
     return_sites=["px_rate"],
     summary_fun={"median": np.median},
-    num_samples=3
+    num_samples=3,
 )
 adata.layers["corrected"] = samples.loc["median", "px_rate"]
 ```
@@ -142,8 +142,13 @@ adata.layers["corrected"] = samples.loc["median", "px_rate"]
 
 ```python
 # Preprocess spatial graph
-scvi.external.SCVIVA.preprocessing_anndata(adata, k_nn=20,
-    sample_key="sample", labels_key="cell_type", cell_coordinates_key="spatial")
+scvi.external.SCVIVA.preprocessing_anndata(
+    adata,
+    k_nn=20,
+    sample_key="sample",
+    labels_key="cell_type",
+    cell_coordinates_key="spatial",
+)
 
 # Setup and train
 scvi.external.SCVIVA.setup_anndata(adata, layer="counts", batch_key="sample", ...)
@@ -151,8 +156,9 @@ model = scvi.external.SCVIVA(adata)
 model.train(max_epochs=600, batch_size=512)
 
 # Niche-aware DE
-DE_results = model.differential_expression(adata, groupby="cluster",
-    group1="1", group2="0", niche_mode=True)
+DE_results = model.differential_expression(
+    adata, groupby="cluster", group1="1", group2="0", niche_mode=True
+)
 ```
 
 **See full workflow**: `/scviva-environment-modeling` skill
@@ -251,8 +257,9 @@ adata_ref = ref_model.export_posterior(adata_ref)
 
 # Stage 2: Spatial mapping
 Cell2location.setup_anndata(adata_vis, batch_key="sample")
-spatial_model = Cell2location(adata_vis, cell_state_df=signatures,
-    N_cells_per_location=30)
+spatial_model = Cell2location(
+    adata_vis, cell_state_df=signatures, N_cells_per_location=30
+)
 spatial_model.train(max_epochs=30000)
 
 # Results (with uncertainty)
@@ -284,11 +291,14 @@ sc.pl.spatial(adata, color="cluster", img_key="hires", size=1.3)
 ```python
 # Side-by-side deconvolution results
 fig, axes = plt.subplots(1, 3, figsize=(18, 5))
-for ax, (method, data) in zip(axes, [
-    ("DestVI", destvi_proportions),
-    ("Stereoscope", stereo_proportions),
-    ("Cell2location", c2l_abundances)
-]):
+for ax, (method, data) in zip(
+    axes,
+    [
+        ("DestVI", destvi_proportions),
+        ("Stereoscope", stereo_proportions),
+        ("Cell2location", c2l_abundances),
+    ],
+):
     sc.pl.spatial(adata, color=data["T_cells"], ax=ax, show=False, title=method)
 plt.tight_layout()
 ```

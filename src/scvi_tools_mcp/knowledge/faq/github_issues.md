@@ -4,7 +4,17 @@ Fetched top 31 issues by comment count.
 
 ## #3806: feat: add harreman for metabolic exchange inference in spatial transcriptomics
 **Comments:** 1
-**Body:** ## Description This PR adds Harreman (`scvi.external.harreman`), a toolkit for inferring  metabolic exchanges in tissues using spatial transcriptomics data.  ## Changes - Add `scvi.external.harreman` with submodules:   - `tl` (tools): KNN graph, cell communication, gene pairs   - `hs` (hotspot): local autocorrelation, local correlation, gene modules   - `pp` (preprocessing): AnnData setup, interaction database loading   - `ds` (datasets): Visium and Slide-seq example datasets   - `pl` 
+**Body:** ## Description
+ This PR adds Harreman (`scvi.external.harreman`), a toolkit for inferring
+ metabolic exchanges in tissues using spatial transcriptomics data.
+
+ ## Changes
+ - Add `scvi.external.harreman` with submodules:
+   - `tl` (tools): KNN graph, cell communication, gene pairs
+   - `hs` (hotspot): local autocorrelation, local correlation, gene modules
+   - `pp` (preprocessing): AnnData setup, interaction database loading
+   - `ds` (datasets): Visium and Slide-seq example datasets
+   - `pl`
 
 ## #3823: scVI-X release
 **Comments:** 1
@@ -12,15 +22,17 @@ Fetched top 31 issues by comment count.
 
 ## #3620: feat: Adding support for Annbatch
 **Comments:** 3
-**Body:** 
+**Body:**
 
 ## #3571: model: SENAVAE
 **Comments:** 4
-**Body:** 
+**Body:**
 
 ## #2257: MultiVI with Poisson/NB likelihood for ATAC?
 **Comments:** 8
-**Body:** Hi @martinkim0 and all  Similarly to https://github.com/scverse/scvi-tools/pull/2249 by @lauradmartens would be great to have a MultiVI version with Poisson or even NB likelihood for ATAC data. How hard do you @martinkim0 think it is to add such option to MultiVI?
+**Body:** Hi @martinkim0 and all
+
+ Similarly to https://github.com/scverse/scvi-tools/pull/2249 by @lauradmartens would be great to have a MultiVI version with Poisson or even NB likelihood for ATAC data. How hard do you @martinkim0 think it is to add such option to MultiVI?
 
 ## #3674: Resolvi.load overflows memory
 **Comments:** 6
@@ -28,11 +40,15 @@ Fetched top 31 issues by comment count.
 
 ## #1038: Faster NB LL computation if data is known to be sparse
 **Comments:** 6
-**Body:** We should add an `is_sparse` param to our distributions (at least [NB](https://github.com/YosefLab/scvi-tools/blob/0ef7ff0e9a06d65cd458b59c516971099bb55756/scvi/distributions/_negative_binomial.py#L236-L280), with LL computation [here](https://github.com/YosefLab/scvi-tools/blob/0ef7ff0e9a06d65cd458b59c516971099bb55756/scvi/distributions/_negative_binomial.py#L67-L102))  As an example in Pyro for Poisson, see [here](https://github.com/pyro-ppl/pyro/pull/2802/files)  If X is known to be spars
+**Body:** We should add an `is_sparse` param to our distributions (at least [NB](https://github.com/YosefLab/scvi-tools/blob/0ef7ff0e9a06d65cd458b59c516971099bb55756/scvi/distributions/_negative_binomial.py#L236-L280), with LL computation [here](https://github.com/YosefLab/scvi-tools/blob/0ef7ff0e9a06d65cd458b59c516971099bb55756/scvi/distributions/_negative_binomial.py#L67-L102))
+
+ As an example in Pyro for Poisson, see [here](https://github.com/pyro-ppl/pyro/pull/2802/files)
+
+ If X is known to be spars
 
 ## #3786: refactor: Dropping Jax from scvi-tools
 **Comments:** 2
-**Body:** 
+**Body:**
 
 ## #3834: MultiVI MuData setup rejects unpaired observations despite model supporting missing modalities
 **Comments:** 4
@@ -40,27 +56,47 @@ Fetched top 31 issues by comment count.
 
 ## #2736: Training models with torch.Tensor input
 **Comments:** 4
-**Body:** **Is your feature request related to a problem? Please describe.** It is not currently straightforward to pass external dataloaders to train a model. In particular, loading `torch.Tensor` data and directly feeding it to a model as input doesn't seem possible because `scvi.data._utils._check_nonnegative_integers` does not handle `torch.Tensor`.   It would be very useful to be able to feed a custom dataloader, dictionary or AnnData as direct input to model.train() without having to copy `torch.
+**Body:** **Is your feature request related to a problem? Please describe.**
+ It is not currently straightforward to pass external dataloaders to train a model. In particular, loading `torch.Tensor` data and directly feeding it to a model as input doesn't seem possible because `scvi.data._utils._check_nonnegative_integers` does not handle `torch.Tensor`.
+
+ It would be very useful to be able to feed a custom dataloader, dictionary or AnnData as direct input to model.train() without having to copy `torch.
 
 ## #2616: PyroModelGuideWarmup fails on GPU - probably need to be manually run before `trainer.fit()`
 **Comments:** 4
-**Body:** <!-- Describe the bug -->  PyroModelGuideWarmup fails on GPU probably because `Callback.setup()` is called in the accelerator environment in the latest PyTorch Lightning.  <!-- To reproduce --> This test fails on GPU: ```python pytest tests/model/test_pyro.py::test_pyro_bayesian_regression_low_level --accelerator 'gpu' ```  <!-- Put your Error output in this code block (if applicable, else delete the block): -->  ```pytb (cell2state_cuda118_torch22) vk7@farm22-gpu0203:.../software/t
+**Body:** <!-- Describe the bug -->
+
+ PyroModelGuideWarmup fails on GPU probably because `Callback.setup()` is called in the accelerator environment in the latest PyTorch Lightning.
+
+ <!-- To reproduce -->
+ This test fails on GPU:
+ ```python
+ pytest tests/model/test_pyro.py::test_pyro_bayesian_regression_low_level --accelerator 'gpu'
+ ```
+
+ <!-- Put your Error output in this code block (if applicable, else delete the block): -->
+
+ ```pytb
+ (cell2state_cuda118_torch22) vk7@farm22-gpu0203:.../software/t
 
 ## #1859: Model request: non-negative spatial factorization (NSF)
 **Comments:** 4
-**Body:** Is anyone currently working on implementing NSF? It's a nice probabilistic method designed with spatial transcriptomics in mind. https://www.nature.com/articles/s41592-022-01687-w  It'd be nice to work with this here, within `scvi-tools`. The authors' implementation (@ https://github.com/willtownes/nsf-paper) is a little hard to parse and implemented with Tensorflow as a backend (which I don't work in). 
+**Body:** Is anyone currently working on implementing NSF? It's a nice probabilistic method designed with spatial transcriptomics in mind. https://www.nature.com/articles/s41592-022-01687-w
+
+ It'd be nice to work with this here, within `scvi-tools`. The authors' implementation (@ https://github.com/willtownes/nsf-paper) is a little hard to parse and implemented with Tensorflow as a backend (which I don't work in).
 
 ## #1840: Finalize scBasset
 **Comments:** 4
-**Body:** - [x] Verify that all parameters are being initialized equivalently, alter the ones used here if needed - [x] Add more content to the tutorial that reproduces their results, allowing us to have some form of reproducibility - [ ] Complete the user guide
+**Body:** - [x] Verify that all parameters are being initialized equivalently, alter the ones used here if needed
+ - [x] Add more content to the tutorial that reproduces their results, allowing us to have some form of reproducibility
+ - [ ] Complete the user guide
 
 ## #3827: feat: scvix reformat
 **Comments:** 1
-**Body:** 
+**Body:**
 
 ## #3821: feat: add rapids singlecell support for cytovi
 **Comments:** 1
-**Body:** 
+**Body:**
 
 ## #3759: Direct `csr` sparse ops support
 **Comments:** 3
@@ -72,7 +108,11 @@ Fetched top 31 issues by comment count.
 
 ## #1789: Some suggestion about GNN
 **Comments:** 3
-**Body:** **Is your feature request related to a problem? Please describe.** I want to develop a new model with Pytorch Geometric  which is a GNN library based on Pytorch. I hope you can develop some api to make it more easier.   **Describe the solution you'd like** 1. Please **develop a obsm_field for AnnDataManager to register obsm(n_obs*n_obs) attribute**. Because [scanpy neighbors](https://scanpy.readthedocs.io/en/stable/generated/scanpy.pp.neighbors.html#scanpy.pp.neighbors) save the graph adjace
+**Body:** **Is your feature request related to a problem? Please describe.**
+ I want to develop a new model with Pytorch Geometric  which is a GNN library based on Pytorch. I hope you can develop some api to make it more easier.
+
+ **Describe the solution you'd like**
+ 1. Please **develop a obsm_field for AnnDataManager to register obsm(n_obs*n_obs) attribute**. Because [scanpy neighbors](https://scanpy.readthedocs.io/en/stable/generated/scanpy.pp.neighbors.html#scanpy.pp.neighbors) save the graph adjace
 
 ## #3819: Add `weighted_knn_trainer`/`weighted_knn_transfer` utilities from scArches
 **Comments:** 2
@@ -80,7 +120,7 @@ Fetched top 31 issues by comment count.
 
 ## #3798: feat: Add RESOLVI graph dataloader integration and benchmark CI
 **Comments:** 1
-**Body:** 
+**Body:**
 
 ## #3748: feat: JointEmbeddingSCVI
 **Comments:** 2
@@ -92,19 +132,30 @@ Fetched top 31 issues by comment count.
 
 ## #3699: Add DRVI
 **Comments:** 1
-**Body:** Dear Maintainers,  Here, I have prepared [DRVI](https://github.com/theislab/drvi) for contribution as an external model, matching the latest version of scvi-tools. In short, it contains:  - DRVI models with all the required PyTorch modules I wrote. Specifically,    - FCLayers are modified to decode multiple parallel splits of the latent space at once. For this, we have a factory that generates hidden layers based on user setup.   - The scArches Q2R mapping is implemented differently but s
+**Body:** Dear Maintainers,
+
+ Here, I have prepared [DRVI](https://github.com/theislab/drvi) for contribution as an external model, matching the latest version of scvi-tools.
+ In short, it contains:
+
+ - DRVI models with all the required PyTorch modules I wrote. Specifically,
+   - FCLayers are modified to decode multiple parallel splits of the latent space at once. For this, we have a factory that generates hidden layers based on user setup.
+   - The scArches Q2R mapping is implemented differently but s
 
 ## #3607: refactor: Use scverse template
 **Comments:** 1
-**Body:** Updated several missing files per the cookicutter template close https://github.com/scverse/scvi-tools/issues/3600
+**Body:** Updated several missing files per the cookicutter template
+ close https://github.com/scverse/scvi-tools/issues/3600
 
 ## #1456: Within cluster DE test
 **Comments:** 2
-**Body:** scVI used to have a within cluster DE test that I used often, but I no longer see this functionality in scvi-tools. Is it possible to add it back?  This would be a differential expression function where a "groupby" argument would specify a set of groups (e.g., cell clusters) and a "states" argument would specify the relevant comparison to make (e.g., case vs control). The output would include the DE test results from a comparison of cases vs controls within each specified group. 
+**Body:** scVI used to have a within cluster DE test that I used often, but I no longer see this functionality in scvi-tools. Is it possible to add it back?
+
+ This would be a differential expression function where a "groupby" argument would specify a set of groups (e.g., cell clusters) and a "states" argument would specify the relevant comparison to make (e.g., case vs control). The output would include the DE test results from a comparison of cases vs controls within each specified group.
+
 
 ## #3830: refactor(external): share cyclic loader for GIMVI and DIAGVI
 **Comments:** 1
-**Body:** 
+**Body:**
 
 ## #3824: First draft of scPoli
 **Comments:** 1
@@ -112,11 +163,11 @@ Fetched top 31 issues by comment count.
 
 ## #3754: feat: add shared memory for DDP data deduplication
 **Comments:** 1
-**Body:** 
+**Body:**
 
 ## #3734: Improving SCVI for low-count cells through self-supervised augmentation
 **Comments:** 1
-**Body:** Hi,  A paper has recently been written about improving scVI for low count cells using binomial thinning and a cross-correlation loss. It looks like this extension of scVI improves on the integration of low count cells based on the paper results. I thought this may be of interest for you and that you may consider incorporating this into scvi-tools at some point.  Paper link: https://www.biorxiv.org/content/10.64898/2026.02.11.705441v1.full.pdf 
+**Body:** Hi,  A paper has recently been written about improving scVI for low count cells using binomial thinning and a cross-correlation loss. It looks like this extension of scVI improves on the integration of low count cells based on the paper results. I thought this may be of interest for you and that you may consider incorporating this into scvi-tools at some point.  Paper link: https://www.biorxiv.org/content/10.64898/2026.02.11.705441v1.full.pdf
 
 ## #3647: Allow custom label_key for scib-metrics in scvi.autotune
 **Comments:** 1
@@ -124,4 +175,4 @@ Fetched top 31 issues by comment count.
 
 ## #1177: User guide: gimVI
 **Comments:** 0
-**Body:** 
+**Body:**

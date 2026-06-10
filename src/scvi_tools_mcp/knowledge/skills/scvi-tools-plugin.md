@@ -113,8 +113,10 @@ The `scripts/model_utils.py` provides importable functions for custom workflows:
 
 2. **HVG selection**: Use 2000-4000 highly variable genes
    ```python
-   sc.pp.highly_variable_genes(adata, n_top_genes=2000, batch_key="batch", layer="counts", flavor="seurat_v3")
-   adata = adata[:, adata.var['highly_variable']].copy()
+   sc.pp.highly_variable_genes(
+       adata, n_top_genes=2000, batch_key="batch", layer="counts", flavor="seurat_v3"
+   )
+   adata = adata[:, adata.var["highly_variable"]].copy()
    ```
 
 3. **Batch information**: Specify batch_key for integration

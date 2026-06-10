@@ -32,13 +32,13 @@ print(f"X min: {adata.X.min()}, max: {adata.X.max()}")
 # scvi-tools needs INTEGER counts
 # If X appears normalized, check for raw counts
 
-if hasattr(adata, 'raw') and adata.raw is not None:
+if hasattr(adata, "raw") and adata.raw is not None:
     print("Found adata.raw")
     # Use raw counts
     adata = adata.raw.to_adata()
-    
+
 # Or check layers
-if 'counts' in adata.layers:
+if "counts" in adata.layers:
     print("Found counts layer")
     # Will specify layer in setup_anndata
 ```
@@ -52,13 +52,13 @@ sc.pp.filter_cells(adata, max_genes=5000)
 
 # Calculate mito percent if not present
 # Handle both human (MT-) and mouse (mt-, Mt-) mitochondrial genes
-adata.var['mt'] = (
-    adata.var_names.str.startswith('MT-') |
-    adata.var_names.str.startswith('mt-') |
-    adata.var_names.str.startswith('Mt-')
+adata.var["mt"] = (
+    adata.var_names.str.startswith("MT-")
+    | adata.var_names.str.startswith("mt-")
+    | adata.var_names.str.startswith("Mt-")
 )
-sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], inplace=True)
-adata = adata[adata.obs['pct_counts_mt'] < 20].copy()
+sc.pp.calculate_qc_metrics(adata, qc_vars=["mt"], inplace=True)
+adata = adata[adata.obs["pct_counts_mt"] < 20].copy()
 
 # Filter genes
 sc.pp.filter_genes(adata, min_cells=3)
@@ -92,13 +92,11 @@ sc.pp.log1p(adata_hvg)
 
 # Select HVGs
 sc.pp.highly_variable_genes(
-    adata_hvg,
-    n_top_genes=2000,
-    flavor="seurat"  # or "cell_ranger"
+    adata_hvg, n_top_genes=2000, flavor="seurat"  # or "cell_ranger"
 )
 
 # Transfer HVG annotation
-adata.var['highly_variable'] = adata_hvg.var['highly_variable']
+adata.var["highly_variable"] = adata_hvg.var["highly_variable"]
 ```
 
 ### For Multi-Batch Data (Recommended)
@@ -111,7 +109,7 @@ sc.pp.highly_variable_genes(
     n_top_genes=2000,
     flavor="seurat_v3",
     batch_key="batch",  # Your batch column
-    layer="counts"      # Use raw counts
+    layer="counts",  # Use raw counts
 )
 ```
 
@@ -119,7 +117,7 @@ sc.pp.highly_variable_genes(
 
 ```python
 # Subset to highly variable genes
-adata = adata[:, adata.var['highly_variable']].copy()
+adata = adata[:, adata.var["highly_variable"]].copy()
 print(f"After HVG selection: {adata.shape}")
 ```
 
@@ -130,19 +128,14 @@ The `setup_anndata()` function registers data for the model.
 ### Basic Setup
 
 ```python
-scvi.model.SCVI.setup_anndata(
-    adata,
-    layer="counts"  # Specify layer with raw counts
-)
+scvi.model.SCVI.setup_anndata(adata, layer="counts")  # Specify layer with raw counts
 ```
 
 ### With Batch Information
 
 ```python
 scvi.model.SCVI.setup_anndata(
-    adata,
-    layer="counts",
-    batch_key="batch"  # Column in adata.obs
+    adata, layer="counts", batch_key="batch"  # Column in adata.obs
 )
 ```
 
@@ -153,7 +146,7 @@ scvi.model.SCANVI.setup_anndata(
     adata,
     layer="counts",
     batch_key="batch",
-    labels_key="cell_type"  # Column with cell type labels
+    labels_key="cell_type",  # Column with cell type labels
 )
 ```
 
@@ -164,7 +157,7 @@ scvi.model.SCVI.setup_anndata(
     adata,
     layer="counts",
     batch_key="batch",
-    continuous_covariate_keys=["percent_mito", "n_genes"]
+    continuous_covariate_keys=["percent_mito", "n_genes"],
 )
 ```
 
@@ -175,7 +168,7 @@ scvi.model.SCVI.setup_anndata(
     adata,
     layer="counts",
     batch_key="batch",
-    categorical_covariate_keys=["donor", "technology"]
+    categorical_covariate_keys=["donor", "technology"],
 )
 ```
 
@@ -195,7 +188,7 @@ scvi.model.TOTALVI.setup_anndata(
     adata,
     layer="counts",
     batch_key="batch",
-    protein_expression_obsm_key="protein_expression"
+    protein_expression_obsm_key="protein_expression",
 )
 ```
 
@@ -214,7 +207,7 @@ scvi.model.MULTIVI.setup_mudata(
     rna_layer="counts",
     protein_layer=None,
     batch_key="batch",
-    modalities={"rna": "rna", "accessibility": "atac"}
+    modalities={"rna": "rna", "accessibility": "atac"},
 )
 ```
 
@@ -227,15 +220,12 @@ from model_utils import prepare_adata
 
 # Prepare data with QC, HVG selection, and layer setup
 adata = prepare_adata(
-    adata,
-    batch_key="batch",
-    n_top_genes=2000,
-    min_genes=200,
-    max_mito_pct=20
+    adata, batch_key="batch", n_top_genes=2000, min_genes=200, max_mito_pct=20
 )
 
 # Then setup for your model
 import scvi
+
 scvi.model.SCVI.setup_anndata(adata, layer="counts", batch_key="batch")
 ```
 
@@ -250,8 +240,8 @@ This function handles:
 
 ```python
 # View registered data
-print(adata.uns['_scvi_manager_uuid'])
-print(adata.uns['_scvi_adata_minify_type'])
+print(adata.uns["_scvi_manager_uuid"])
+print(adata.uns["_scvi_adata_minify_type"])
 
 # For scVI
 scvi.model.SCVI.view_anndata_setup(adata)

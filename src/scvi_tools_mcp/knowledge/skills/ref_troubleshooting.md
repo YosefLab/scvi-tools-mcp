@@ -44,11 +44,12 @@ print(f"Contains integers: {np.allclose(protein, protein.astype(int))}")
 ```python
 # Check if X contains integers
 import numpy as np
+
 print(f"X max: {adata.X.max()}")
 print(f"Contains integers: {np.allclose(adata.X.data, adata.X.data.astype(int))}")
 
 # If normalized, recover from raw
-if hasattr(adata, 'raw') and adata.raw is not None:
+if hasattr(adata, "raw") and adata.raw is not None:
     adata = adata.raw.to_adata()
 
 # Or use existing counts layer
@@ -65,7 +66,7 @@ scvi.model.SCVI.setup_anndata(adata, layer="counts")
 from scipy.sparse import csr_matrix
 
 # Convert to CSR format (most compatible)
-if hasattr(adata.X, 'toarray'):
+if hasattr(adata.X, "toarray"):
     adata.X = csr_matrix(adata.X)
 
 # Or convert to dense if small enough
@@ -82,7 +83,7 @@ if adata.n_obs * adata.n_vars < 1e8:
 import numpy as np
 
 # Check for issues
-X = adata.X.toarray() if hasattr(adata.X, 'toarray') else adata.X
+X = adata.X.toarray() if hasattr(adata.X, "toarray") else adata.X
 print(f"NaN count: {np.isnan(X).sum()}")
 print(f"Inf count: {np.isinf(X).sum()}")
 print(f"Negative count: {(X < 0).sum()}")
@@ -104,7 +105,7 @@ print(adata.obs.columns.tolist())
 
 # Check for similar names
 for col in adata.obs.columns:
-    if 'batch' in col.lower() or 'sample' in col.lower():
+    if "batch" in col.lower() or "sample" in col.lower():
         print(f"Potential batch column: {col}")
 ```
 
@@ -122,17 +123,16 @@ model.train(batch_size=64)  # Default is 128
 
 # 2. Use smaller model architecture
 model = scvi.model.SCVI(
-    adata,
-    n_latent=10,   # Default is 10-30
-    n_layers=1     # Default is 1-2
+    adata, n_latent=10, n_layers=1  # Default is 10-30  # Default is 1-2
 )
 
 # 3. Subset to fewer genes
 sc.pp.highly_variable_genes(adata, n_top_genes=1500)
-adata = adata[:, adata.var['highly_variable']].copy()
+adata = adata[:, adata.var["highly_variable"]].copy()
 
 # 4. Clear GPU cache between models
 import torch
+
 torch.cuda.empty_cache()
 
 # 5. Use CPU if GPU is too small
@@ -146,6 +146,7 @@ model.train(accelerator="cpu")
 **Diagnosis**:
 ```python
 import torch
+
 print(f"CUDA available: {torch.cuda.is_available()}")
 print(f"PyTorch version: {torch.__version__}")
 print(f"CUDA version: {torch.version.cuda}")
@@ -174,10 +175,10 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121  # For CUDA
 adata_sample = adata[np.random.choice(adata.n_obs, 50000, replace=False)].copy()
 
 # 2. Use backed mode for AnnData
-adata = sc.read_h5ad("large_data.h5ad", backed='r')
+adata = sc.read_h5ad("large_data.h5ad", backed="r")
 
 # 3. Reduce gene count aggressively
-adata = adata[:, adata.var['highly_variable']].copy()
+adata = adata[:, adata.var["highly_variable"]].copy()
 ```
 
 ## Training Issues
@@ -210,11 +211,12 @@ model.train(max_epochs=400)
 
 # 2. Check training curves
 import matplotlib.pyplot as plt
-plt.plot(model.history['elbo_train'])
-plt.plot(model.history['elbo_validation'])
-plt.xlabel('Epoch')
-plt.ylabel('ELBO')
-plt.legend(['Train', 'Validation'])
+
+plt.plot(model.history["elbo_train"])
+plt.plot(model.history["elbo_validation"])
+plt.xlabel("Epoch")
+plt.ylabel("ELBO")
+plt.legend(["Train", "Validation"])
 
 # 3. Adjust model size for data size
 # Small data (<10k cells): smaller model
@@ -249,8 +251,8 @@ model = scvi.model.SCVI(adata, n_layers=1)
 **Solutions**:
 ```python
 # 1. Check gene overlap between batches
-for batch in adata.obs['batch'].unique():
-    batch_genes = adata[adata.obs['batch'] == batch].var_names
+for batch in adata.obs["batch"].unique():
+    batch_genes = adata[adata.obs["batch"] == batch].var_names
     print(f"{batch}: {len(batch_genes)} genes")
 
 # 2. Use more HVGs
@@ -279,7 +281,7 @@ model = scvi.model.SCVI(adata, n_latent=10)
 scvi.model.SCVI.setup_anndata(
     adata,
     layer="counts",
-    categorical_covariate_keys=["batch"]  # Less aggressive than batch_key
+    categorical_covariate_keys=["batch"],  # Less aggressive than batch_key
 )
 ```
 
@@ -290,15 +292,18 @@ scvi.model.SCVI.setup_anndata(
 **Solutions**:
 ```python
 # 1. Check batch distribution
-print(adata.obs['batch'].value_counts())
+print(adata.obs["batch"].value_counts())
 
 # 2. Subsample to balance
 from sklearn.utils import resample
+
 balanced = []
-min_size = adata.obs['batch'].value_counts().min()
-for batch in adata.obs['batch'].unique():
-    batch_data = adata[adata.obs['batch'] == batch]
-    balanced.append(batch_data[np.random.choice(len(batch_data), min_size, replace=False)])
+min_size = adata.obs["batch"].value_counts().min()
+for batch in adata.obs["batch"].unique():
+    batch_data = adata[adata.obs["batch"] == batch]
+    balanced.append(
+        batch_data[np.random.choice(len(batch_data), min_size, replace=False)]
+    )
 adata_balanced = sc.concat(balanced)
 ```
 
@@ -309,10 +314,10 @@ adata_balanced = sc.concat(balanced)
 **Solutions**:
 ```python
 # 1. Check label distribution
-print(adata.obs['cell_type'].value_counts())
+print(adata.obs["cell_type"].value_counts())
 
 # 2. Use Unknown for low-confidence cells
-adata.obs.loc[adata.obs['prediction_score'] < 0.5, 'cell_type'] = 'Unknown'
+adata.obs.loc[adata.obs["prediction_score"] < 0.5, "cell_type"] = "Unknown"
 
 # 3. Train scVI longer before scANVI
 scvi_model.train(max_epochs=300)
@@ -330,7 +335,7 @@ _, protein_denoised = model.get_normalized_expression(return_mean=True)
 # 2. Check isotype controls
 # Isotype controls should have low expression
 for i, name in enumerate(adata.uns["protein_names"]):
-    if 'isotype' in name.lower():
+    if "isotype" in name.lower():
         print(f"{name}: mean={adata.obsm['protein_expression'][:, i].mean():.1f}")
 ```
 
@@ -340,6 +345,7 @@ for i, name in enumerate(adata.uns["protein_names"]):
 ```python
 # 1. Use more variable peaks
 from sklearn.feature_selection import VarianceThreshold
+
 selector = VarianceThreshold(threshold=0.05)
 adata = adata[:, selector.fit(adata.X).get_support()].copy()
 
@@ -369,7 +375,7 @@ print(f"Common genes: {len(common_genes)}")  # Should be >1000
 # Reference should contain all cell types expected in spatial data
 
 # 3. Check reference quality
-print(adata_ref.obs['cell_type'].value_counts())
+print(adata_ref.obs["cell_type"].value_counts())
 ```
 
 ## Version Compatibility

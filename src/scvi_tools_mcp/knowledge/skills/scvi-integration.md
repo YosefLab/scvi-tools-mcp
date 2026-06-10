@@ -103,18 +103,19 @@ For custom analysis workflows, use the modular functions from `scripts/integrati
 ```python
 import anndata as ad
 import sys
-sys.path.append('scripts/')
+
+sys.path.append("scripts/")
 from integration_core import (
     setup_anndata_scvi,
     train_scvi_model,
     train_scanvi_model,
     get_latent_representation,
-    compute_neighbors_and_umap
+    compute_neighbors_and_umap,
 )
 from integration_metrics import calculate_integration_metrics
 
-adata = ad.read_h5ad('input.h5ad')
-setup_anndata_scvi(adata, batch_key='batch', layer='counts')
+adata = ad.read_h5ad("input.h5ad")
+setup_anndata_scvi(adata, batch_key="batch", layer="counts")
 # ... custom workflow
 ```
 
@@ -144,28 +145,28 @@ From `integration_metrics.py`:
 
 **Example 1: scVI only (no cell type annotations)**
 ```python
-adata = ad.read_h5ad('input.h5ad')
-setup_anndata_scvi(adata, batch_key='sample', layer='counts')
+adata = ad.read_h5ad("input.h5ad")
+setup_anndata_scvi(adata, batch_key="sample", layer="counts")
 scvi_model = train_scvi_model(adata, n_latent=30)
-adata.obsm['X_scVI'] = get_latent_representation(scvi_model, adata)
-compute_neighbors_and_umap(adata, use_rep='X_scVI')
+adata.obsm["X_scVI"] = get_latent_representation(scvi_model, adata)
+compute_neighbors_and_umap(adata, use_rep="X_scVI")
 ```
 
 **Example 2: Query-to-reference mapping (label transfer)**
 ```python
 # Load reference atlas with trained scANVI model
-reference = ad.read_h5ad('reference_atlas.h5ad')
-scanvi_model = scvi.model.SCANVI.load('reference_scanvi_model/', adata=reference)
+reference = ad.read_h5ad("reference_atlas.h5ad")
+scanvi_model = scvi.model.SCANVI.load("reference_scanvi_model/", adata=reference)
 
 # Map query to reference
-query = ad.read_h5ad('query_data.h5ad')
+query = ad.read_h5ad("query_data.h5ad")
 scvi.model.SCANVI.prepare_query_anndata(query, scanvi_model)
 query_model = scanvi_model.load_query_data(query)
-query_model.train(max_epochs=100, plan_kwargs={'weight_decay': 0.0})
+query_model.train(max_epochs=100, plan_kwargs={"weight_decay": 0.0})
 
 # Transfer labels
-query.obs['predicted_cell_type'] = query_model.predict()
-query.obsm['X_scANVI'] = query_model.get_latent_representation()
+query.obs["predicted_cell_type"] = query_model.predict()
+query.obsm["X_scANVI"] = query_model.get_latent_representation()
 ```
 
 **Example 3: Compare multiple integration methods**
@@ -174,9 +175,9 @@ query.obsm['X_scANVI'] = query_model.get_latent_representation()
 # and stored results in adata.obsm['X_scVI'], adata.obsm['X_scANVI'], adata.obsm['X_harmony']
 metrics_df = compare_embeddings(
     adata,
-    embed_keys=['X_scVI', 'X_scANVI', 'X_harmony'],
-    batch_key='batch',
-    label_key='cell_type'
+    embed_keys=["X_scVI", "X_scANVI", "X_harmony"],
+    batch_key="batch",
+    label_key="cell_type",
 )
 print(metrics_df)  # Shows metrics for each method
 ```

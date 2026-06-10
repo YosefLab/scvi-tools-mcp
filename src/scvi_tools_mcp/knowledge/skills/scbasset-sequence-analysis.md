@@ -74,16 +74,16 @@ print(f"Data: {adata.n_obs} cells, {adata.n_vars} peaks")
 
 ```python
 # Check if coordinates exist
-if 'chr' not in adata.var.columns:
+if "chr" not in adata.var.columns:
     # Parse from peak names (format: chr1:1000-2000 or chr1_1000_2000)
-    if ':' in adata.var_names[0]:
+    if ":" in adata.var_names[0]:
         # Format: chr1:1000-2000
         split_interval = adata.var_names.str.split(":", expand=True)
         adata.var["chr"] = split_interval[0]
         split_coords = split_interval[1].str.split("-", expand=True)
         adata.var["start"] = split_coords[0].astype(int)
         adata.var["end"] = split_coords[1].astype(int)
-    elif '_' in adata.var_names[0]:
+    elif "_" in adata.var_names[0]:
         # Format: chr1_1000_2000
         split_parts = adata.var_names.str.split("_", expand=True)
         adata.var["chr"] = split_parts[0]
@@ -91,7 +91,7 @@ if 'chr' not in adata.var.columns:
         adata.var["end"] = split_parts[2].astype(int)
     else:
         # Try gene_ids column if available
-        if 'gene_ids' in adata.var.columns:
+        if "gene_ids" in adata.var.columns:
             split_interval = adata.var["gene_ids"].str.split(":", expand=True)
             adata.var["chr"] = split_interval[0]
             split_coords = split_interval[1].str.split("-", expand=True)
@@ -103,7 +103,7 @@ print(f"Chromosomes: {adata.var['chr'].unique()[:5]}...")
 print(f"Coordinate range: {adata.var['start'].min()} - {adata.var['end'].max()}")
 
 # Filter to standard chromosomes only (remove chrM, chrUn, random, etc.)
-mask = adata.var["chr"].str.match(r'^chr[0-9XY]+$')
+mask = adata.var["chr"].str.match(r"^chr[0-9XY]+$")
 print(f"Peaks before chromosome filter: {adata.n_vars}")
 adata = adata[:, mask].copy()
 print(f"Peaks after chromosome filter: {adata.n_vars}")
@@ -115,8 +115,8 @@ print(f"Peaks after chromosome filter: {adata.n_vars}")
 
 ```python
 # Calculate peak detection frequency
-adata.var['n_cells'] = np.array((adata.X > 0).sum(axis=0)).flatten()
-adata.var['detection_rate'] = adata.var['n_cells'] / adata.n_obs
+adata.var["n_cells"] = np.array((adata.X > 0).sum(axis=0)).flatten()
+adata.var["detection_rate"] = adata.var["n_cells"] / adata.n_obs
 
 # Filter peaks: keep those detected in at least 5% of cells
 min_detection = 0.05
@@ -127,8 +127,8 @@ sc.pp.filter_genes(adata, min_cells=min_cells)
 print(f"Peaks after filtering (>{min_detection*100}% detection): {adata.n_vars}")
 
 # Cell-level QC
-adata.obs['n_peaks'] = np.array((adata.X > 0).sum(axis=1)).flatten()
-adata.obs['total_counts'] = np.array(adata.X.sum(axis=1)).flatten()
+adata.obs["n_peaks"] = np.array((adata.X > 0).sum(axis=1)).flatten()
+adata.obs["total_counts"] = np.array(adata.X.sum(axis=1)).flatten()
 ```
 
 ---
@@ -182,7 +182,9 @@ print(f"Binary layer created with dtype: {bdata.layers['binary'].dtype}")
 
 # Verify dna_code is in correct location after transpose
 # Should now be in bdata.obsm (since peaks are now observations)
-print(f"DNA codes location: bdata.obsm['dna_code'] shape = {bdata.obsm['dna_code'].shape}")
+print(
+    f"DNA codes location: bdata.obsm['dna_code'] shape = {bdata.obsm['dna_code'].shape}"
+)
 ```
 
 **Why Transpose?**
@@ -196,11 +198,7 @@ print(f"DNA codes location: bdata.obsm['dna_code'] shape = {bdata.obsm['dna_code
 
 ```python
 # Setup transposed data for scBasset
-scvi.external.SCBASSET.setup_anndata(
-    bdata,
-    layer="binary",
-    dna_code_key="dna_code"
-)
+scvi.external.SCBASSET.setup_anndata(bdata, layer="binary", dna_code_key="dna_code")
 
 print("AnnData registered for scBasset")
 ```
@@ -231,28 +229,28 @@ model.train(precision=16)
 plt.figure(figsize=(12, 4))
 
 plt.subplot(1, 3, 1)
-plt.plot(model.history['train_loss_epoch'].values)
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training Loss')
+plt.plot(model.history["train_loss_epoch"].values)
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("Training Loss")
 
 plt.subplot(1, 3, 2)
-if 'auroc_train' in model.history:
-    plt.plot(model.history['auroc_train'].values, label='Train')
-if 'auroc_validation' in model.history:
-    plt.plot(model.history['auroc_validation'].values, label='Validation')
-plt.xlabel('Epoch')
-plt.ylabel('AUROC')
+if "auroc_train" in model.history:
+    plt.plot(model.history["auroc_train"].values, label="Train")
+if "auroc_validation" in model.history:
+    plt.plot(model.history["auroc_validation"].values, label="Validation")
+plt.xlabel("Epoch")
+plt.ylabel("AUROC")
 plt.legend()
-plt.title('AUROC')
+plt.title("AUROC")
 
 plt.subplot(1, 3, 3)
 # Cell bias (library size effect)
 cell_bias = model.get_cell_bias()
 plt.hist(cell_bias, bins=50)
-plt.xlabel('Cell Bias')
-plt.ylabel('Count')
-plt.title('Cell Bias Distribution')
+plt.xlabel("Cell Bias")
+plt.ylabel("Count")
+plt.title("Cell Bias Distribution")
 
 plt.tight_layout()
 plt.show()
@@ -290,8 +288,8 @@ sc.tl.leiden(adata, key_added="leiden_scbasset")
 sc.pl.umap(adata, color="leiden_scbasset", title="scBasset Clusters")
 
 # Check cell bias correlation with counts (QC)
-adata.obs['cell_bias'] = model.get_cell_bias()
-sc.pl.umap(adata, color=['cell_bias', 'n_peaks'], ncols=2)
+adata.obs["cell_bias"] = model.get_cell_bias()
+sc.pl.umap(adata, color=["cell_bias", "n_peaks"], ncols=2)
 ```
 
 ---
@@ -310,10 +308,7 @@ tfs_to_score = ["PAX5", "TCF7", "RXRA", "SPI1", "GATA1"]
 
 for tf in tfs_to_score:
     try:
-        activity = model.get_tf_activity(
-            tf=tf,
-            motif_dir=motif_dir
-        )
+        activity = model.get_tf_activity(tf=tf, motif_dir=motif_dir)
         adata.obs[f"TF_{tf}"] = activity
         print(f"Scored {tf}: range [{activity.min():.3f}, {activity.max():.3f}]")
     except Exception as e:
@@ -327,7 +322,7 @@ if tf_cols:
         color=tf_cols,
         ncols=3,
         cmap="PRGn",  # Diverging colormap for TF activity
-        vcenter=0
+        vcenter=0,
     )
 ```
 
@@ -352,7 +347,7 @@ adata.write_h5ad("atac_scbasset_analyzed.h5ad")
 # Export TF activities
 tf_cols = [c for c in adata.obs.columns if c.startswith("TF_")]
 if tf_cols:
-    adata.obs[['leiden_scbasset'] + tf_cols].to_csv("tf_activities.csv")
+    adata.obs[["leiden_scbasset"] + tf_cols].to_csv("tf_activities.csv")
 
 # Reload model later
 # Note: Need to provide transposed bdata
@@ -428,8 +423,8 @@ Accessibility Prediction
 
 # The actual implementation:
 activity = model.get_tf_activity(
-    tf="PAX5",              # TF name (must match motif file)
-    motif_dir="motifs/",    # Directory with .motif files
+    tf="PAX5",  # TF name (must match motif file)
+    motif_dir="motifs/",  # Directory with .motif files
 )
 ```
 
@@ -458,17 +453,10 @@ mkdir -p motifs
 
 ```python
 # More latent dimensions
-model = scvi.external.SCBASSET(
-    bdata,
-    n_bottleneck_layer=64  # Increase from default 32
-)
+model = scvi.external.SCBASSET(bdata, n_bottleneck_layer=64)  # Increase from default 32
 
 # Extended training
-model.train(
-    max_epochs=2000,
-    precision=16,
-    early_stopping_patience=100
-)
+model.train(max_epochs=2000, precision=16, early_stopping_patience=100)
 ```
 
 ### Cell-Type-Specific TF Programs
@@ -483,6 +471,7 @@ tf_by_cluster = adata.obs.groupby("leiden_scbasset")[tf_cols].mean()
 
 # Visualize as heatmap
 import seaborn as sns
+
 plt.figure(figsize=(10, 6))
 sns.heatmap(tf_by_cluster.T, cmap="RdBu_r", center=0)
 plt.title("TF Activity by Cluster")
@@ -504,23 +493,24 @@ for cluster in tf_by_cluster.index:
 plt.figure(figsize=(10, 4))
 
 plt.subplot(1, 2, 1)
-plt.scatter(adata.obs['n_peaks'], adata.obs['cell_bias'], alpha=0.3)
-plt.xlabel('Number of Peaks')
-plt.ylabel('Cell Bias')
-plt.title('Cell Bias vs Peak Count')
+plt.scatter(adata.obs["n_peaks"], adata.obs["cell_bias"], alpha=0.3)
+plt.xlabel("Number of Peaks")
+plt.ylabel("Cell Bias")
+plt.title("Cell Bias vs Peak Count")
 
 plt.subplot(1, 2, 2)
-plt.scatter(adata.obs['total_counts'], adata.obs['cell_bias'], alpha=0.3)
-plt.xlabel('Total Counts')
-plt.ylabel('Cell Bias')
-plt.title('Cell Bias vs Total Counts')
+plt.scatter(adata.obs["total_counts"], adata.obs["cell_bias"], alpha=0.3)
+plt.xlabel("Total Counts")
+plt.ylabel("Cell Bias")
+plt.title("Cell Bias vs Total Counts")
 
 plt.tight_layout()
 plt.show()
 
 # Calculate correlation
 from scipy.stats import pearsonr
-r, p = pearsonr(adata.obs['n_peaks'], adata.obs['cell_bias'])
+
+r, p = pearsonr(adata.obs["n_peaks"], adata.obs["cell_bias"])
 print(f"Correlation (peaks vs bias): r={r:.3f}, p={p:.2e}")
 ```
 
@@ -606,27 +596,33 @@ def check_scbasset_readiness(adata):
     recommendations = []
 
     # Check coordinates
-    required_cols = ['chr', 'start', 'end']
+    required_cols = ["chr", "start", "end"]
     missing = [c for c in required_cols if c not in adata.var.columns]
     if missing:
         ready = False
         recommendations.append(f"Missing columns: {missing}. Parse from peak names.")
 
     # Check chromosomes
-    if 'chr' in adata.var.columns:
-        non_standard = adata.var['chr'].str.contains('random|Un|chrM', na=False).sum()
+    if "chr" in adata.var.columns:
+        non_standard = adata.var["chr"].str.contains("random|Un|chrM", na=False).sum()
         if non_standard > 0:
-            recommendations.append(f"{non_standard} non-standard chromosomes. Filter these.")
+            recommendations.append(
+                f"{non_standard} non-standard chromosomes. Filter these."
+            )
 
     # Check size
     if adata.n_vars > 100000:
-        recommendations.append("Very many peaks. Consider stricter filtering (0.08-0.10).")
+        recommendations.append(
+            "Very many peaks. Consider stricter filtering (0.08-0.10)."
+        )
     if adata.n_obs > 50000:
         recommendations.append("Large dataset. Use precision=16 and GPU if available.")
 
     # Memory estimate
     estimated_memory_gb = (adata.n_vars * 1344 * 4) / 1e9  # DNA codes
-    recommendations.append(f"Estimated memory for DNA codes: ~{estimated_memory_gb:.1f} GB")
+    recommendations.append(
+        f"Estimated memory for DNA codes: ~{estimated_memory_gb:.1f} GB"
+    )
 
     print("scBasset Readiness Check:")
     print(f"  Ready: {ready}")

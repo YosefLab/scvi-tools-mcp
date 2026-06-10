@@ -123,7 +123,8 @@ For custom analysis workflows, use the modular functions from `scripts/seed_labe
 ```python
 import anndata as ad
 import sys
-sys.path.append('scripts/')
+
+sys.path.append("scripts/")
 from seed_labeling_core import (
     load_marker_genes,
     score_cells_by_markers,
@@ -132,11 +133,11 @@ from seed_labeling_core import (
     train_scvi_model,
     train_scanvi_from_seeds,
     predict_labels,
-    get_prediction_confidence
+    get_prediction_confidence,
 )
 
-adata = ad.read_h5ad('input.h5ad')
-markers = load_marker_genes('markers.json')
+adata = ad.read_h5ad("input.h5ad")
+markers = load_marker_genes("markers.json")
 # ... custom workflow
 ```
 
@@ -162,13 +163,13 @@ From `seed_labeling_core.py`:
 
 **Example 1: Basic seed labeling with custom markers**
 ```python
-adata = ad.read_h5ad('input.h5ad')
+adata = ad.read_h5ad("input.h5ad")
 
 # Define markers inline
 markers = {
     "T cell": {"positive": ["CD3D", "CD3E"], "negative": ["CD14"]},
     "B cell": {"positive": ["CD19", "MS4A1"], "negative": ["CD3D"]},
-    "Monocyte": {"positive": ["CD14", "LYZ"], "negative": ["CD3D"]}
+    "Monocyte": {"positive": ["CD14", "LYZ"], "negative": ["CD3D"]},
 }
 
 # Score and select seeds
@@ -178,24 +179,24 @@ create_seed_labels(adata, seed_masks, list(markers.keys()))
 
 # Train and predict
 scvi_model = train_scvi_model(adata)
-scanvi_model = train_scanvi_from_seeds(scvi_model, adata, 'seed_labels')
-adata.obs['predicted_type'] = predict_labels(scanvi_model, adata)
+scanvi_model = train_scanvi_from_seeds(scvi_model, adata, "seed_labels")
+adata.obs["predicted_type"] = predict_labels(scanvi_model, adata)
 ```
 
 **Example 2: Iterative refinement with confidence filtering**
 ```python
 # First pass
-scanvi_model = train_scanvi_from_seeds(scvi_model, adata, 'seed_labels')
+scanvi_model = train_scanvi_from_seeds(scvi_model, adata, "seed_labels")
 predictions = predict_labels(scanvi_model, adata)
 confidence = get_prediction_confidence(scanvi_model, adata)
 
 # Filter high-confidence predictions as new seeds
 high_conf_mask = confidence.max(axis=1) > 0.9
-adata.obs['refined_seeds'] = 'Unknown'
-adata.obs.loc[high_conf_mask, 'refined_seeds'] = predictions[high_conf_mask]
+adata.obs["refined_seeds"] = "Unknown"
+adata.obs.loc[high_conf_mask, "refined_seeds"] = predictions[high_conf_mask]
 
 # Retrain with expanded seeds
-scanvi_model_v2 = train_scanvi_from_seeds(scvi_model, adata, 'refined_seeds')
+scanvi_model_v2 = train_scanvi_from_seeds(scvi_model, adata, "refined_seeds")
 ```
 
 **Example 3: Combining marker-based and cluster-based seeds**
@@ -204,11 +205,11 @@ scanvi_model_v2 = train_scanvi_from_seeds(scvi_model, adata, 'refined_seeds')
 marker_seeds = select_seed_cells(scores, n_cells=30)
 
 # Add cluster-based seeds (from manual inspection)
-cluster_seeds = adata.obs['leiden'] == '5'  # Known T cell cluster
+cluster_seeds = adata.obs["leiden"] == "5"  # Known T cell cluster
 
 # Combine
-combined_mask = marker_seeds['T cell'] | cluster_seeds
-create_seed_labels(adata, {'T cell': combined_mask}, ['T cell'])
+combined_mask = marker_seeds["T cell"] | cluster_seeds
+create_seed_labels(adata, {"T cell": combined_mask}, ["T cell"])
 ```
 
 ## Marker Gene Signature Design

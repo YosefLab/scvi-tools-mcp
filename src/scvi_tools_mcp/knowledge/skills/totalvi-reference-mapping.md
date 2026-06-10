@@ -60,11 +60,7 @@ adata_ref.raw = adata_ref  # Store for later
 
 # HVG selection
 sc.pp.highly_variable_genes(
-    adata_ref,
-    n_top_genes=4000,
-    batch_key="batch",
-    flavor="seurat_v3",
-    subset=True
+    adata_ref, n_top_genes=4000, batch_key="batch", flavor="seurat_v3", subset=True
 )
 ```
 
@@ -80,14 +76,14 @@ scvi.model.TOTALVI.setup_anndata(
     adata_ref,
     layer="counts",
     batch_key="batch",
-    protein_expression_obsm_key="protein_expression"
+    protein_expression_obsm_key="protein_expression",
 )
 
 # Initialize TotalVI reference
 model_ref = scvi.model.TOTALVI(
     adata_ref,
-    use_layer_norm="both",      # scArches compatible
-    use_batch_norm="none"       # scArches compatible
+    use_layer_norm="both",  # scArches compatible
+    use_batch_norm="none",  # scArches compatible
 )
 
 # Train
@@ -110,11 +106,7 @@ print("Reference TotalVI model saved")
 # Train classifier on reference latent space
 latent_ref = model_ref.get_latent_representation()
 
-clf = RandomForestClassifier(
-    n_estimators=100,
-    random_state=0,
-    n_jobs=-1
-)
+clf = RandomForestClassifier(n_estimators=100, random_state=0, n_jobs=-1)
 clf.fit(latent_ref, adata_ref.obs["cell_type"])
 
 # Store reference UMAP for consistent projection
@@ -147,20 +139,16 @@ sc.pp.normalize_total(adata_query, target_sum=1e4)
 sc.pp.log1p(adata_query)
 
 # Prepare query for TotalVI reference
-scvi.model.TOTALVI.prepare_query_anndata(
-    adata_query,
-    "totalvi_reference"
-)
+scvi.model.TOTALVI.prepare_query_anndata(adata_query, "totalvi_reference")
 
 # If query lacks protein, create empty protein matrix
 if not has_protein:
     n_proteins = adata_ref.obsm["protein_expression"].shape[1]
-    protein_names = adata_ref.uns.get("protein_names",
-                                       [f"Protein_{i}" for i in range(n_proteins)])
-    # Set to zeros (TotalVI interprets as missing)
-    adata_query.obsm["protein_expression"] = np.zeros(
-        (adata_query.n_obs, n_proteins)
+    protein_names = adata_ref.uns.get(
+        "protein_names", [f"Protein_{i}" for i in range(n_proteins)]
     )
+    # Set to zeros (TotalVI interprets as missing)
+    adata_query.obsm["protein_expression"] = np.zeros((adata_query.n_obs, n_proteins))
     print(f"Created empty protein matrix ({n_proteins} proteins)")
 ```
 
@@ -170,16 +158,10 @@ if not has_protein:
 
 ```python
 # Load query model from reference
-model_query = scvi.model.TOTALVI.load_query_data(
-    adata_query,
-    "totalvi_reference"
-)
+model_query = scvi.model.TOTALVI.load_query_data(adata_query, "totalvi_reference")
 
 # Train query model (preserves reference space)
-model_query.train(
-    max_epochs=200,
-    plan_kwargs={"weight_decay": 0.0}  # Critical!
-)
+model_query.train(max_epochs=200, plan_kwargs={"weight_decay": 0.0})  # Critical!
 
 # Get query latent representation
 adata_query.obsm["X_totalVI"] = model_query.get_latent_representation()
@@ -200,7 +182,7 @@ _, protein_imputed = model_query.get_normalized_expression(
     adata_query,
     n_samples=25,
     return_mean=True,
-    transform_batch=adata_ref.obs["batch"].unique().tolist()  # Reference batches
+    transform_batch=adata_ref.obs["batch"].unique().tolist(),  # Reference batches
 )
 
 # Store imputed proteins
@@ -208,13 +190,13 @@ adata_query.obsm["protein_imputed"] = protein_imputed
 
 # Also get denoised RNA
 rna_denoised, _ = model_query.get_normalized_expression(
-    adata_query,
-    n_samples=25,
-    return_mean=True
+    adata_query, n_samples=25, return_mean=True
 )
 adata_query.layers["denoised_rna"] = rna_denoised
 
-print(f"Imputed {protein_imputed.shape[1]} proteins for {protein_imputed.shape[0]} cells")
+print(
+    f"Imputed {protein_imputed.shape[1]} proteins for {protein_imputed.shape[0]} cells"
+)
 ```
 
 **Key Parameter**: `transform_batch` specifies which reference batch(es) to use as the "source" for protein imputation.
@@ -250,18 +232,35 @@ sc.tl.umap(adata_query)
 fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 
 # Row 1: Clustering and labels
-sc.pl.umap(adata_query, color="predicted_cell_type", ax=axes[0, 0],
-           show=False, title="Predicted Cell Types")
-sc.pl.umap(adata_query, color="prediction_confidence", ax=axes[0, 1],
-           show=False, title="Prediction Confidence", cmap="RdYlGn")
+sc.pl.umap(
+    adata_query,
+    color="predicted_cell_type",
+    ax=axes[0, 0],
+    show=False,
+    title="Predicted Cell Types",
+)
+sc.pl.umap(
+    adata_query,
+    color="prediction_confidence",
+    ax=axes[0, 1],
+    show=False,
+    title="Prediction Confidence",
+    cmap="RdYlGn",
+)
 
 # Row 2: Imputed proteins
 protein_names = adata_ref.uns.get("protein_names", ["CD3", "CD4", "CD8"])[:3]
 for i, prot in enumerate(protein_names[:3]):
     if i < protein_imputed.shape[1]:
         adata_query.obs[f"imputed_{prot}"] = np.log1p(protein_imputed[:, i])
-        sc.pl.umap(adata_query, color=f"imputed_{prot}", ax=axes[1, i],
-                   show=False, title=f"{prot} (imputed)", cmap="viridis")
+        sc.pl.umap(
+            adata_query,
+            color=f"imputed_{prot}",
+            ax=axes[1, i],
+            show=False,
+            title=f"{prot} (imputed)",
+            cmap="viridis",
+        )
 
 plt.tight_layout()
 plt.show()
@@ -280,10 +279,11 @@ model_query.save("query_totalvi_model", overwrite=True)
 
 # Export imputed proteins as CSV
 import pandas as pd
+
 protein_df = pd.DataFrame(
     protein_imputed,
     index=adata_query.obs_names,
-    columns=adata_ref.uns.get("protein_names", range(protein_imputed.shape[1]))
+    columns=adata_ref.uns.get("protein_names", range(protein_imputed.shape[1])),
 )
 protein_df.to_csv("imputed_proteins.csv")
 
@@ -375,9 +375,11 @@ def assess_imputation_quality(protein_imputed, predicted_cell_types):
     print("Imputed Protein Statistics:")
     for i in range(min(5, protein_imputed.shape[1])):
         prot_vals = protein_imputed[:, i]
-        print(f"  Protein {i}: mean={prot_vals.mean():.2f}, "
-              f"std={prot_vals.std():.2f}, "
-              f"zeros={100*(prot_vals < 0.1).mean():.1f}%")
+        print(
+            f"  Protein {i}: mean={prot_vals.mean():.2f}, "
+            f"std={prot_vals.std():.2f}, "
+            f"zeros={100*(prot_vals < 0.1).mean():.1f}%"
+        )
 
     # Check cell-type-specific patterns
     print("\nProtein patterns by cell type:")
@@ -385,8 +387,10 @@ def assess_imputation_quality(protein_imputed, predicted_cell_types):
         mask = predicted_cell_types == ct
         mean_expr = protein_imputed[mask].mean(axis=0)
         top_protein = mean_expr.argmax()
-        print(f"  {ct}: Highest protein = {top_protein} "
-              f"(mean={mean_expr[top_protein]:.2f})")
+        print(
+            f"  {ct}: Highest protein = {top_protein} "
+            f"(mean={mean_expr[top_protein]:.2f})"
+        )
 ```
 
 ---
@@ -443,10 +447,7 @@ def validate_imputation(true_protein, imputed_protein):
 
 specific_batch = "PBMC10k"
 _, protein_batch_specific = model_query.get_normalized_expression(
-    adata_query,
-    n_samples=25,
-    return_mean=True,
-    transform_batch=specific_batch
+    adata_query, n_samples=25, return_mean=True, transform_batch=specific_batch
 )
 ```
 
@@ -457,9 +458,7 @@ _, protein_batch_specific = model_query.get_normalized_expression(
 import anndata
 
 adata_combined = anndata.concat(
-    [adata_ref, adata_query],
-    label="source",
-    keys=["reference", "query"]
+    [adata_ref, adata_query], label="source", keys=["reference", "query"]
 )
 
 # Get combined latent through query model
@@ -469,8 +468,7 @@ adata_combined.obsm["X_totalVI"] = model_query.get_latent_representation(adata_c
 sc.pp.neighbors(adata_combined, use_rep="X_totalVI")
 sc.tl.umap(adata_combined)
 
-sc.pl.umap(adata_combined, color=["source", "cell_type"],
-           ncols=2, frameon=False)
+sc.pl.umap(adata_combined, color=["source", "cell_type"], ncols=2, frameon=False)
 ```
 
 ---

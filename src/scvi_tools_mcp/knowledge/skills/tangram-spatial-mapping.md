@@ -104,10 +104,7 @@ else:
 
 ```python
 # Tangram requires MuData with spatial and single-cell modalities
-mdata = mudata.MuData({
-    "sp": adata_sp_sub,
-    "sc": adata_sc_sub
-})
+mdata = mudata.MuData({"sp": adata_sp_sub, "sc": adata_sc_sub})
 
 print(mdata)
 ```
@@ -125,17 +122,13 @@ Tangram.setup_mudata(
         "density_prior_key": "sp",
         "sc_layer": "sc",
         "sp_layer": "sp",
-    }
+    },
 )
 
 # Initialize model
 # constrained=True: maps fixed number of cells (use target_count)
 # constrained=False: probabilistic mapping ("cells" mode)
-model = Tangram(
-    mdata,
-    constrained=True,
-    target_count=target_count
-)
+model = Tangram(mdata, constrained=True, target_count=target_count)
 
 # Train
 model.train()
@@ -173,10 +166,7 @@ mdata.mod["sc"].obsm["tangram_mapper"] = mapper
 labels = mdata.mod["sc"].obs["cell_type"]
 
 mdata.mod["sp"].obsm["tangram_ct_pred"] = model.project_cell_annotations(
-    mdata.mod["sc"],
-    mdata.mod["sp"],
-    mapper,
-    labels
+    mdata.mod["sc"], mdata.mod["sp"], mapper, labels
 )
 
 # Add to obs for visualization
@@ -187,10 +177,7 @@ for ct in ct_predictions.columns:
 # Visualize cell type predictions spatially
 cell_types = ct_predictions.columns.tolist()
 sc.pl.spatial(
-    adata_sp,
-    color=[f"tangram_{ct}" for ct in cell_types[:6]],
-    ncols=3,
-    cmap="viridis"
+    adata_sp, color=[f"tangram_{ct}" for ct in cell_types[:6]], ncols=3, cmap="viridis"
 )
 ```
 
@@ -201,23 +188,14 @@ sc.pl.spatial(
 ```python
 # Impute genes from scRNA-seq to spatial
 # This can add genes not measured in spatial data
-adata_sp_projected = model.project_genes(
-    mdata.mod["sc"],
-    mdata.mod["sp"],
-    mapper
-)
+adata_sp_projected = model.project_genes(mdata.mod["sc"], mdata.mod["sp"], mapper)
 
 # Store as new modality or layer
 mdata.mod["sp_projected"] = adata_sp_projected
 
 # Visualize imputed genes
 genes_to_plot = ["Gene1", "Gene2", "Gene3"]  # Replace with genes of interest
-sc.pl.spatial(
-    adata_sp_projected,
-    color=genes_to_plot,
-    ncols=3,
-    cmap="plasma"
-)
+sc.pl.spatial(adata_sp_projected, color=genes_to_plot, ncols=3, cmap="plasma")
 ```
 
 ---

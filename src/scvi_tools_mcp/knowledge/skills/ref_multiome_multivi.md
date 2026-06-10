@@ -54,7 +54,7 @@ adata_atac = adata_atac[common_cells].copy()
 
 ```python
 # RNA preprocessing (standard scvi-tools pipeline)
-adata_rna = mdata.mod['rna'].copy()
+adata_rna = mdata.mod["rna"].copy()
 
 # Filter
 sc.pp.filter_cells(adata_rna, min_genes=200)
@@ -69,18 +69,18 @@ sc.pp.highly_variable_genes(
     n_top_genes=4000,
     flavor="seurat_v3",
     layer="counts",
-    batch_key="batch"  # If multiple batches
+    batch_key="batch",  # If multiple batches
 )
 
 # Subset to HVGs
-adata_rna = adata_rna[:, adata_rna.var['highly_variable']].copy()
+adata_rna = adata_rna[:, adata_rna.var["highly_variable"]].copy()
 ```
 
 ## Step 2: Prepare ATAC Data
 
 ```python
 # ATAC preprocessing
-adata_atac = mdata.mod['atac'].copy()
+adata_atac = mdata.mod["atac"].copy()
 
 # Filter peaks
 sc.pp.filter_genes(adata_atac, min_cells=10)
@@ -107,10 +107,7 @@ adata_rna = adata_rna[common_cells].copy()
 adata_atac = adata_atac[common_cells].copy()
 
 # Create MuData
-mdata = md.MuData({
-    "rna": adata_rna,
-    "atac": adata_atac
-})
+mdata = md.MuData({"rna": adata_rna, "atac": adata_atac})
 
 print(f"Combined multiome: {mdata.n_obs} cells")
 print(f"RNA features: {mdata.mod['rna'].n_vars}")
@@ -126,11 +123,7 @@ scvi.model.MULTIVI.setup_mudata(
     rna_layer="counts",
     atac_layer="counts",
     batch_key="batch",  # Optional
-    modalities={
-        "rna_layer": "rna",
-        "batch_key": "rna",
-        "atac_layer": "atac"
-    }
+    modalities={"rna_layer": "rna", "batch_key": "rna", "atac_layer": "atac"},
 )
 ```
 
@@ -138,23 +131,15 @@ scvi.model.MULTIVI.setup_mudata(
 
 ```python
 # Create model
-model = scvi.model.MULTIVI(
-    mdata,
-    n_latent=20,
-    n_layers_encoder=2,
-    n_layers_decoder=2
-)
+model = scvi.model.MULTIVI(mdata, n_latent=20, n_layers_encoder=2, n_layers_decoder=2)
 
 # Train
 model.train(
-    max_epochs=300,
-    early_stopping=True,
-    early_stopping_patience=10,
-    batch_size=128
+    max_epochs=300, early_stopping=True, early_stopping_patience=10, batch_size=128
 )
 
 # Check training
-model.history['elbo_train'].plot()
+model.history["elbo_train"].plot()
 ```
 
 ## Step 6: Get Joint Representation
@@ -172,7 +157,7 @@ sc.tl.umap(mdata)
 sc.tl.leiden(mdata, resolution=1.0)
 
 # Visualize
-sc.pl.umap(mdata, color=['leiden', 'batch'], ncols=2)
+sc.pl.umap(mdata, color=["leiden", "batch"], ncols=2)
 ```
 
 ## Step 7: Modality-Specific Analysis
@@ -182,9 +167,7 @@ sc.pl.umap(mdata, color=['leiden', 'batch'], ncols=2)
 ```python
 # Impute RNA expression for ATAC-only cells
 # (Useful when integrating with ATAC-only datasets)
-imputed_rna = model.get_normalized_expression(
-    modality="rna"
-)
+imputed_rna = model.get_normalized_expression(modality="rna")
 
 # Impute accessibility for RNA-only cells
 imputed_atac = model.get_accessibility_estimates()
@@ -194,18 +177,10 @@ imputed_atac = model.get_accessibility_estimates()
 
 ```python
 # Differential expression (RNA)
-de_results = model.differential_expression(
-    groupby="leiden",
-    group1="0",
-    group2="1"
-)
+de_results = model.differential_expression(groupby="leiden", group1="0", group2="1")
 
 # Differential accessibility (ATAC)
-da_results = model.differential_accessibility(
-    groupby="leiden",
-    group1="0",
-    group2="1"
-)
+da_results = model.differential_accessibility(groupby="leiden", group1="0", group2="1")
 ```
 
 ## Handling Partial Data
@@ -218,7 +193,7 @@ MultiVI can integrate datasets with only one modality:
 # Dataset 3: ATAC only
 
 # Mark missing modalities
-mdata.obs['modality'] = 'paired'  # For cells with both
+mdata.obs["modality"] = "paired"  # For cells with both
 # For RNA-only cells, ATAC data should be missing/NaN
 # For ATAC-only cells, RNA data should be missing/NaN
 
@@ -235,7 +210,7 @@ def analyze_multiome(
     n_top_genes=4000,
     n_top_peaks=50000,
     n_latent=20,
-    max_epochs=300
+    max_epochs=300,
 ):
     """
     Complete multiome analysis with MultiVI.
@@ -277,8 +252,11 @@ def analyze_multiome(
 
     if batch_key:
         sc.pp.highly_variable_genes(
-            adata_rna, n_top_genes=n_top_genes,
-            flavor="seurat_v3", layer="counts", batch_key=batch_key
+            adata_rna,
+            n_top_genes=n_top_genes,
+            flavor="seurat_v3",
+            layer="counts",
+            batch_key=batch_key,
         )
     else:
         sc.pp.normalize_total(adata_rna, target_sum=1e4)
@@ -286,7 +264,7 @@ def analyze_multiome(
         sc.pp.highly_variable_genes(adata_rna, n_top_genes=n_top_genes)
         adata_rna.X = adata_rna.layers["counts"].copy()
 
-    adata_rna = adata_rna[:, adata_rna.var['highly_variable']].copy()
+    adata_rna = adata_rna[:, adata_rna.var["highly_variable"]].copy()
 
     # ATAC preprocessing
     sc.pp.filter_genes(adata_atac, min_cells=10)
@@ -308,7 +286,7 @@ def analyze_multiome(
         rna_layer="counts",
         atac_layer="counts",
         batch_key=batch_key,
-        modalities={"rna_layer": "rna", "batch_key": "rna", "atac_layer": "atac"}
+        modalities={"rna_layer": "rna", "batch_key": "rna", "atac_layer": "atac"},
     )
 
     model = scvi.model.MULTIVI(mdata, n_latent=n_latent)
@@ -326,13 +304,9 @@ def analyze_multiome(
 
 
 # Usage
-mdata, model = analyze_multiome(
-    adata_rna,
-    adata_atac,
-    batch_key="sample"
-)
+mdata, model = analyze_multiome(adata_rna, adata_atac, batch_key="sample")
 
-sc.pl.umap(mdata, color=['leiden', 'sample'])
+sc.pl.umap(mdata, color=["leiden", "sample"])
 ```
 
 ## Peak-to-Gene Linking
@@ -340,6 +314,7 @@ sc.pl.umap(mdata, color=['leiden', 'sample'])
 ```python
 # Link ATAC peaks to genes based on correlation in latent space
 # This identifies regulatory relationships
+
 
 def link_peaks_to_genes(model, mdata, distance_threshold=100000):
     """

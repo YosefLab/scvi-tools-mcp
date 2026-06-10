@@ -316,7 +316,7 @@ def analyze_citeseq(
 ):
     """
     Complete CITE-seq analysis with totalVI.
-    
+
     Parameters
     ----------
     adata_rna : AnnData
@@ -329,23 +329,23 @@ def analyze_citeseq(
         Number of HVGs
     n_latent : int
         Latent dimensions
-        
+
     Returns
     -------
     Tuple of (processed AnnData, trained model)
     """
     import scvi
     import scanpy as sc
-    
+
     # Ensure same cells
     common_cells = adata_rna.obs_names.intersection(adata_protein.obs_names)
     adata = adata_rna[common_cells].copy()
     adata_protein = adata_protein[common_cells].copy()
-    
+
     # Add protein to obsm
     adata.obsm["protein_expression"] = adata_protein.X.toarray() if hasattr(adata_protein.X, 'toarray') else adata_protein.X
     adata.uns["protein_names"] = list(adata_protein.var_names)
-    
+
     # RNA QC
     # Handle both human (MT-) and mouse (mt-, Mt-) mitochondrial genes
     adata.var['mt'] = (
@@ -356,10 +356,10 @@ def analyze_citeseq(
     sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], inplace=True)
     adata = adata[adata.obs['pct_counts_mt'] < 20].copy()
     sc.pp.filter_genes(adata, min_cells=3)
-    
+
     # Store counts
     adata.layers["counts"] = adata.X.copy()
-    
+
     # HVG selection
     sc.pp.highly_variable_genes(
         adata,
@@ -369,7 +369,7 @@ def analyze_citeseq(
         layer="counts"
     )
     adata = adata[:, adata.var["highly_variable"]].copy()
-    
+
     # Setup totalVI
     scvi.model.TOTALVI.setup_anndata(
         adata,
@@ -377,22 +377,22 @@ def analyze_citeseq(
         protein_expression_obsm_key="protein_expression",
         batch_key=batch_key
     )
-    
+
     # Train
     model = scvi.model.TOTALVI(adata, n_latent=n_latent)
     model.train(max_epochs=200, early_stopping=True)
-    
+
     # Get representations
     adata.obsm["X_totalVI"] = model.get_latent_representation()
     rna_norm, protein_denoised = model.get_normalized_expression(return_mean=True)
     adata.layers["totalVI_normalized"] = rna_norm
     adata.obsm["protein_denoised"] = protein_denoised
-    
+
     # Clustering
     sc.pp.neighbors(adata, use_rep="X_totalVI")
     sc.tl.umap(adata)
     sc.tl.leiden(adata)
-    
+
     return adata, model
 
 # Usage

@@ -90,7 +90,7 @@ Running scanvi from the scvi model will require the original counts matrix and c
 ## Performing Differential Expression in scVI
 
 While we only have access to the minified data, we can still perform downstream analysis using the generative part of the model.
-For example here, we will do it on a cluster of DMSO_TF controls vs the drug Harringtonine that is used for protein synthesis inhibitor per the cell line CVCL_0459 which is typicaly associated with Lung large cell carcinoma, a sub type of NSCLC. 
+For example here, we will do it on a cluster of DMSO_TF controls vs the drug Harringtonine that is used for protein synthesis inhibitor per the cell line CVCL_0459 which is typicaly associated with Lung large cell carcinoma, a sub type of NSCLC.
 We also choose to use the sub group of G2M cell cycle phase.
 
 

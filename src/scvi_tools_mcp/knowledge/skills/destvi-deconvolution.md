@@ -45,8 +45,8 @@ print(f"Reference: {sc_adata.n_obs} cells, {sc_adata.n_vars} genes")
 print(f"Cell types: {sc_adata.obs['cell_type'].value_counts()}")
 
 # Ensure raw counts
-if 'counts' not in sc_adata.layers:
-    sc_adata.layers['counts'] = sc_adata.X.copy()
+if "counts" not in sc_adata.layers:
+    sc_adata.layers["counts"] = sc_adata.X.copy()
 ```
 
 **Reference Requirements**:
@@ -68,8 +68,8 @@ st_adata = sc.read_h5ad("path/to/spatial_data.h5ad")
 print(f"Spatial: {st_adata.n_obs} spots, {st_adata.n_vars} genes")
 
 # Ensure raw counts
-if 'counts' not in st_adata.layers:
-    st_adata.layers['counts'] = st_adata.X.copy()
+if "counts" not in st_adata.layers:
+    st_adata.layers["counts"] = st_adata.X.copy()
 ```
 
 ---
@@ -86,11 +86,7 @@ st_adata = st_adata[:, shared_genes].copy()
 
 # Optional: Select highly variable genes for efficiency
 sc.pp.highly_variable_genes(
-    sc_adata,
-    n_top_genes=3000,
-    subset=False,
-    layer="counts",
-    flavor="seurat_v3"
+    sc_adata, n_top_genes=3000, subset=False, layer="counts", flavor="seurat_v3"
 )
 
 # Use HVGs for both datasets
@@ -108,25 +104,20 @@ print(f"After HVG selection: {len(hvg)} genes")
 ```python
 # Setup reference data
 CondSCVI.setup_anndata(
-    sc_adata,
-    layer="counts",
-    labels_key="cell_type"  # Cell type annotation column
+    sc_adata, layer="counts", labels_key="cell_type"  # Cell type annotation column
 )
 
 # Initialize and train scLVM (reference model)
-sc_model = CondSCVI(
-    sc_adata,
-    weight_obs=False  # Equal weight to all cells
-)
+sc_model = CondSCVI(sc_adata, weight_obs=False)  # Equal weight to all cells
 
 sc_model.train(max_epochs=300)
 
 # Plot training
 plt.figure(figsize=(8, 4))
-plt.plot(sc_model.history['elbo_train'].values)
-plt.xlabel('Epoch')
-plt.ylabel('ELBO')
-plt.title('Reference Model Training')
+plt.plot(sc_model.history["elbo_train"].values)
+plt.xlabel("Epoch")
+plt.ylabel("ELBO")
+plt.title("Reference Model Training")
 plt.show()
 
 # Save reference model
@@ -149,10 +140,10 @@ st_model.train(max_epochs=2500)  # Minimum 1000 recommended
 
 # Plot training
 plt.figure(figsize=(8, 4))
-plt.plot(st_model.history['elbo_train'].values)
-plt.xlabel('Epoch')
-plt.ylabel('ELBO')
-plt.title('Spatial Model Training')
+plt.plot(st_model.history["elbo_train"].values)
+plt.xlabel("Epoch")
+plt.ylabel("ELBO")
+plt.title("Spatial Model Training")
 plt.show()
 
 # Save spatial model
@@ -178,7 +169,7 @@ sc.pl.spatial(
     color=[f"prop_{ct}" for ct in cell_types[:6]],  # First 6 types
     ncols=3,
     cmap="viridis",
-    vmax=1.0
+    vmax=1.0,
 )
 ```
 
@@ -201,7 +192,7 @@ sc.pl.spatial(
     st_adata,
     color=[f"{ct}_gamma_PC1" for ct in list(gamma_dict.keys())[:4]],
     ncols=2,
-    cmap="coolwarm"
+    cmap="coolwarm",
 )
 ```
 
@@ -219,10 +210,7 @@ mask = st_adata.obs[f"prop_{cell_type}"] > proportion_threshold
 indices = np.where(mask)[0]
 
 # Get cell-type-specific expression
-ct_expression = st_model.get_scale_for_ct(
-    cell_type,
-    indices=indices
-)
+ct_expression = st_model.get_scale_for_ct(cell_type, indices=indices)
 
 # Store for analysis
 st_adata.layers[f"{cell_type}_expression"] = np.zeros((st_adata.n_obs, st_adata.n_vars))

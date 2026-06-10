@@ -58,8 +58,8 @@ print(f"Cell types: {adata.obs['cell_type'].nunique()}")
 
 ```python
 # Ensure counts layer
-if 'counts' not in adata.layers:
-    adata.layers['counts'] = adata.X.copy()
+if "counts" not in adata.layers:
+    adata.layers["counts"] = adata.X.copy()
 
 # Optional: Run scANVI first to get expression embeddings
 # This provides better initialization for scVIVA
@@ -84,9 +84,7 @@ setup_kwargs = {
 
 # Compute spatial neighborhood graph
 scvi.external.SCVIVA.preprocessing_anndata(
-    adata,
-    k_nn=20,  # Number of spatial neighbors
-    **setup_kwargs
+    adata, k_nn=20, **setup_kwargs  # Number of spatial neighbors
 )
 ```
 
@@ -99,10 +97,7 @@ scvi.external.SCVIVA.preprocessing_anndata(
 ```python
 # Register AnnData
 scvi.external.SCVIVA.setup_anndata(
-    adata,
-    layer="counts",
-    batch_key="sample",
-    **setup_kwargs
+    adata, layer="counts", batch_key="sample", **setup_kwargs
 )
 
 # Initialize model
@@ -114,7 +109,7 @@ model.train(
     early_stopping=True,
     check_val_every_n_epoch=1,
     batch_size=512,
-    plan_kwargs={"lr": 5e-4}
+    plan_kwargs={"lr": 5e-4},
 )
 
 # Plot training history
@@ -152,7 +147,14 @@ sc.tl.leiden(adata, resolution=0.5, key_added="scviva_clusters")
 # Visualize clusters spatially and in UMAP
 fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 sc.pl.umap(adata, color="scviva_clusters", ax=axes[0], show=False, title="UMAP")
-sc.pl.spatial(adata, color="scviva_clusters", spot_size=30, ax=axes[1], show=False, title="Spatial")
+sc.pl.spatial(
+    adata,
+    color="scviva_clusters",
+    spot_size=30,
+    ax=axes[1],
+    show=False,
+    title="Spatial",
+)
 plt.tight_layout()
 plt.show()
 ```
@@ -170,7 +172,9 @@ adata_subset = adata[adata.obs["cell_type"] == cell_type_of_interest].copy()
 sc.pp.neighbors(adata_subset, use_rep="X_scVIVA", n_neighbors=15)
 sc.tl.leiden(adata_subset, resolution=0.3, key_added="subtype_clusters")
 
-sc.pl.umap(adata_subset, color="subtype_clusters", title=f"{cell_type_of_interest} Subtypes")
+sc.pl.umap(
+    adata_subset, color="subtype_clusters", title=f"{cell_type_of_interest} Subtypes"
+)
 ```
 
 ---
@@ -191,7 +195,7 @@ DE_results = model.differential_expression(
     niche_mode=True,  # Enable niche comparisons
     n_samples_overall=1e5,
     fdr_target=0.2,
-    pseudocounts=1e-4
+    pseudocounts=1e-4,
 )
 
 print(f"Significant DE genes: {len(DE_results)}")
@@ -217,12 +221,7 @@ sc.pp.log1p(adata_subset)
 top_genes = DE_results.head(4).index.tolist()
 
 sc.pl.spatial(
-    adata_subset,
-    color=top_genes,
-    spot_size=30,
-    ncols=2,
-    cmap="plasma",
-    vmax="p99"
+    adata_subset, color=top_genes, spot_size=30, ncols=2, cmap="plasma", vmax="p99"
 )
 ```
 

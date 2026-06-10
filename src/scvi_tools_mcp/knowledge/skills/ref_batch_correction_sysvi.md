@@ -88,7 +88,7 @@ sc.pp.highly_variable_genes(
     n_top_genes=4000,  # More genes for cross-system
     flavor="seurat_v3",
     batch_key="system",  # Consider system for HVG
-    layer="counts"
+    layer="counts",
 )
 
 # Optionally: ensure overlap between systems
@@ -106,20 +106,15 @@ adata = adata[:, adata.var["highly_variable"]].copy()
 scvi.model.SCVI.setup_anndata(
     adata,
     layer="counts",
-    batch_key="sample",           # Within-system batches
-    categorical_covariate_keys=["system"]  # System-level covariate
+    batch_key="sample",  # Within-system batches
+    categorical_covariate_keys=["system"],  # System-level covariate
 )
 
 # For true sysVI (if available in your version)
 # scvi.model.SysVI.setup_anndata(...)
 
 # Create model with system awareness
-model = scvi.model.SCVI(
-    adata,
-    n_latent=30,
-    n_layers=2,
-    gene_likelihood="nb"
-)
+model = scvi.model.SCVI(adata, n_latent=30, n_layers=2, gene_likelihood="nb")
 
 # Train
 model.train(max_epochs=300)
@@ -167,7 +162,7 @@ scvi.model.SCVI.setup_anndata(
     adata,
     layer="counts",
     batch_key="sample",
-    categorical_covariate_keys=["system", "technology_version"]
+    categorical_covariate_keys=["system", "technology_version"],
 )
 
 model = scvi.model.SCVI(adata, n_latent=30)
@@ -227,7 +222,7 @@ bm = Benchmarker(
     adata,
     batch_key="system",
     label_key="cell_type",
-    embedding_obsm_keys=["X_integrated"]
+    embedding_obsm_keys=["X_integrated"],
 )
 
 bm.benchmark()
@@ -244,18 +239,10 @@ bm.benchmark()
 from scib_metrics import lisi
 
 # Batch LISI (higher = better mixing)
-batch_lisi = lisi.ilisi_graph(
-    adata,
-    batch_key="system",
-    use_rep="X_integrated"
-)
+batch_lisi = lisi.ilisi_graph(adata, batch_key="system", use_rep="X_integrated")
 
 # Cell type LISI (lower = better preservation)
-ct_lisi = lisi.clisi_graph(
-    adata,
-    label_key="cell_type", 
-    use_rep="X_integrated"
-)
+ct_lisi = lisi.clisi_graph(adata, label_key="cell_type", use_rep="X_integrated")
 
 print(f"Batch LISI: {batch_lisi.mean():.3f}")
 print(f"Cell type LISI: {ct_lisi.mean():.3f}")
@@ -281,10 +268,7 @@ print(f"Common genes: {len(common_genes)}")
 adata.obs["log_counts"] = np.log1p(adata.obs["total_counts"])
 
 scvi.model.SCVI.setup_anndata(
-    adata,
-    layer="counts",
-    batch_key="sample",
-    continuous_covariate_keys=["log_counts"]
+    adata, layer="counts", batch_key="sample", continuous_covariate_keys=["log_counts"]
 )
 ```
 
@@ -311,11 +295,11 @@ def integrate_cross_system(
     batch_key: str = "batch",
     cell_type_key: str = "cell_type",
     n_top_genes: int = 4000,
-    n_latent: int = 30
+    n_latent: int = 30,
 ):
     """
     Integrate datasets from different technological systems.
-    
+
     Parameters
     ----------
     adatas : dict
@@ -330,70 +314,71 @@ def integrate_cross_system(
         Number of HVGs
     n_latent : int
         Latent dimensions
-        
+
     Returns
     -------
     Integrated AnnData with model
     """
     import scvi
     import scanpy as sc
-    
+
     # Add system labels and concatenate
     for system_name, adata in adatas.items():
         adata.obs[system_key] = system_name
-    
+
     adata = sc.concat(list(adatas.values()))
-    
+
     # Find common genes
     for name, ad in adatas.items():
         if name == list(adatas.keys())[0]:
             common_genes = set(ad.var_names)
         else:
             common_genes = common_genes.intersection(ad.var_names)
-    
+
     adata = adata[:, list(common_genes)].copy()
     print(f"Common genes: {len(common_genes)}")
-    
+
     # Store counts
     adata.layers["counts"] = adata.X.copy()
-    
+
     # HVG selection
     sc.pp.highly_variable_genes(
         adata,
         n_top_genes=n_top_genes,
         flavor="seurat_v3",
         batch_key=system_key,
-        layer="counts"
+        layer="counts",
     )
     adata = adata[:, adata.var["highly_variable"]].copy()
-    
+
     # Setup with system as covariate
     scvi.model.SCVI.setup_anndata(
         adata,
         layer="counts",
         batch_key=batch_key if batch_key in adata.obs else None,
-        categorical_covariate_keys=[system_key]
+        categorical_covariate_keys=[system_key],
     )
-    
+
     # Train
     model = scvi.model.SCVI(adata, n_latent=n_latent, n_layers=2)
     model.train(max_epochs=300, early_stopping=True)
-    
+
     # Get representation
     adata.obsm["X_integrated"] = model.get_latent_representation()
-    
+
     # Clustering
     sc.pp.neighbors(adata, use_rep="X_integrated")
     sc.tl.umap(adata)
     sc.tl.leiden(adata)
-    
+
     return adata, model
+
 
 # Usage
 adatas = {
     "10x_v3": sc.read_h5ad("10x_v3_data.h5ad"),
     "Smart-seq2": sc.read_h5ad("smartseq_data.h5ad"),
-    "Drop-seq": sc.read_h5ad("dropseq_data.h5ad")
+    "Drop-seq": sc.read_h5ad("dropseq_data.h5ad"),
 }
 
 adata_integrated, model = integrate_cross_system(adatas)

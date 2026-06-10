@@ -75,17 +75,20 @@ rna = mdata.mod["rna"]
 protein = mdata.mod["prot"]
 
 # CRITICAL: Convert sparse to dense (TotalVI requirement)
-if hasattr(protein.X, 'toarray'):
+if hasattr(protein.X, "toarray"):
     protein.X = protein.X.toarray()
-if hasattr(rna.X, 'toarray'):
+if hasattr(rna.X, "toarray"):
     rna.X = rna.X.toarray()
 
 # Ensure counts layer exists for RNA
 if "counts" not in rna.layers:
     rna.layers["counts"] = rna.X.copy()
 else:
-    rna.layers["counts"] = rna.layers["counts"].toarray() if hasattr(
-        rna.layers["counts"], 'toarray') else rna.layers["counts"]
+    rna.layers["counts"] = (
+        rna.layers["counts"].toarray()
+        if hasattr(rna.layers["counts"], "toarray")
+        else rna.layers["counts"]
+    )
 
 # Check protein names
 print(f"Proteins measured: {list(protein.var_names)}")
@@ -108,12 +111,12 @@ scvi.model.TOTALVI.setup_mudata(
     mdata,
     rna_layer="counts",
     protein_layer=None,  # Uses .X from protein modality
-    batch_key="batch",   # Optional: for batch correction
+    batch_key="batch",  # Optional: for batch correction
     modalities={
-        "rna_layer": "rna",      # Name of RNA modality
-        "protein_layer": "prot", # Name of protein modality
-        "batch_key": "rna"       # Where batch info is stored
-    }
+        "rna_layer": "rna",  # Name of RNA modality
+        "protein_layer": "prot",  # Name of protein modality
+        "batch_key": "rna",  # Where batch info is stored
+    },
 )
 
 # Alternative: Setup for AnnData with protein in obsm
@@ -144,19 +147,19 @@ model.train(early_stopping=True)
 # Plot training history
 plt.figure(figsize=(10, 4))
 plt.subplot(1, 2, 1)
-plt.plot(model.history['elbo_train'].values, label='Train')
-if 'elbo_validation' in model.history:
-    plt.plot(model.history['elbo_validation'].values, label='Validation')
-plt.xlabel('Epoch')
-plt.ylabel('ELBO')
+plt.plot(model.history["elbo_train"].values, label="Train")
+if "elbo_validation" in model.history:
+    plt.plot(model.history["elbo_validation"].values, label="Validation")
+plt.xlabel("Epoch")
+plt.ylabel("ELBO")
 plt.legend()
-plt.title('TotalVI Training')
+plt.title("TotalVI Training")
 
 plt.subplot(1, 2, 2)
-plt.plot(model.history['reconstruction_loss_train'].values)
-plt.xlabel('Epoch')
-plt.ylabel('Reconstruction Loss')
-plt.title('Reconstruction Loss')
+plt.plot(model.history["reconstruction_loss_train"].values)
+plt.xlabel("Epoch")
+plt.ylabel("Reconstruction Loss")
+plt.title("Reconstruction Loss")
 plt.tight_layout()
 plt.show()
 ```
@@ -187,8 +190,7 @@ print(f"Latent representation shape: {latent.shape}")
 ```python
 # Get denoised RNA and protein
 rna_denoised, protein_denoised = model.get_normalized_expression(
-    n_samples=25,      # Monte Carlo samples
-    return_mean=True   # Return mean of samples
+    n_samples=25, return_mean=True  # Monte Carlo samples  # Return mean of samples
 )
 
 # Store denoised values
@@ -198,13 +200,14 @@ protein.layers["denoised_protein"] = protein_denoised
 # Get protein foreground probability
 # (probability that signal is real, not background)
 protein_fg_prob = model.get_protein_foreground_probability(
-    n_samples=25,
-    return_mean=True
+    n_samples=25, return_mean=True
 )
 protein.layers["foreground_prob"] = protein_fg_prob
 
 print("Denoised values extracted")
-print(f"Protein foreground probability range: {protein_fg_prob.min():.2f} - {protein_fg_prob.max():.2f}")
+print(
+    f"Protein foreground probability range: {protein_fg_prob.min():.2f} - {protein_fg_prob.max():.2f}"
+)
 ```
 
 **Key Outputs**:
@@ -242,8 +245,14 @@ else:
 # Transform for visualization
 protein_for_viz = np.log1p(protein_denoised)
 rna.obs["CD3_denoised"] = protein_for_viz[:, protein.var_names.get_loc("CD3")]
-sc.pl.umap(rna, color="CD3_denoised", ax=axes[2], show=False,
-           title="CD3 (denoised)", vmax="p99")
+sc.pl.umap(
+    rna,
+    color="CD3_denoised",
+    ax=axes[2],
+    show=False,
+    title="CD3 (denoised)",
+    vmax="p99",
+)
 
 plt.tight_layout()
 plt.show()
@@ -258,10 +267,10 @@ plt.show()
 # TotalVI tests both RNA and protein together
 de_results = model.differential_expression(
     groupby="rna:leiden_totalVI",  # Format: modality:column
-    group1="0",                     # Compare cluster 0
-    group2="1",                     # vs cluster 1
-    delta=0.5,                      # Effect size threshold
-    batch_correction=True           # Account for batch effects
+    group1="0",  # Compare cluster 0
+    group2="1",  # vs cluster 1
+    delta=0.5,  # Effect size threshold
+    batch_correction=True,  # Account for batch effects
 )
 
 # View results
@@ -276,19 +285,19 @@ print(de_results.head(10))
 # Filter for significant markers
 # Protein markers
 protein_markers = de_results[
-    (de_results["is_de_fdr"]) &
-    (de_results["bayes_factor"] > 0.7) &
-    (de_results["lfc_mean"] > 0) &
-    (de_results.index.isin(protein.var_names))
+    (de_results["is_de_fdr"])
+    & (de_results["bayes_factor"] > 0.7)
+    & (de_results["lfc_mean"] > 0)
+    & (de_results.index.isin(protein.var_names))
 ]
 
 # RNA markers
 rna_markers = de_results[
-    (de_results["is_de_fdr"]) &
-    (de_results["bayes_factor"] > 3) &
-    (de_results["non_zeros_proportion1"] > 0.1) &
-    (de_results["lfc_mean"] > 0) &
-    (~de_results.index.isin(protein.var_names))
+    (de_results["is_de_fdr"])
+    & (de_results["bayes_factor"] > 3)
+    & (de_results["non_zeros_proportion1"] > 0.1)
+    & (de_results["lfc_mean"] > 0)
+    & (~de_results.index.isin(protein.var_names))
 ]
 
 print(f"Protein markers: {len(protein_markers)}")
@@ -422,7 +431,7 @@ def validate_citeseq_data(mdata):
     protein = mdata.mod["prot"]
 
     # Check for dense matrices
-    if hasattr(protein.X, 'toarray'):
+    if hasattr(protein.X, "toarray"):
         issues.append("Protein matrix is sparse - convert to dense")
 
     # Check cell counts
@@ -431,9 +440,13 @@ def validate_citeseq_data(mdata):
 
     # Check protein count
     if protein.n_vars < 10:
-        recommendations.append(f"Few proteins ({protein.n_vars}). Consider if TotalVI is needed.")
+        recommendations.append(
+            f"Few proteins ({protein.n_vars}). Consider if TotalVI is needed."
+        )
     if protein.n_vars > 200:
-        recommendations.append(f"Many proteins ({protein.n_vars}). May need longer training.")
+        recommendations.append(
+            f"Many proteins ({protein.n_vars}). May need longer training."
+        )
 
     # Check for zeros
     zero_proteins = (protein.X.sum(axis=0) == 0).sum()
@@ -444,7 +457,9 @@ def validate_citeseq_data(mdata):
     if "batch" in rna.obs.columns:
         batch_sizes = rna.obs["batch"].value_counts()
         if batch_sizes.min() < 100:
-            recommendations.append("Some batches have <100 cells. May affect batch correction.")
+            recommendations.append(
+                "Some batches have <100 cells. May affect batch correction."
+            )
 
     print("CITE-Seq Data Validation:")
     for issue in issues:
@@ -502,7 +517,7 @@ plt.figure(figsize=(8, 4))
 plt.hist(fg_prob, bins=50)
 plt.xlabel(f"{protein_name} Foreground Probability")
 plt.ylabel("Cells")
-plt.axvline(0.5, color='r', linestyle='--', label='Threshold')
+plt.axvline(0.5, color="r", linestyle="--", label="Threshold")
 plt.legend()
 plt.title(f"{protein_name}: Real vs Background Signal")
 plt.show()
@@ -517,18 +532,14 @@ plt.show()
 ```python
 model = scvi.model.TOTALVI(
     mdata,
-    n_latent=25,           # More latent dimensions
-    n_layers_encoder=3,    # Deeper encoder
-    n_layers_decoder=2,    # Deeper decoder
+    n_latent=25,  # More latent dimensions
+    n_layers_encoder=3,  # Deeper encoder
+    n_layers_decoder=2,  # Deeper decoder
     latent_distribution="normal",
-    gene_likelihood="nb"   # Negative binomial for RNA
+    gene_likelihood="nb",  # Negative binomial for RNA
 )
 
-model.train(
-    max_epochs=500,
-    early_stopping=True,
-    early_stopping_patience=30
-)
+model.train(max_epochs=500, early_stopping=True, early_stopping_patience=30)
 ```
 
 ### Compare Denoised vs Raw Protein
@@ -546,7 +557,8 @@ scatter = axes[0].scatter(
     rna.obsm["X_umap"][:, 0],
     rna.obsm["X_umap"][:, 1],
     c=protein.X[:, idx],
-    s=1, cmap="viridis"
+    s=1,
+    cmap="viridis",
 )
 plt.colorbar(scatter, ax=axes[0])
 axes[0].set_title(f"{protein_name} (Raw)")
@@ -556,7 +568,8 @@ scatter = axes[1].scatter(
     rna.obsm["X_umap"][:, 0],
     rna.obsm["X_umap"][:, 1],
     c=np.log1p(protein.layers["denoised_protein"][:, idx]),
-    s=1, cmap="viridis"
+    s=1,
+    cmap="viridis",
 )
 plt.colorbar(scatter, ax=axes[1])
 axes[1].set_title(f"{protein_name} (Denoised, log)")

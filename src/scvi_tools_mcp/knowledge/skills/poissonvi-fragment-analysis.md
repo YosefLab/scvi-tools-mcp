@@ -72,7 +72,7 @@ print(f"Sparsity: {1 - (adata.X.nnz / (adata.n_obs * adata.n_vars)):.2%}")
 # Key insight: Read count matrices have more 2s than 1s
 # Fragment count matrices have more 1s than 2s
 
-if hasattr(adata.X, 'toarray'):
+if hasattr(adata.X, "toarray"):
     X_dense = adata.X.toarray()
 else:
     X_dense = adata.X
@@ -97,7 +97,7 @@ else:
     print("-> No conversion needed")
 
     # Store as fragments layer for consistency
-    adata.layers['fragments'] = adata.X.copy()
+    adata.layers["fragments"] = adata.X.copy()
 ```
 
 **Why This Matters**:
@@ -112,16 +112,16 @@ else:
 
 ```python
 # Use fragments layer for QC
-X_frag = adata.layers['fragments']
+X_frag = adata.layers["fragments"]
 
 # Calculate region detection across cells
-if hasattr(X_frag, 'toarray'):
+if hasattr(X_frag, "toarray"):
     n_cells_per_region = np.array((X_frag > 0).sum(axis=0)).flatten()
 else:
     n_cells_per_region = np.array((X_frag > 0).sum(axis=0)).flatten()
 
-adata.var['n_cells_fragment'] = n_cells_per_region
-adata.var['detection_rate'] = n_cells_per_region / adata.n_obs
+adata.var["n_cells_fragment"] = n_cells_per_region
+adata.var["detection_rate"] = n_cells_per_region / adata.n_obs
 
 # Filter regions: keep those detected in at least 5% of cells
 min_detection = 0.05
@@ -132,16 +132,16 @@ sc.pp.filter_genes(adata, min_cells=min_cells)
 print(f"Regions after filtering (>{min_detection*100}% detection): {adata.n_vars}")
 
 # Calculate cell-level QC on fragments
-frag_layer = adata.layers['fragments']
-if hasattr(frag_layer, 'toarray'):
-    adata.obs['n_fragments'] = np.array(frag_layer.sum(axis=1)).flatten()
-    adata.obs['n_regions'] = np.array((frag_layer > 0).sum(axis=1)).flatten()
+frag_layer = adata.layers["fragments"]
+if hasattr(frag_layer, "toarray"):
+    adata.obs["n_fragments"] = np.array(frag_layer.sum(axis=1)).flatten()
+    adata.obs["n_regions"] = np.array((frag_layer > 0).sum(axis=1)).flatten()
 else:
-    adata.obs['n_fragments'] = np.array(frag_layer.sum(axis=1)).flatten()
-    adata.obs['n_regions'] = np.array((frag_layer > 0).sum(axis=1)).flatten()
+    adata.obs["n_fragments"] = np.array(frag_layer.sum(axis=1)).flatten()
+    adata.obs["n_regions"] = np.array((frag_layer > 0).sum(axis=1)).flatten()
 
 # Visualize QC
-sc.pl.violin(adata, ['n_fragments', 'n_regions'], jitter=0.4)
+sc.pl.violin(adata, ["n_fragments", "n_regions"], jitter=0.4)
 ```
 
 ---
@@ -150,10 +150,7 @@ sc.pl.violin(adata, ['n_fragments', 'n_regions'], jitter=0.4)
 
 ```python
 # Setup with fragments layer
-scvi.external.POISSONVI.setup_anndata(
-    adata,
-    layer="fragments"
-)
+scvi.external.POISSONVI.setup_anndata(adata, layer="fragments")
 
 # OR: Setup with batch correction
 # scvi.external.POISSONVI.setup_anndata(
@@ -188,19 +185,19 @@ model.train()
 # Plot training history
 plt.figure(figsize=(10, 4))
 plt.subplot(1, 2, 1)
-plt.plot(model.history['elbo_train'].values, label='Train')
-if 'elbo_validation' in model.history:
-    plt.plot(model.history['elbo_validation'].values, label='Validation')
-plt.xlabel('Epoch')
-plt.ylabel('ELBO')
+plt.plot(model.history["elbo_train"].values, label="Train")
+if "elbo_validation" in model.history:
+    plt.plot(model.history["elbo_validation"].values, label="Validation")
+plt.xlabel("Epoch")
+plt.ylabel("ELBO")
 plt.legend()
-plt.title('PoissonVI Training')
+plt.title("PoissonVI Training")
 
 plt.subplot(1, 2, 2)
-plt.plot(model.history['reconstruction_loss_train'].values)
-plt.xlabel('Epoch')
-plt.ylabel('Reconstruction Loss')
-plt.title('Reconstruction Loss')
+plt.plot(model.history["reconstruction_loss_train"].values)
+plt.xlabel("Epoch")
+plt.ylabel("Reconstruction Loss")
+plt.title("Reconstruction Loss")
 plt.tight_layout()
 plt.show()
 
@@ -242,7 +239,7 @@ sc.tl.leiden(adata, key_added="clusters_poissonvi", resolution=0.2)
 sc.pl.umap(adata, color="clusters_poissonvi", title="PoissonVI Clusters")
 
 # Check batch mixing if applicable
-if 'batch' in adata.obs.columns:
+if "batch" in adata.obs.columns:
     sc.pl.umap(adata, color=["clusters_poissonvi", "batch"], ncols=2)
 ```
 
@@ -255,10 +252,10 @@ if 'batch' in adata.obs.columns:
 da_results = model.differential_accessibility(
     adata,
     groupby="clusters_poissonvi",
-    group1="3",              # Target cluster
-    mode="vanilla",          # Standard mode
-    two_sided=False,         # One-sided for markers
-    batch_correction=True    # For multi-batch data
+    group1="3",  # Target cluster
+    mode="vanilla",  # Standard mode
+    two_sided=False,  # One-sided for markers
+    batch_correction=True,  # For multi-batch data
 )
 
 # View results
@@ -267,7 +264,7 @@ print(f"\nTotal regions tested: {len(da_results)}")
 
 # Filter for marker peaks
 # emp_prob1: empirical probability in group1 (target)
-markers = da_results[da_results['emp_prob1'] >= 0.05].copy()
+markers = da_results[da_results["emp_prob1"] >= 0.05].copy()
 print(f"Marker peaks (emp_prob1 >= 0.05): {len(markers)}")
 
 # Key columns:
@@ -299,9 +296,9 @@ for cluster in adata.obs["clusters_poissonvi"].unique():
         groupby="clusters_poissonvi",
         group1=str(cluster),
         mode="vanilla",
-        two_sided=False
+        two_sided=False,
     )
-    significant = da[da['is_da_fdr']]
+    significant = da[da["is_da_fdr"]]
     significant.to_csv(f"markers_cluster_{cluster}.csv")
     print(f"Cluster {cluster}: {len(significant)} marker peaks")
 
@@ -396,14 +393,13 @@ else:
 
 ```python
 # Conservative: FDR-controlled
-significant = da_results[da_results['is_da_fdr']]
+significant = da_results[da_results["is_da_fdr"]]
 
 # Moderate: High probability threshold
-moderate = da_results[da_results['prob_da'] > 0.9]
+moderate = da_results[da_results["prob_da"] > 0.9]
 
 # Marker-focused: High accessibility in target
-markers = da_results[(da_results['prob_da'] > 0.8) &
-                      (da_results['emp_prob1'] >= 0.05)]
+markers = da_results[(da_results["prob_da"] > 0.8) & (da_results["emp_prob1"] >= 0.05)]
 ```
 
 ---
@@ -414,11 +410,7 @@ markers = da_results[(da_results['prob_da'] > 0.8) &
 
 ```python
 # Setup with batch correction
-scvi.external.POISSONVI.setup_anndata(
-    adata,
-    layer="fragments",
-    batch_key="batch"
-)
+scvi.external.POISSONVI.setup_anndata(adata, layer="fragments", batch_key="batch")
 
 model = scvi.external.POISSONVI(adata)
 model.train()
@@ -434,7 +426,7 @@ da_results = model.differential_accessibility(
     adata,
     groupby="cell_type",
     group1="T_cells",
-    batch_correction=True  # Critical for multi-batch
+    batch_correction=True,  # Critical for multi-batch
 )
 ```
 
@@ -465,10 +457,22 @@ adata.obsm["X_umap_peakvi"] = adata.obsm["X_umap"].copy()
 
 # Visualize side by side
 fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-sc.pl.embedding(adata, basis="X_umap_poissonvi", color="cell_type",
-                ax=axes[0], show=False, title="PoissonVI")
-sc.pl.embedding(adata, basis="X_umap_peakvi", color="cell_type",
-                ax=axes[1], show=False, title="PeakVI")
+sc.pl.embedding(
+    adata,
+    basis="X_umap_poissonvi",
+    color="cell_type",
+    ax=axes[0],
+    show=False,
+    title="PoissonVI",
+)
+sc.pl.embedding(
+    adata,
+    basis="X_umap_peakvi",
+    color="cell_type",
+    ax=axes[1],
+    show=False,
+    title="PeakVI",
+)
 plt.tight_layout()
 plt.show()
 ```
@@ -540,7 +544,7 @@ def diagnose_atac_data(adata):
     """Provide data-driven parameter recommendations."""
 
     # Check read vs fragment
-    X = adata.X.toarray() if hasattr(adata.X, 'toarray') else adata.X
+    X = adata.X.toarray() if hasattr(adata.X, "toarray") else adata.X
     count_1s = np.sum(X == 1)
     count_2s = np.sum(X == 2)
 
@@ -609,9 +613,9 @@ for val, cnt in zip(unique[:10], counts[:10]):
 # Plot distribution
 plt.figure(figsize=(10, 4))
 plt.hist(X_dense[X_dense > 0].flatten(), bins=50, log=True)
-plt.xlabel('Count')
-plt.ylabel('Frequency (log)')
-plt.title('Count Distribution')
+plt.xlabel("Count")
+plt.ylabel("Frequency (log)")
+plt.title("Count Distribution")
 plt.show()
 ```
 

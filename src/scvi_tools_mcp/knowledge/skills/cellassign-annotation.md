@@ -145,7 +145,8 @@ For custom analysis workflows, use the modular functions from `scripts/cellassig
 import anndata as ad
 import pandas as pd
 import sys
-sys.path.append('scripts/')
+
+sys.path.append("scripts/")
 from cellassign_core import (
     load_marker_matrix,
     compute_size_factors,
@@ -153,11 +154,11 @@ from cellassign_core import (
     setup_cellassign,
     train_cellassign,
     predict_cell_types,
-    get_prediction_probabilities
+    get_prediction_probabilities,
 )
 
-adata = ad.read_h5ad('data.h5ad')
-marker_matrix = load_marker_matrix('markers.csv')
+adata = ad.read_h5ad("data.h5ad")
+marker_matrix = load_marker_matrix("markers.csv")
 # ... custom workflow
 ```
 
@@ -191,12 +192,12 @@ from cellassign_core import (
     compute_size_factors,
     subset_to_markers,
     train_cellassign,
-    predict_cell_types
+    predict_cell_types,
 )
 
 # Load data
-adata = ad.read_h5ad('data.h5ad')
-marker_matrix = load_marker_matrix('markers.csv')
+adata = ad.read_h5ad("data.h5ad")
+marker_matrix = load_marker_matrix("markers.csv")
 
 # Prepare data
 adata = compute_size_factors(adata)
@@ -205,7 +206,7 @@ adata_subset = subset_to_markers(adata, marker_matrix)
 # Train and predict
 model = train_cellassign(adata_subset, marker_matrix)
 predictions = predict_cell_types(model)
-adata.obs['celltype'] = predictions
+adata.obs["celltype"] = predictions
 ```
 
 **Example 2: Create marker matrix from dictionary**
@@ -213,10 +214,10 @@ adata.obs['celltype'] = predictions
 from cellassign_core import create_marker_matrix
 
 markers = {
-    'T_cell': ['CD3D', 'CD3E', 'CD4', 'CD8A'],
-    'B_cell': ['CD19', 'MS4A1', 'CD79A'],
-    'Monocyte': ['CD14', 'LYZ', 'S100A8'],
-    'NK_cell': ['NKG7', 'GNLY', 'NCAM1']
+    "T_cell": ["CD3D", "CD3E", "CD4", "CD8A"],
+    "B_cell": ["CD19", "MS4A1", "CD79A"],
+    "Monocyte": ["CD14", "LYZ", "S100A8"],
+    "NK_cell": ["NKG7", "GNLY", "NCAM1"],
 }
 
 marker_matrix = create_marker_matrix(markers)
@@ -233,9 +234,9 @@ probabilities = get_prediction_probabilities(model)
 confidence = probabilities.max(axis=1)
 high_conf_mask = confidence > 0.8
 
-adata.obs['celltype'] = predictions
-adata.obs.loc[~high_conf_mask, 'celltype'] = 'Uncertain'
-adata.obs['assignment_confidence'] = confidence
+adata.obs["celltype"] = predictions
+adata.obs.loc[~high_conf_mask, "celltype"] = "Uncertain"
+adata.obs["assignment_confidence"] = confidence
 ```
 
 **Example 4: Iterative marker refinement**

@@ -126,7 +126,8 @@ For custom analysis workflows, use the modular functions from `scripts/label_tra
 ```python
 import anndata as ad
 import sys
-sys.path.append('scripts/')
+
+sys.path.append("scripts/")
 from label_transfer_core import (
     normalize_gene_length,
     concatenate_datasets,
@@ -134,11 +135,11 @@ from label_transfer_core import (
     train_scvi_integration,
     train_scanvi_transfer,
     predict_labels,
-    evaluate_transfer
+    evaluate_transfer,
 )
 
-reference = ad.read_h5ad('reference.h5ad')
-query = ad.read_h5ad('query.h5ad')
+reference = ad.read_h5ad("reference.h5ad")
+query = ad.read_h5ad("query.h5ad")
 # ... custom workflow
 ```
 
@@ -166,26 +167,26 @@ From `label_transfer_core.py`:
 
 **Example 1: Basic label transfer**
 ```python
-reference = ad.read_h5ad('reference.h5ad')
-query = ad.read_h5ad('query.h5ad')
+reference = ad.read_h5ad("reference.h5ad")
+query = ad.read_h5ad("query.h5ad")
 
 # Add batch labels
-reference.obs['batch'] = 'reference'
-query.obs['batch'] = 'query'
+reference.obs["batch"] = "reference"
+query.obs["batch"] = "query"
 
 # Concatenate
-adata = concatenate_datasets(reference, query, labels_key='cell_type')
+adata = concatenate_datasets(reference, query, labels_key="cell_type")
 
 # Select HVGs
-select_hvg_across_batches(adata, batch_key='batch', n_top_genes=2000)
+select_hvg_across_batches(adata, batch_key="batch", n_top_genes=2000)
 
 # Train and transfer
-setup_combined_anndata(adata, batch_key='batch', labels_key='cell_type_transfer')
+setup_combined_anndata(adata, batch_key="batch", labels_key="cell_type_transfer")
 scvi_model = train_scvi_integration(adata)
-scanvi_model = train_scanvi_transfer(scvi_model, adata, 'cell_type_transfer')
+scanvi_model = train_scanvi_transfer(scvi_model, adata, "cell_type_transfer")
 
 # Get predictions for query
-query_mask = adata.obs['batch'] == 'query'
+query_mask = adata.obs["batch"] == "query"
 predictions = predict_labels(scanvi_model, adata)
 query_predictions = predictions[query_mask]
 ```
@@ -193,11 +194,11 @@ query_predictions = predictions[query_mask]
 **Example 2: Cross-technology with gene length normalization**
 ```python
 # Load SmartSeq2 reference
-reference = ad.read_h5ad('smartseq2_reference.h5ad')
-reference = normalize_gene_length(reference, gene_lengths_file='gene_lengths.txt')
+reference = ad.read_h5ad("smartseq2_reference.h5ad")
+reference = normalize_gene_length(reference, gene_lengths_file="gene_lengths.txt")
 
 # Load 10x query (no normalization needed)
-query = ad.read_h5ad('10x_query.h5ad')
+query = ad.read_h5ad("10x_query.h5ad")
 
 # Continue with standard workflow...
 ```
@@ -213,8 +214,8 @@ confidence = probabilities.max(axis=1)
 high_conf_mask = confidence > 0.8
 
 # Only keep high-confidence predictions
-adata.obs['predicted_type'] = predictions
-adata.obs.loc[~high_conf_mask, 'predicted_type'] = 'Low_confidence'
+adata.obs["predicted_type"] = predictions
+adata.obs.loc[~high_conf_mask, "predicted_type"] = "Low_confidence"
 ```
 
 ## Cross-Technology Integration
@@ -235,7 +236,7 @@ For SmartSeq2 data, read counts are proportional to gene length:
 
 ```python
 # Load gene lengths
-gene_lengths = pd.read_csv('gene_lengths.txt', index_col=0)
+gene_lengths = pd.read_csv("gene_lengths.txt", index_col=0)
 
 # Normalize
 adata.X = adata.X / gene_lengths.values * np.median(gene_lengths.values)
@@ -248,12 +249,12 @@ When integrating different technologies:
 
 ```python
 # Option 1: Use technology as batch
-adata.obs['tech'] = ['10x'] * n_10x + ['SS2'] * n_ss2
-setup_anndata(..., batch_key='tech')
+adata.obs["tech"] = ["10x"] * n_10x + ["SS2"] * n_ss2
+setup_anndata(..., batch_key="tech")
 
 # Option 2: Use original batch + technology
-adata.obs['batch_tech'] = adata.obs['original_batch'] + '_' + adata.obs['tech']
-setup_anndata(..., batch_key='batch_tech')
+adata.obs["batch_tech"] = adata.obs["original_batch"] + "_" + adata.obs["tech"]
+setup_anndata(..., batch_key="batch_tech")
 ```
 
 ## Key Parameters Explained

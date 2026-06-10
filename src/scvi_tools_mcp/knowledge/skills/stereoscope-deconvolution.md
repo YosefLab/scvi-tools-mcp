@@ -51,8 +51,8 @@ print(f"Reference: {sc_adata.n_obs} cells, {sc_adata.n_vars} genes")
 print(f"Cell types:\n{sc_adata.obs['cell_type'].value_counts()}")
 
 # Ensure raw counts are available
-if 'counts' not in sc_adata.layers:
-    sc_adata.layers['counts'] = sc_adata.X.copy()
+if "counts" not in sc_adata.layers:
+    sc_adata.layers["counts"] = sc_adata.X.copy()
 ```
 
 ---
@@ -64,7 +64,7 @@ if 'counts' not in sc_adata.layers:
 sc.pp.filter_genes(sc_adata, min_counts=10)
 
 # Remove mitochondrial genes (recommended for deconvolution)
-non_mito_genes = [g for g in sc_adata.var_names if not g.startswith('MT-')]
+non_mito_genes = [g for g in sc_adata.var_names if not g.startswith("MT-")]
 sc_adata = sc_adata[:, non_mito_genes].copy()
 
 # Normalize and log-transform for HVG selection (keep raw counts)
@@ -78,7 +78,7 @@ sc.pp.highly_variable_genes(
     subset=True,
     layer="counts",
     flavor="seurat_v3",
-    batch_key="batch" if "batch" in sc_adata.obs.columns else None
+    batch_key="batch" if "batch" in sc_adata.obs.columns else None,
 )
 
 print(f"After preprocessing: {sc_adata.n_vars} genes")
@@ -99,14 +99,14 @@ st_adata = sc.read_h5ad("path/to/spatial_data.h5ad")
 print(f"Spatial: {st_adata.n_obs} spots, {st_adata.n_vars} genes")
 
 # Basic QC
-st_adata.var['mt'] = st_adata.var_names.str.startswith('MT-')
-sc.pp.calculate_qc_metrics(st_adata, qc_vars=['mt'], inplace=True)
+st_adata.var["mt"] = st_adata.var_names.str.startswith("MT-")
+sc.pp.calculate_qc_metrics(st_adata, qc_vars=["mt"], inplace=True)
 sc.pp.filter_cells(st_adata, min_counts=500)
 sc.pp.filter_cells(st_adata, min_genes=500)
 
 # Ensure counts layer
-if 'counts' not in st_adata.layers:
-    st_adata.layers['counts'] = st_adata.X.copy()
+if "counts" not in st_adata.layers:
+    st_adata.layers["counts"] = st_adata.X.copy()
 ```
 
 ---
@@ -130,9 +130,7 @@ st_adata = st_adata[:, shared_genes].copy()
 ```python
 # Setup reference data for Stereoscope
 RNAStereoscope.setup_anndata(
-    sc_adata,
-    layer="counts",
-    labels_key="cell_type"  # Cell type annotation column
+    sc_adata, layer="counts", labels_key="cell_type"  # Cell type annotation column
 )
 
 # Initialize reference model
@@ -143,10 +141,10 @@ sc_model.train(max_epochs=100)
 
 # Plot training
 plt.figure(figsize=(8, 4))
-plt.plot(sc_model.history['elbo_train'].values)
-plt.xlabel('Epoch')
-plt.ylabel('ELBO')
-plt.title('Reference Model Training')
+plt.plot(sc_model.history["elbo_train"].values)
+plt.xlabel("Epoch")
+plt.ylabel("ELBO")
+plt.title("Reference Model Training")
 plt.show()
 
 # Save reference model
@@ -170,10 +168,10 @@ spatial_model.train(max_epochs=2000)
 
 # Plot training
 plt.figure(figsize=(8, 4))
-plt.plot(spatial_model.history['elbo_train'].values)
-plt.xlabel('Epoch')
-plt.ylabel('ELBO')
-plt.title('Spatial Model Training')
+plt.plot(spatial_model.history["elbo_train"].values)
+plt.xlabel("Epoch")
+plt.ylabel("ELBO")
+plt.title("Spatial Model Training")
 plt.show()
 
 # Save spatial model
@@ -204,10 +202,7 @@ print(st_adata.obsm["deconvolution"].describe())
 ```python
 # Configure visualization
 sc.settings.set_figure_params(
-    dpi=100,
-    color_map="inferno",
-    dpi_save=200,
-    vector_friendly=True
+    dpi=100, color_map="inferno", dpi_save=200, vector_friendly=True
 )
 
 # Get cell types for plotting
@@ -221,7 +216,7 @@ sc.pl.spatial(
     ncols=3,
     size=1.2,
     cmap="inferno",
-    vmax=1.0
+    vmax=1.0,
 )
 
 # Heatmap of proportions across spots
@@ -231,7 +226,7 @@ sns.clustermap(
     cmap="viridis",
     figsize=(12, 8),
     col_cluster=True,
-    row_cluster=True
+    row_cluster=True,
 )
 plt.title("Cell Type Proportions Across Spots")
 plt.show()

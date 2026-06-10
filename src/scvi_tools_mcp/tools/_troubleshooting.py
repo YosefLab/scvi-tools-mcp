@@ -40,6 +40,7 @@ FAQ_CONTENT: dict[str, str] = {
 ## Check GPU availability
 ```python
 import torch
+
 print(torch.cuda.is_available())
 ```
 
@@ -70,6 +71,7 @@ model = scvi.model.SCVI.load_from_hub("username/model-name")
 ## Check if training converged
 ```python
 import matplotlib.pyplot as plt
+
 plt.plot(model.history["elbo_train"], label="train")
 plt.plot(model.history["elbo_validation"], label="val")
 plt.legend()
@@ -97,15 +99,17 @@ Default 30. Try 10–50.
 ## Evaluate batch correction
 ```python
 import scib
-metrics = scib.metrics.metrics(adata, adata_int, batch_key="batch",
-                                label_key="cell_type", embed="X_scVI")
+
+metrics = scib.metrics.metrics(
+    adata, adata_int, batch_key="batch", label_key="cell_type", embed="X_scVI"
+)
 ```
 """,
     "memory": """# Memory FAQ
 
 ## Dataset too large for RAM
 ```python
-adata = anndata.read_h5ad("file.h5ad", backed='r')
+adata = anndata.read_h5ad("file.h5ad", backed="r")
 ```
 
 ## Reduce memory during training

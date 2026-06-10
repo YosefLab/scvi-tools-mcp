@@ -4,7 +4,7 @@ An MCP (Model Context Protocol) server that gives LLMs structured access to [scv
 
 No runtime model execution — pure knowledge layer. Works with Claude Desktop, Cursor, and any MCP-compatible client.
 
----
+______________________________________________________________________
 
 ## Quick Start
 
@@ -36,57 +36,57 @@ pip install scvi-tools-mcp
 scvi-tools-mcp
 ```
 
----
+______________________________________________________________________
 
 ## Tools
 
-| Tool | Description |
-|------|-------------|
-| `recommend_model` | Rank models by task and data type — start here |
-| `get_model_overview` | Full model description, use cases, inputs, outputs |
-| `get_model_parameters` | Key `__init__` and `train()` parameters with defaults |
-| `get_setup_anndata_guide` | Exact `setup_anndata()` call + required obs/var fields |
-| `validate_data_requirements` | Pass/fail checklist for your AnnData against a model |
-| `list_tutorials` | Browse tutorials by category |
-| `get_tutorial` | Paginated tutorial content (code + prose, no outputs) |
-| `search_tutorials` | Keyword search across all tutorials |
-| `get_api_reference` | Signature + docstring for any public class or function |
-| `search_api` | Search public symbols by keyword |
-| `get_workflow_template` | Step-by-step code template for an analysis task |
-| `get_downstream_guide` | Guide for DE, clustering, embedding, label transfer |
-| `get_faq` | Curated FAQ from docs, GitHub issues, and Discourse |
-| `search_knowledge` | Cross-search all knowledge (catch-all) |
+| Tool                         | Description                                            |
+| ---------------------------- | ------------------------------------------------------ |
+| `recommend_model`            | Rank models by task and data type — start here         |
+| `get_model_overview`         | Full model description, use cases, inputs, outputs     |
+| `get_model_parameters`       | Key `__init__` and `train()` parameters with defaults  |
+| `get_setup_anndata_guide`    | Exact `setup_anndata()` call + required obs/var fields |
+| `validate_data_requirements` | Pass/fail checklist for your AnnData against a model   |
+| `list_tutorials`             | Browse tutorials by category                           |
+| `get_tutorial`               | Paginated tutorial content (code + prose, no outputs)  |
+| `search_tutorials`           | Keyword search across all tutorials                    |
+| `get_api_reference`          | Signature + docstring for any public class or function |
+| `search_api`                 | Search public symbols by keyword                       |
+| `get_workflow_template`      | Step-by-step code template for an analysis task        |
+| `get_downstream_guide`       | Guide for DE, clustering, embedding, label transfer    |
+| `get_faq`                    | Curated FAQ from docs, GitHub issues, and Discourse    |
+| `search_knowledge`           | Cross-search all knowledge (catch-all)                 |
 
----
+______________________________________________________________________
 
 ## Knowledge Sources
 
 All knowledge is baked into the package as Markdown files at build time. No network calls at tool-call time.
 
-| Directory | Content |
-|-----------|---------|
-| `knowledge/models/` | One `.md` per model — description, use case, parameters |
-| `knowledge/tutorials/` | 60+ tutorials converted from `.ipynb` (code + prose only) |
-| `knowledge/api/` | Extracted class signatures and docstrings |
-| `knowledge/user_guide/` | Narrative documentation from the scvi-tools user guide |
-| `knowledge/faq/github_issues.md` | Top GitHub issues snapshot |
-| `knowledge/faq/discourse_threads.md` | Discourse forum thread snapshot |
+| Directory                            | Content                                                   |
+| ------------------------------------ | --------------------------------------------------------- |
+| `knowledge/models/`                  | One `.md` per model — description, use case, parameters   |
+| `knowledge/tutorials/`               | 60+ tutorials converted from `.ipynb` (code + prose only) |
+| `knowledge/api/`                     | Extracted class signatures and docstrings                 |
+| `knowledge/user_guide/`              | Narrative documentation from the scvi-tools user guide    |
+| `knowledge/faq/github_issues.md`     | Top GitHub issues snapshot                                |
+| `knowledge/faq/discourse_threads.md` | Discourse forum thread snapshot                           |
 
----
+______________________________________________________________________
 
 ## Knowledge Refresh (CI)
 
 Three monthly GitHub Actions jobs keep knowledge current — each opens a PR if a diff is found:
 
-| Workflow | Schedule | What it does |
-|----------|----------|--------------|
-| `refresh_knowledge.yaml` | 1st of month | Re-scrapes GitHub issues + Discourse threads |
-| `sync_tutorials.yaml` | 1st of month | Fetches new `.ipynb` from scvi-tools, converts to `.md` |
+| Workflow                    | Schedule     | What it does                                                |
+| --------------------------- | ------------ | ----------------------------------------------------------- |
+| `refresh_knowledge.yaml`    | 1st of month | Re-scrapes GitHub issues + Discourse threads                |
+| `sync_tutorials.yaml`       | 1st of month | Fetches new `.ipynb` from scvi-tools, converts to `.md`     |
 | `sync_model_knowledge.yaml` | 1st of month | Checks CHANGELOG, regenerates model docs for changed models |
 
 All workflows also support `workflow_dispatch` for manual runs.
 
----
+______________________________________________________________________
 
 ## Development
 
@@ -115,10 +115,10 @@ python scripts/scrape_external.py
 ### Adding a new model
 
 1. Run `scripts/extract_api_docs.py` after updating scvi-tools.
-2. Add the model name to `MODEL_NAMES` in `src/scvi_tools_mcp/tools/_constants.py`.
-3. Add requirements to `MODEL_REQUIREMENTS` in `_data_prep.py` if needed.
+1. Add the model name to `MODEL_NAMES` in `src/scvi_tools_mcp/tools/_constants.py`.
+1. Add requirements to `MODEL_REQUIREMENTS` in `_data_prep.py` if needed.
 
----
+______________________________________________________________________
 
 ## License
 

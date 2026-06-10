@@ -38,10 +38,12 @@ adata_ref = sc.read_h5ad("reference_atlas.h5ad")
 # Check annotations
 print(f"Reference cells: {adata_ref.n_obs}")
 print(f"Cell types: {adata_ref.obs['cell_type'].nunique()}")
-print(adata_ref.obs['cell_type'].value_counts())
+print(adata_ref.obs["cell_type"].value_counts())
 
 # Ensure raw counts
-adata_ref.layers["counts"] = adata_ref.raw.X.copy() if adata_ref.raw else adata_ref.X.copy()
+adata_ref.layers["counts"] = (
+    adata_ref.raw.X.copy() if adata_ref.raw else adata_ref.X.copy()
+)
 
 # HVG selection
 sc.pp.highly_variable_genes(
@@ -49,7 +51,7 @@ sc.pp.highly_variable_genes(
     n_top_genes=3000,
     flavor="seurat_v3",
     batch_key="batch" if "batch" in adata_ref.obs else None,
-    layer="counts"
+    layer="counts",
 )
 adata_ref = adata_ref[:, adata_ref.var["highly_variable"]].copy()
 ```
@@ -58,20 +60,14 @@ adata_ref = adata_ref[:, adata_ref.var["highly_variable"]].copy()
 
 ```python
 # First train scVI (unlabeled)
-scvi.model.SCVI.setup_anndata(
-    adata_ref,
-    layer="counts",
-    batch_key="batch"
-)
+scvi.model.SCVI.setup_anndata(adata_ref, layer="counts", batch_key="batch")
 
 scvi_ref = scvi.model.SCVI(adata_ref, n_latent=30)
 scvi_ref.train(max_epochs=200)
 
 # Initialize scANVI from scVI
 scanvi_ref = scvi.model.SCANVI.from_scvi_model(
-    scvi_ref,
-    labels_key="cell_type",
-    unlabeled_category="Unknown"
+    scvi_ref, labels_key="cell_type", unlabeled_category="Unknown"
 )
 
 # Train scANVI
@@ -100,10 +96,10 @@ if missing_genes:
     # Add missing genes with zero expression
     import numpy as np
     from scipy.sparse import csr_matrix
-    
+
     zero_matrix = csr_matrix((adata_query.n_obs, len(missing_genes)))
     # ... concat and reorder to match reference
-    
+
 # Store counts
 adata_query.layers["counts"] = adata_query.X.copy()
 ```
@@ -115,16 +111,10 @@ adata_query.layers["counts"] = adata_query.X.copy()
 scvi.model.SCANVI.prepare_query_anndata(adata_query, scanvi_ref)
 
 # Create query model from reference
-scanvi_query = scvi.model.SCANVI.load_query_data(
-    adata_query,
-    scanvi_ref
-)
+scanvi_query = scvi.model.SCANVI.load_query_data(adata_query, scanvi_ref)
 
 # Fine-tune on query (optional but recommended)
-scanvi_query.train(
-    max_epochs=100,
-    plan_kwargs={"weight_decay": 0.0}
-)
+scanvi_query.train(max_epochs=100, plan_kwargs={"weight_decay": 0.0})
 
 # Get predictions
 adata_query.obs["predicted_cell_type"] = scanvi_query.predict()
@@ -141,13 +131,13 @@ adata_query.obs["prediction_score"] = soft_predictions.max(axis=1)
 print(f"Mean prediction confidence: {adata_query.obs['prediction_score'].mean():.3f}")
 
 # Low confidence predictions
-low_conf = adata_query.obs['prediction_score'] < 0.5
+low_conf = adata_query.obs["prediction_score"] < 0.5
 print(f"Low confidence cells: {low_conf.sum()} ({low_conf.mean()*100:.1f}%)")
 
 # Visualize
 sc.pp.neighbors(adata_query, use_rep="X_scANVI")
 sc.tl.umap(adata_query)
-sc.pl.umap(adata_query, color=['predicted_cell_type', 'prediction_score'])
+sc.pl.umap(adata_query, color=["predicted_cell_type", "prediction_score"])
 ```
 
 ## Option 2: Use Pre-Trained Models
@@ -161,10 +151,7 @@ sc.pl.umap(adata_query, color=['predicted_cell_type', 'prediction_score'])
 # Example: Load pre-trained model
 from huggingface_hub import hf_hub_download
 
-model_path = hf_hub_download(
-    repo_id="scvi-tools/example-model",
-    filename="model.pt"
-)
+model_path = hf_hub_download(repo_id="scvi-tools/example-model", filename="model.pt")
 
 # Load model
 model = scvi.model.SCANVI.load(model_path, adata=adata_query)
@@ -196,10 +183,7 @@ scvi.model.SCANVI.prepare_query_anndata(adata_query, scanvi_ref)
 scanvi_query = scvi.model.SCANVI.load_query_data(adata_query, scanvi_ref)
 
 # Train only query-specific parameters
-scanvi_query.train(
-    max_epochs=200,
-    plan_kwargs={"weight_decay": 0.0}
-)
+scanvi_query.train(max_epochs=200, plan_kwargs={"weight_decay": 0.0})
 ```
 
 ## Visualize Reference and Query Together
@@ -222,9 +206,7 @@ sc.tl.umap(adata_combined)
 
 # Plot
 sc.pl.umap(
-    adata_combined,
-    color=["dataset", "cell_type", "predicted_cell_type"],
-    ncols=2
+    adata_combined, color=["dataset", "cell_type", "predicted_cell_type"], ncols=2
 )
 ```
 
@@ -236,8 +218,12 @@ sc.pl.umap(
 # Filter predictions by confidence
 confidence_threshold = 0.7
 
-high_conf = adata_query[adata_query.obs['prediction_score'] >= confidence_threshold].copy()
-low_conf = adata_query[adata_query.obs['prediction_score'] < confidence_threshold].copy()
+high_conf = adata_query[
+    adata_query.obs["prediction_score"] >= confidence_threshold
+].copy()
+low_conf = adata_query[
+    adata_query.obs["prediction_score"] < confidence_threshold
+].copy()
 
 print(f"High confidence: {len(high_conf)} ({len(high_conf)/len(adata_query)*100:.1f}%)")
 print(f"Low confidence: {len(low_conf)} ({len(low_conf)/len(adata_query)*100:.1f}%)")
@@ -248,13 +234,13 @@ print(f"Low confidence: {len(low_conf)} ({len(low_conf)/len(adata_query)*100:.1f
 ```python
 # Validate predictions with known markers
 markers = {
-    'T cells': ['CD3D', 'CD3E'],
-    'B cells': ['CD19', 'MS4A1'],
-    'Monocytes': ['CD14', 'LYZ']
+    "T cells": ["CD3D", "CD3E"],
+    "B cells": ["CD19", "MS4A1"],
+    "Monocytes": ["CD14", "LYZ"],
 }
 
 for ct, genes in markers.items():
-    ct_cells = adata_query[adata_query.obs['predicted_cell_type'] == ct]
+    ct_cells = adata_query[adata_query.obs["predicted_cell_type"] == ct]
     if len(ct_cells) > 0:
         for gene in genes:
             if gene in adata_query.var_names:
@@ -271,11 +257,11 @@ def transfer_labels(
     cell_type_key="cell_type",
     batch_key=None,
     n_top_genes=3000,
-    confidence_threshold=0.5
+    confidence_threshold=0.5,
 ):
     """
     Transfer cell type labels from reference to query.
-    
+
     Parameters
     ----------
     adata_ref : AnnData
@@ -290,72 +276,71 @@ def transfer_labels(
         Number of HVGs
     confidence_threshold : float
         Minimum confidence for predictions
-        
+
     Returns
     -------
     AnnData with predictions
     """
     import scvi
     import scanpy as sc
-    
+
     # Prepare reference
     adata_ref = adata_ref.copy()
     adata_ref.layers["counts"] = adata_ref.X.copy()
-    
+
     sc.pp.highly_variable_genes(
         adata_ref,
         n_top_genes=n_top_genes,
         flavor="seurat_v3",
         batch_key=batch_key,
-        layer="counts"
+        layer="counts",
     )
     adata_ref = adata_ref[:, adata_ref.var["highly_variable"]].copy()
-    
+
     # Train reference model
     scvi.model.SCVI.setup_anndata(adata_ref, layer="counts", batch_key=batch_key)
     scvi_ref = scvi.model.SCVI(adata_ref, n_latent=30)
     scvi_ref.train(max_epochs=200)
-    
+
     scanvi_ref = scvi.model.SCANVI.from_scvi_model(
-        scvi_ref,
-        labels_key=cell_type_key,
-        unlabeled_category="Unknown"
+        scvi_ref, labels_key=cell_type_key, unlabeled_category="Unknown"
     )
     scanvi_ref.train(max_epochs=50)
-    
+
     # Prepare query
     adata_query = adata_query[:, adata_ref.var_names].copy()
     adata_query.layers["counts"] = adata_query.X.copy()
-    
+
     # Map query
     scvi.model.SCANVI.prepare_query_anndata(adata_query, scanvi_ref)
     scanvi_query = scvi.model.SCANVI.load_query_data(adata_query, scanvi_ref)
     scanvi_query.train(max_epochs=100, plan_kwargs={"weight_decay": 0.0})
-    
+
     # Get predictions
     adata_query.obs["predicted_cell_type"] = scanvi_query.predict()
     soft = scanvi_query.predict(soft=True)
     adata_query.obs["prediction_score"] = soft.max(axis=1)
-    
+
     # Mark low confidence
-    adata_query.obs["confident_prediction"] = adata_query.obs["prediction_score"] >= confidence_threshold
-    
+    adata_query.obs["confident_prediction"] = (
+        adata_query.obs["prediction_score"] >= confidence_threshold
+    )
+
     # Add latent representation
     adata_query.obsm["X_scANVI"] = scanvi_query.get_latent_representation()
-    
+
     return adata_query, scanvi_ref, scanvi_query
+
 
 # Usage
 adata_annotated, ref_model, query_model = transfer_labels(
-    adata_ref,
-    adata_query,
-    cell_type_key="cell_type"
+    adata_ref, adata_query, cell_type_key="cell_type"
 )
 
 # Visualize
 sc.pp.neighbors(adata_annotated, use_rep="X_scANVI")
 sc.tl.umap(adata_annotated)
-sc.pl.umap(adata_annotated, color=['predicted_cell_type', 'prediction_score'])
+sc.pl.umap(adata_annotated, color=["predicted_cell_type", "prediction_score"])
 ```
 
 ## Troubleshooting
