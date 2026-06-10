@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Literal
+
 from pydantic import BaseModel
+
+from scvi_tools_mcp.mcp import mcp
 from scvi_tools_mcp.tools import utils
 from scvi_tools_mcp.tools._constants import MODEL_NAMES
-from scvi_tools_mcp.mcp import mcp
 
 MODEL_REQUIREMENTS: dict[str, dict] = {
     "scvi": {
@@ -130,11 +131,9 @@ def validate_data_requirements(
             available = list(MODEL_REQUIREMENTS.keys())
             return DataPrepResult(
                 error=f"No requirements defined for '{model_name}'. Known: {', '.join(available)}. "
-                      "Use get_model_overview for full documentation."
+                "Use get_model_overview for full documentation."
             )
-        checks: list[tuple[bool, str]] = [
-            (True, "adata.X contains count matrix (assumed from call context)")
-        ]
+        checks: list[tuple[bool, str]] = [(True, "adata.X contains count matrix (assumed from call context)")]
         for req in reqs.get("required_obs", []):
             field = req.split(" ")[0]
             passed = field in obs_keys or "(" in req
@@ -145,7 +144,12 @@ def validate_data_requirements(
             checks.append((passed, f"var requirement '{req}': {'OK' if passed else 'CHECK — may be needed'}"))
         if reqs.get("needs_raw", False):
             raw_ok = has_raw
-            checks.append((raw_ok, "adata.raw: PRESENT" if raw_ok else "adata.raw: MISSING — this model requires adata.raw to be set"))
+            checks.append(
+                (
+                    raw_ok,
+                    "adata.raw: PRESENT" if raw_ok else "adata.raw: MISSING — this model requires adata.raw to be set",
+                )
+            )
         lines = [f"# Data Requirements — {model_name.upper()}", ""]
         all_pass = all(p for p, _ in checks)
         lines.append("**Status: PASS ✓**" if all_pass else "**Status: ACTION REQUIRED**")

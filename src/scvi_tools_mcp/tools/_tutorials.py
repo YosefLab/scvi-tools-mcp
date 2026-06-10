@@ -1,13 +1,26 @@
 from __future__ import annotations
-from typing import Literal
+
 from pathlib import Path
+from typing import Literal
+
 from pydantic import BaseModel
-from scvi_tools_mcp.tools import utils
+
 from scvi_tools_mcp.mcp import mcp
+from scvi_tools_mcp.tools import utils
 
 TUTORIAL_CATEGORIES = Literal[
-    "scrna", "multimodal", "spatial", "atac", "hub", "quick_start",
-    "cytometry", "dev", "r", "use_cases", "scbs", "custom_dl"
+    "scrna",
+    "multimodal",
+    "spatial",
+    "atac",
+    "hub",
+    "quick_start",
+    "cytometry",
+    "dev",
+    "r",
+    "use_cases",
+    "scbs",
+    "custom_dl",
 ]
 
 
@@ -122,7 +135,11 @@ def search_tutorials(query: str) -> TutorialResult:
             score = sum(lower.count(kw) for kw in keywords)
             if score > 0:
                 excerpt = next(
-                    (line.strip()[:120] for line in content.splitlines() if any(kw in line.lower() for kw in keywords) and len(line.strip()) > 10),
+                    (
+                        line.strip()[:120]
+                        for line in content.splitlines()
+                        if any(kw in line.lower() for kw in keywords) and len(line.strip()) > 10
+                    ),
                     "",
                 )
                 rel = str(md.relative_to(base).with_suffix(""))

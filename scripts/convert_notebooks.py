@@ -7,7 +7,9 @@ Usage:
     python scripts/convert_notebooks.py
     python scripts/convert_notebooks.py --src /path/to/notebooks --dst /path/to/output
 """
+
 from __future__ import annotations
+
 import argparse
 import json
 from pathlib import Path

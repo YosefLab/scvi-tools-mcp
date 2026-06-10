@@ -1,8 +1,9 @@
 # tests/conftest.py
-from pathlib import Path
 import shutil
-import pytest
+from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -40,10 +41,14 @@ def mock_knowledge(tmp_path):
     )
     user_guide_dir = k / "user_guide"
     user_guide_dir.mkdir(exist_ok=True)
-    (user_guide_dir / "saving_and_loading_models.md").write_text("# Saving Models\n\nUse model.save().\n", encoding="utf-8")
+    (user_guide_dir / "saving_and_loading_models.md").write_text(
+        "# Saving Models\n\nUse model.save().\n", encoding="utf-8"
+    )
     faq_dir = k / "faq"
     faq_dir.mkdir(exist_ok=True)
-    (faq_dir / "github_issues.md").write_text("# FAQ\n\n## Training\nQ: Loss not decreasing?\nA: Check learning rate.\n", encoding="utf-8")
+    (faq_dir / "github_issues.md").write_text(
+        "# FAQ\n\n## Training\nQ: Loss not decreasing?\nA: Check learning rate.\n", encoding="utf-8"
+    )
     (faq_dir / "discourse_threads.md").write_text("# Discourse\n\n## How to use SCANVI?\nPosts: 10\n", encoding="utf-8")
 
     with patch("scvi_tools_mcp.tools.utils.get_knowledge_dir", return_value=k):

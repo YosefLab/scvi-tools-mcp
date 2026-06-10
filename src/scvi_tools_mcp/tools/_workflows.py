@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 from typing import Literal
+
 from pydantic import BaseModel
+
+from scvi_tools_mcp.mcp import mcp
 from scvi_tools_mcp.tools import utils
 from scvi_tools_mcp.tools._constants import MODEL_NAMES
-from scvi_tools_mcp.mcp import mcp
 
 WORKFLOW_TEMPLATES: dict[str, dict[str, str]] = {
     "batch_integration": {
@@ -206,10 +209,16 @@ class WorkflowResult(BaseModel):
 @mcp.tool()
 def get_workflow_template(
     task: Literal[
-        "batch_integration", "dimensionality_reduction", "differential_expression",
-        "cell_type_annotation", "deconvolution", "spatial_mapping",
-        "chromatin_accessibility", "multimodal_integration", "reference_mapping",
-        "perturbation_modeling"
+        "batch_integration",
+        "dimensionality_reduction",
+        "differential_expression",
+        "cell_type_annotation",
+        "deconvolution",
+        "spatial_mapping",
+        "chromatin_accessibility",
+        "multimodal_integration",
+        "reference_mapping",
+        "perturbation_modeling",
     ],
     model_name: MODEL_NAMES | None = None,
 ) -> WorkflowResult:
@@ -270,7 +279,7 @@ def get_downstream_guide(
         if guide is None:
             return WorkflowResult(
                 error=f"No downstream guide for task='{task}' with model='{model_name}'. "
-                      f"Try search_knowledge(query='{task} {model_name}')."
+                f"Try search_knowledge(query='{task} {model_name}')."
             )
         result = utils.truncate(guide)
         return WorkflowResult(content=result.content, truncated=result.truncated)

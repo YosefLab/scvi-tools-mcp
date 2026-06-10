@@ -5,7 +5,9 @@ Requires scvi-tools installed: pip install scvi-tools-mcp[scvi]
 Usage:
     python scripts/extract_api_docs.py
 """
+
 from __future__ import annotations
+
 import importlib
 import inspect
 from pathlib import Path
@@ -144,6 +146,7 @@ def run() -> None:
     version_file = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/.last_synced_version"
     try:
         import scvi
+
         version_file.write_text(scvi.__version__, encoding="utf-8")
         print(f"  synced version: {scvi.__version__}")
     except Exception:

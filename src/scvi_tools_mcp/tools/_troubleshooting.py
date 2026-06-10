@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 from typing import Literal
+
 from pydantic import BaseModel
-from scvi_tools_mcp.tools import utils
+
 from scvi_tools_mcp.mcp import mcp
+from scvi_tools_mcp.tools import utils
 
 FAQ_CONTENT: dict[str, str] = {
     "training": """# Training FAQ
@@ -182,7 +185,11 @@ def search_knowledge(query: str) -> TroubleshootResult:
             score = sum(content.lower().count(kw) for kw in keywords)
             if score > 0:
                 excerpt = next(
-                    (line.strip()[:150] for line in content.splitlines() if any(kw in line.lower() for kw in keywords) and len(line.strip()) > 20),
+                    (
+                        line.strip()[:150]
+                        for line in content.splitlines()
+                        if any(kw in line.lower() for kw in keywords) and len(line.strip()) > 20
+                    ),
                     "",
                 )
                 rel = str(md.relative_to(knowledge_dir).with_suffix(""))

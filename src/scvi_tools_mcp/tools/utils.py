@@ -1,8 +1,9 @@
 from __future__ import annotations
+
+import math
 from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
-import math
 
 
 class KnowledgeNotFoundError(Exception):
@@ -28,9 +29,7 @@ def get_knowledge_dir() -> Path:
 
 def load_knowledge(path: Path) -> str:
     if not path.exists():
-        raise KnowledgeNotFoundError(
-            f"Knowledge file not found: {path}. Run scripts/extract_api_docs.py to rebuild."
-        )
+        raise KnowledgeNotFoundError(f"Knowledge file not found: {path}. Run scripts/extract_api_docs.py to rebuild.")
     return path.read_text(encoding="utf-8")
 
 

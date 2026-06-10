@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 from pathlib import Path
+
 from pydantic import BaseModel
-from scvi_tools_mcp.tools import utils
+
 from scvi_tools_mcp.mcp import mcp
+from scvi_tools_mcp.tools import utils
 
 
 class ApiResult(BaseModel):

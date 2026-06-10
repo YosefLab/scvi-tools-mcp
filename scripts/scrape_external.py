@@ -6,10 +6,13 @@ GitHub token recommended: set GITHUB_TOKEN env var for higher rate limits.
 Usage:
     python scripts/scrape_external.py
 """
+
 from __future__ import annotations
+
 import os
 import time
 from pathlib import Path
+
 import requests
 
 KNOWLEDGE_FAQ = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/faq"
@@ -63,7 +66,12 @@ def fetch_discourse_threads() -> str:
             print(f"  WARN: Discourse fetch failed for {url}: {e}")
         time.sleep(1)
     all_topics = sorted(all_topics, key=lambda t: t.get("views", 0), reverse=True)[:MAX_THREADS]
-    lines = ["# scvi-tools Discourse Forum Snapshot", "", f"Fetched {len(all_topics)} threads (deduplicated across sources).", ""]
+    lines = [
+        "# scvi-tools Discourse Forum Snapshot",
+        "",
+        f"Fetched {len(all_topics)} threads (deduplicated across sources).",
+        "",
+    ]
     for topic in all_topics:
         title = topic.get("title", "")
         posts = topic.get("posts_count", 0)

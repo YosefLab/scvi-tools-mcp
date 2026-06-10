@@ -1,7 +1,9 @@
 from pathlib import Path
-import pytest
 from unittest.mock import patch
-from scvi_tools_mcp.tools.utils import load_knowledge, truncate, paginate, list_knowledge_files, KnowledgeNotFoundError
+
+import pytest
+
+from scvi_tools_mcp.tools.utils import KnowledgeNotFoundError, list_knowledge_files, load_knowledge, paginate, truncate
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

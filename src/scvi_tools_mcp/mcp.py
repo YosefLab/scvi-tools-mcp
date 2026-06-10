@@ -12,10 +12,10 @@ mcp = FastMCP(
 
 # Tool modules register their tools with @mcp.tool() decorator on import
 from scvi_tools_mcp.tools import (  # noqa: E402, F401
-    _model_guidance,
-    _data_prep,
-    _tutorials,
     _api_reference,
-    _workflows,
+    _data_prep,
+    _model_guidance,
     _troubleshooting,
+    _tutorials,
+    _workflows,
 )

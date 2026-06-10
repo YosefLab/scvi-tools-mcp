@@ -1,8 +1,9 @@
 from pathlib import Path
-import pytest
-from scripts.convert_notebooks import convert_notebook, convert_all
+
+from scripts.convert_notebooks import convert_all, convert_notebook
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
 
 def test_convert_notebook_produces_md(tmp_path):
     nb = FIXTURES / "sample_notebook.ipynb"
@@ -13,6 +14,7 @@ def test_convert_notebook_produces_md(tmp_path):
     assert "# scVI Tutorial" in content
     assert "import scvi" in content
 
+
 def test_convert_notebook_strips_outputs(tmp_path):
     nb = FIXTURES / "sample_notebook.ipynb"
     out = tmp_path / "sample_notebook.md"
@@ -20,12 +22,14 @@ def test_convert_notebook_strips_outputs(tmp_path):
     content = out.read_text()
     assert "Training..." not in content
 
+
 def test_convert_notebook_has_code_fences(tmp_path):
     nb = FIXTURES / "sample_notebook.ipynb"
     out = tmp_path / "sample_notebook.md"
     convert_notebook(nb, out)
     content = out.read_text()
     assert "```python" in content
+
 
 def test_convert_notebook_skips_checkpoints(tmp_path):
     nb = FIXTURES / "sample_notebook.ipynb"

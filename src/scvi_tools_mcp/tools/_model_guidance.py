@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 from typing import Literal
+
 from pydantic import BaseModel
+
+from scvi_tools_mcp.mcp import mcp
 from scvi_tools_mcp.tools import utils
 from scvi_tools_mcp.tools._constants import MODEL_NAMES  # noqa: F401 — re-exported
-from scvi_tools_mcp.mcp import mcp
 
 TASK_MODEL_MAP: dict[str, list[str]] = {
     "batch_integration": ["scvi", "scanvi", "sysvi", "linearscvi"],
@@ -40,12 +43,18 @@ class ModelGuidanceResult(BaseModel):
 @mcp.tool()
 def recommend_model(
     task: Literal[
-        "batch_integration","dimensionality_reduction","differential_expression",
-        "cell_type_annotation","deconvolution","spatial_mapping",
-        "chromatin_accessibility","multimodal_integration","reference_mapping",
-        "perturbation_modeling"
+        "batch_integration",
+        "dimensionality_reduction",
+        "differential_expression",
+        "cell_type_annotation",
+        "deconvolution",
+        "spatial_mapping",
+        "chromatin_accessibility",
+        "multimodal_integration",
+        "reference_mapping",
+        "perturbation_modeling",
     ],
-    data_type: Literal["scrna","cite_seq","spatial","atac","multiome","cytometry","methylation"],
+    data_type: Literal["scrna", "cite_seq", "spatial", "atac", "multiome", "cytometry", "methylation"],
     has_protein: bool,
     has_accessibility: bool,
     n_batches: int,
@@ -114,9 +123,7 @@ def get_model_overview(
         if not model_file.exists():
             models_dir = knowledge_dir / "models"
             available = sorted(p.stem for p in models_dir.glob("*.md")) if models_dir.exists() else []
-            return ModelGuidanceResult(
-                error=f"Model '{model_name}' not found. Available: {', '.join(available)}"
-            )
+            return ModelGuidanceResult(error=f"Model '{model_name}' not found. Available: {', '.join(available)}")
         content = model_file.read_text(encoding="utf-8")
         result = utils.truncate(content)
         return ModelGuidanceResult(content=result.content, truncated=result.truncated)

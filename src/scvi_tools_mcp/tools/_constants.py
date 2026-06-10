@@ -1,10 +1,35 @@
 from __future__ import annotations
+
 from typing import Literal
 
 MODEL_NAMES = Literal[
-    "amortizedlda", "autozi", "cellassign", "contrastivevi", "cytovi",
-    "decipher", "destvi", "diagvi", "gimvi", "linearscvi", "methylanvi",
-    "methylvi", "mrvi", "multivi", "peakvi", "poissonvi", "resolvi",
-    "scanvi", "scar", "scbasset", "scvi", "scviva", "solo", "stereoscope",
-    "sysvi", "tangram", "totalanvi", "totalvi", "velovi"
+    "amortizedlda",
+    "autozi",
+    "cellassign",
+    "contrastivevi",
+    "cytovi",
+    "decipher",
+    "destvi",
+    "diagvi",
+    "gimvi",
+    "linearscvi",
+    "methylanvi",
+    "methylvi",
+    "mrvi",
+    "multivi",
+    "peakvi",
+    "poissonvi",
+    "resolvi",
+    "scanvi",
+    "scar",
+    "scbasset",
+    "scvi",
+    "scviva",
+    "solo",
+    "stereoscope",
+    "sysvi",
+    "tangram",
+    "totalanvi",
+    "totalvi",
+    "velovi",
 ]
