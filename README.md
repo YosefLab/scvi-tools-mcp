@@ -1,6 +1,7 @@
 # scvi-tools-mcp
 
-An MCP (Model Context Protocol) server that gives LLMs structured access to [scvi-tools](https://scvi-tools.org) knowledge: model documentation, tutorials, API reference, workflow templates, and community FAQ.
+An MCP (Model Context Protocol) server that gives LLMs structured access to [scvi-tools](https://scvi-tools.org)
+knowledge: model documentation, tutorials, API reference, workflow templates, and community FAQ.
 
 No runtime model execution — pure knowledge layer. Works with Claude Desktop, Cursor, and any MCP-compatible client.
 
