@@ -1,4 +1,7 @@
 # tests/test_tools.py
+import pytest
+
+
 def test_recommend_model_returns_content(mock_knowledge):
     from scvi_tools_mcp.tools._model_guidance import recommend_model
 
@@ -203,8 +206,6 @@ def test_search_knowledge_no_match(mock_knowledge):
 
 
 # --- Task 13: smoke test — all tools registered ---
-
-import pytest
 
 
 @pytest.mark.asyncio

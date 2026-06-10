@@ -9,6 +9,22 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- DiagVI spatial proteomics + transcriptomics tutorials under `knowledge/tutorials/multimodal/`
+- 20 scvi skill SKILL.md files + scvi-tools plugin SKILL.md + 12 reference docs in `knowledge/skills/`
+- `docs/installation.md`, `docs/faq.md`, `docs/references.md`, `docs/references.bib`
+- `.codecov.yaml`, `.markdownlint.yaml`, `.readthedocs.yaml`, `Dockerfile`, `LICENSE`
+- `.github/ISSUE_TEMPLATE/` (bug report, feature request, release checklist)
+- Updated `.pre-commit-config.yaml` to match scvi-tools pattern (blacken-docs, prettier, mdformat, markdownlint-fix, pre-commit-hooks)
+- Second Discourse source URL in `scrape_external.py`; topics deduplicated and sorted by views
+
+### Fixed
+
+- `_data_prep.py`: long setup_call strings wrapped to stay under 120-char line limit
+- `tests/test_tools.py`: `import pytest` moved to top of file (E402)
+- `pyproject.toml`: notebook fixtures excluded from ruff linting (F821)
+
 ## [0.1.0] - 2026-06-09
 
 ### Added

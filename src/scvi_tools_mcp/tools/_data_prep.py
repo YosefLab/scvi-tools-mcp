@@ -19,14 +19,21 @@ MODEL_REQUIREMENTS: dict[str, dict] = {
         "optional_obs": ["batch_key"],
         "required_var": [],
         "needs_raw": True,
-        "setup_call": "SCANVI.setup_anndata(adata, labels_key='cell_type', unlabeled_category='Unknown', batch_key='batch')",
-        "notes": "Requires at least some labeled cells. Works best with >100 labeled cells per type. Store raw counts in adata.raw before normalization.",
+        "setup_call": (
+            "SCANVI.setup_anndata(adata, labels_key='cell_type', unlabeled_category='Unknown', batch_key='batch')"
+        ),
+        "notes": (
+            "Requires at least some labeled cells. Works best with >100 labeled cells per type."
+            " Store raw counts in adata.raw before normalization."
+        ),
     },
     "totalvi": {
         "required_obs": ["batch_key recommended"],
         "optional_obs": [],
         "required_var": [],
-        "setup_call": "TOTALVI.setup_anndata(adata, batch_key='batch', protein_expression_obsm_key='protein_expression')",
+        "setup_call": (
+            "TOTALVI.setup_anndata(adata, batch_key='batch', protein_expression_obsm_key='protein_expression')"
+        ),
         "notes": "Protein data must be raw counts in adata.obsm['protein_expression']. Do not normalize.",
     },
     "multivi": {

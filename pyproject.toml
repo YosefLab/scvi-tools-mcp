@@ -41,6 +41,7 @@ include = ["src/", "tests/", "docs/"]
 
 [tool.ruff]
 line-length = 120
+extend-exclude = ["tests/fixtures/*.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]

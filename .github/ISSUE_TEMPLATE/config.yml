@@ -1,0 +1,4 @@
+contact_links:
+  - name: Usage question
+    url: https://discourse.scverse.org/c/help/scvi-tools/
+    about: Please ask and answer non-development questions on Discourse.
