@@ -12,7 +12,7 @@ import argparse
 import json
 from pathlib import Path
 
-SCVI_NOTEBOOKS = Path(__file__).parent.parent.parent / "scvi-tools2/docs/tutorials/notebooks"
+SCVI_NOTEBOOKS = Path(__file__).parent.parent.parent / "/scvi-tutorials/"
 KNOWLEDGE_TUTORIALS = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/tutorials"
 
 
