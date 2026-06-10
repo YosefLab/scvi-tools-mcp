@@ -14,7 +14,10 @@ import requests
 
 KNOWLEDGE_FAQ = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/faq"
 GITHUB_ISSUES_URL = "https://api.github.com/repos/scverse/scvi-tools/issues"
-DISCOURSE_URL = "https://discourse.scverse.org/c/help/scvi-tools/7.json"
+DISCOURSE_URLS = [
+    "https://discourse.scverse.org/c/help/scvi-tools/7.json",
+    "https://discourse.scverse.org/tag/scvi.json",
+]
 MAX_ISSUES = 50
 MAX_THREADS = 30
 
@@ -44,12 +47,24 @@ def fetch_github_issues() -> str:
 
 
 def fetch_discourse_threads() -> str:
-    resp = requests.get(DISCOURSE_URL, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
-    topics = data.get("topic_list", {}).get("topics", [])[:MAX_THREADS]
-    lines = ["# scvi-tools Discourse Forum Snapshot", "", f"Fetched top {len(topics)} threads.", ""]
-    for topic in topics:
+    seen: set[int] = set()
+    all_topics: list[dict] = []
+    for url in DISCOURSE_URLS:
+        try:
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+            for topic in data.get("topic_list", {}).get("topics", []):
+                tid = topic.get("id")
+                if tid not in seen:
+                    seen.add(tid)
+                    all_topics.append(topic)
+        except Exception as e:
+            print(f"  WARN: Discourse fetch failed for {url}: {e}")
+        time.sleep(1)
+    all_topics = sorted(all_topics, key=lambda t: t.get("views", 0), reverse=True)[:MAX_THREADS]
+    lines = ["# scvi-tools Discourse Forum Snapshot", "", f"Fetched {len(all_topics)} threads (deduplicated across sources).", ""]
+    for topic in all_topics:
         title = topic.get("title", "")
         posts = topic.get("posts_count", 0)
         views = topic.get("views", 0)
