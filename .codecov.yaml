@@ -1,0 +1,26 @@
+codecov:
+  require_ci_to_pass: no
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true
+    patch:
+      default:
+        target: 80%
+        threshold: 1%
+    changes: false
+
+flags:
+  unit:
+    paths:
+      - src/scvi_tools_mcp/
+    carryforward: true
+
+comment:
+  layout: diff, flags, files
+  behavior: once
+  require_base: no

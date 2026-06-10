@@ -1,0 +1,77 @@
+name: Sync Model Knowledge
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Update model docs from scvi-tools CHANGELOG
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install scvi-tools + dev deps
+        run: pip install -e ".[dev,scvi]"
+
+      - name: Get latest scvi-tools version
+        id: latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VER=$(gh api repos/scverse/scvi-tools/releases/latest --jq '.tag_name')
+          echo "tag=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Check if update needed
+        id: check
+        run: |
+          SYNCED=$(cat src/scvi_tools_mcp/knowledge/.last_synced_version 2>/dev/null || echo "0.0.0")
+          echo "synced=$SYNCED" >> "$GITHUB_OUTPUT"
+          if [ "$SYNCED" = "${{ steps.latest.outputs.tag }}" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract changelog excerpt
+        if: steps.check.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/scverse/scvi-tools/contents/CHANGELOG.md --jq '.content' \
+            | base64 -d > /tmp/CHANGELOG.md
+
+      - name: Regenerate model knowledge
+        if: steps.check.outputs.needed == 'true'
+        run: python scripts/extract_api_docs.py
+
+      - name: Update last-synced version
+        if: steps.check.outputs.needed == 'true'
+        run: echo "${{ steps.latest.outputs.tag }}" > src/scvi_tools_mcp/knowledge/.last_synced_version
+
+      - name: Create pull request
+        if: steps.check.outputs.needed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: sync model knowledge for scvi-tools ${{ steps.latest.outputs.tag }}"
+          branch: chore/sync-models-${{ github.run_id }}
+          title: "chore: sync model knowledge for scvi-tools ${{ steps.latest.outputs.tag }}"
+          body: |
+            Automated model knowledge sync for scvi-tools ${{ steps.latest.outputs.tag }}.
+
+            Previous synced version: ${{ steps.check.outputs.synced }}
+
+            Re-runs `scripts/extract_api_docs.py` against the newly installed version.
+            Review changes to `knowledge/models/` and `knowledge/api/` before merging.
+          labels: automated

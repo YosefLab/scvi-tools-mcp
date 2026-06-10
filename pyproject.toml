@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "scvi-tools-mcp"
+dynamic = ["version"]
+description = "MCP server for scvi-tools - deep probabilistic analysis of single-cell omics data"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+    "fastmcp>=3.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+scvi = ["scvi-tools>=1.0"]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.1",
+    "pre-commit",
+    "nbconvert>=7.0",
+    "jupyter",
+    "requests>=2.28",
+]
+
+[project.scripts]
+scvi-tools-mcp = "scvi_tools_mcp.main:run_app"
+
+[tool.hatch.version]
+path = "src/scvi_tools_mcp/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scvi_tools_mcp"]
+artifacts = ["src/scvi_tools_mcp/knowledge/**/*"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/", "tests/", "docs/"]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["tests/fixtures/*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

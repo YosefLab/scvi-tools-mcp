@@ -1,0 +1,51 @@
+name: Refresh External Knowledge
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    name: Re-scrape GitHub issues + Discourse threads
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run scraper
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/scrape_external.py
+
+      - name: Check for changes
+        id: diff
+        run: |
+          git diff --quiet src/scvi_tools_mcp/knowledge/faq/ && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: refresh external knowledge snapshot"
+          branch: chore/refresh-knowledge-${{ github.run_id }}
+          title: "chore: refresh external knowledge snapshot (${{ env.MONTH }})"
+          body: |
+            Monthly automated refresh of GitHub issues and Discourse thread snapshots.
+
+            Run `scripts/scrape_external.py` locally to reproduce.
+          labels: automated
+        env:
+          MONTH: ${{ github.event.schedule && 'scheduled' || 'manual' }}
