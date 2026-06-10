@@ -143,11 +143,11 @@ def validate_data_requirements(
         checks: list[tuple[bool, str]] = [(True, "adata.X contains count matrix (assumed from call context)")]
         for req in reqs.get("required_obs", []):
             field = req.split(" ")[0]
-            passed = field in obs_keys or "(" in req
+            passed = field in obs_keys
             checks.append((passed, f"obs key '{field}': {'PRESENT' if passed else 'MISSING — required'}"))
         for req in reqs.get("required_var", []):
             field = req.split(" ")[0]
-            passed = field in var_keys or "column in" in req
+            passed = field in var_keys
             checks.append((passed, f"var requirement '{req}': {'OK' if passed else 'CHECK — may be needed'}"))
         if reqs.get("needs_raw", False):
             raw_ok = has_raw

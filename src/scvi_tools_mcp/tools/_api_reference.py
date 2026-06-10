@@ -15,14 +15,18 @@ class ApiResult(BaseModel):
 
 
 def _find_symbol(symbol: str) -> Path | None:
-    name = symbol.lower().split(".")[-1]
+    parts = symbol.lower().split(".")
     api_dir = utils.get_knowledge_dir() / "api"
-    candidate = api_dir / f"{name}.md"
-    if candidate.exists():
-        return candidate
-    candidate2 = utils.get_knowledge_dir() / "models" / f"{name}.md"
-    if candidate2.exists():
-        return candidate2
+    models_dir = utils.get_knowledge_dir() / "models"
+    # For dotted symbols like 'SCANVI.setup_anndata', use the class component
+    # to find the file so method-extraction logic can slice the right section.
+    for name in parts:
+        candidate = api_dir / f"{name}.md"
+        if candidate.exists():
+            return candidate
+        candidate2 = models_dir / f"{name}.md"
+        if candidate2.exists():
+            return candidate2
     return None
 
 
