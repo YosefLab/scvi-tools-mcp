@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Literal
 
 from pydantic import BaseModel
@@ -198,6 +199,33 @@ def search_knowledge(query: str) -> TroubleshootResult:
                 )
                 rel = str(md.relative_to(knowledge_dir).with_suffix(""))
                 results.append((score, rel, excerpt))
+        hub_models = knowledge_dir / "hub" / "models.json"
+        if hub_models.exists():
+            try:
+                snapshot = json.loads(hub_models.read_text(encoding="utf-8"))
+                for model in snapshot.get("models", []):
+                    if not isinstance(model, dict):
+                        continue
+                    model_id = str(model.get("model_id") or "")
+                    fields = [
+                        model_id,
+                        str(model.get("model_class") or ""),
+                        " ".join(str(value) for value in model.get("modalities", [])),
+                        " ".join(str(value) for value in model.get("tissues", [])),
+                        " ".join(str(value) for value in model.get("files", [])),
+                        str(model.get("url") or ""),
+                    ]
+                    searchable = " ".join(fields).lower()
+                    score = sum(searchable.count(kw) for kw in keywords)
+                    if score > 0:
+                        excerpt = (
+                            f"{model_id} | {model.get('model_class') or 'unknown'} | "
+                            f"modalities: {', '.join(model.get('modalities', [])) or 'unspecified'} | "
+                            f"tissues: {', '.join(model.get('tissues', [])) or 'unspecified'}"
+                        )
+                        results.append((score, f"hub/models/{model_id}", excerpt))
+            except Exception:
+                pass
         results.sort(key=lambda x: x[0], reverse=True)
         lines = [f"# Knowledge Search: '{query}'", ""]
         for _, name, excerpt in results[:8]:
