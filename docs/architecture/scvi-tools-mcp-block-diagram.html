@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>scvi-tools-mcp Block Diagram</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink:       #1d262d;
+      --muted:     #64717b;
+      --paper:     #fbfaf7;
+      --panel:     #ffffff;
+      --line:      #26323a;
+      --client:    #b8d8f4;   /* AI client / consumer    */
+      --transport: #8fd3c7;   /* FastMCP server layer    */
+      --tool:      #8fb7e3;   /* tool modules            */
+      --util:      #b8d878;   /* shared utilities        */
+      --knowledge: #f0dd86;   /* knowledge base          */
+      --script:    #efbd73;   /* build / maintenance     */
+      --shadow:    0 16px 40px rgba(29,38,45,.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(143,211,199,.18), transparent 280px),
+        var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+
+    main {
+      width: min(1480px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 32px 0 44px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 48px; line-height: 1; letter-spacing: 0; }
+
+    header p {
+      max-width: 780px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: rgba(29,38,45,.08);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: .92em;
+      white-space: nowrap;
+    }
+
+    .stamp {
+      align-self: start;
+      min-width: 200px;
+      padding: 12px 14px;
+      border: 1px solid rgba(29,38,45,.12);
+      border-left: 6px solid var(--transport);
+      border-radius: 8px;
+      background: rgba(255,255,255,.78);
+      color: var(--muted);
+      font-size: 13px;
+      box-shadow: 0 8px 20px rgba(29,38,45,.06);
+    }
+
+    /* ── Diagram canvas ────────────────────────────────── */
+    .diagram {
+      position: relative;
+      display: grid;
+      gap: 18px;
+      padding: 24px;
+      border: 1px solid rgba(29,38,45,.10);
+      border-radius: 8px;
+      background: rgba(255,255,255,.76);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .diagram::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(29,38,45,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(29,38,45,.04) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.38), transparent 80%);
+    }
+
+    .row, .group, .legend { position: relative; z-index: 1; }
+
+    /* ── Layout rows ───────────────────────────────────── */
+    .row {
+      display: grid;
+      gap: 16px;
+      justify-items: center;
+    }
+
+    .row.stack {
+      grid-template-columns: minmax(0,1fr);
+      justify-content: stretch;
+      justify-items: stretch;
+    }
+
+    .tools-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 14px;
+    }
+
+    .util-row {
+      display: grid;
+      grid-template-columns: minmax(0,2fr) minmax(0,1fr);
+      gap: 14px;
+    }
+
+    .knowledge-row {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0,1fr));
+      gap: 10px;
+    }
+
+    .scripts-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 14px;
+    }
+
+    /* ── Cards ─────────────────────────────────────────── */
+    .card {
+      width: 100%;
+      padding: 13px 15px;
+      border: 1px solid rgba(29,38,45,.14);
+      border-top: 8px solid var(--transport);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 10px 24px rgba(29,38,45,.08);
+    }
+
+    .card.client    { border-top-color: var(--client);    }
+    .card.transport { border-top-color: var(--transport); }
+    .card.tool      { border-top-color: var(--tool);      }
+    .card.util      { border-top-color: var(--util);      }
+
+    /* Wide card (full-width row) */
+    .card.wide {
+      display: grid;
+      grid-template-columns: minmax(150px,.30fr) minmax(0,1fr) auto;
+      gap: 8px 20px;
+      align-items: center;
+      padding: 14px 20px;
+    }
+    .card.wide .kicker { grid-column:1; margin-bottom:0; }
+    .card.wide h2      { grid-column:1; grid-row:2; font-size:18px; }
+    .card.wide p       { grid-column:2; grid-row:1/span 2; margin-top:0; }
+    .card.wide .chips  { grid-column:3; grid-row:1/span 2; max-width:320px; justify-content:flex-end; margin-top:0; }
+
+    .card h2, .card h3 { font-size:15px; line-height:1.2; letter-spacing:0; }
+
+    .card .kicker {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .card p { margin-top:7px; color:var(--muted); font-size:12px; }
+
+    /* ── Chips ──────────────────────────────────────────── */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 3px 7px;
+      border: 1px solid rgba(29,38,45,.14);
+      border-radius: 6px;
+      background: rgba(255,255,255,.72);
+      color: #2b3942;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .chip.client-chip    { background: rgba(184,216,244,.30); }
+    .chip.transport-chip { background: rgba(143,211,199,.30); }
+    .chip.tool-chip      { background: rgba(143,183,227,.28); }
+    .chip.util-chip      { background: rgba(184,216,120,.28); }
+    .chip.knowledge-chip { background: rgba(240,221,134,.30); }
+    .chip.script-chip    { background: rgba(239,189,115,.28); }
+
+    /* ── Connectors ─────────────────────────────────────── */
+    .connector {
+      position: relative;
+      width: min(420px,75%);
+      height: 32px;
+      margin: -4px auto;
+    }
+
+    .connector::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 8px;
+      border-left: 3px solid var(--line);
+      transform: translateX(-50%);
+    }
+
+    .connector::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 10px solid var(--line);
+      transform: translateX(-50%);
+    }
+
+    .connector span {
+      position: absolute;
+      left: calc(50% + 16px);
+      top: 6px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    /* dashed = file read */
+    .connector.reads::before { border-left-style: dashed; border-left-color: #5e7c2a; }
+    .connector.reads::after  { border-top-color: #5e7c2a; }
+    .connector.reads span    { color: #5e7c2a; }
+
+    /* ── Knowledge narrow cards ─────────────────────────── */
+    .k-card {
+      padding: 12px 11px;
+      border: 1px solid rgba(29,38,45,.13);
+      border-top: 6px solid var(--knowledge);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 8px 18px rgba(29,38,45,.07);
+    }
+
+    .k-card .kicker {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .k-card h3 { font-size: 13px; letter-spacing: 0; }
+    .k-card p  { margin-top: 5px; color: var(--muted); font-size: 11px; }
+
+    /* ── Build-script narrow cards ──────────────────────── */
+    .s-card {
+      padding: 12px 14px;
+      border: 1px solid rgba(29,38,45,.13);
+      border-top: 6px solid var(--script);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 8px 18px rgba(29,38,45,.07);
+    }
+
+    .s-card .kicker {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .s-card h3 { font-size: 13px; letter-spacing: 0; }
+    .s-card p  { margin-top: 5px; color: var(--muted); font-size: 11px; }
+
+    /* ── Group container ────────────────────────────────── */
+    .group {
+      padding: 14px;
+      border: 1px solid rgba(29,38,45,.12);
+      border-radius: 8px;
+      background: rgba(255,255,255,.62);
+      position: relative;
+      z-index: 1;
+    }
+
+    .group-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: baseline;
+    }
+
+    .group-header h2 { font-size: 17px; letter-spacing: 0; }
+    .group-header p  { color: var(--muted); font-size: 12px; }
+
+    /* ── Legend ─────────────────────────────────────────── */
+    .legend {
+      display: grid;
+      grid-template-columns: minmax(0,1.4fr) minmax(260px,.60fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .legend-panel {
+      padding: 14px;
+      border: 1px solid rgba(29,38,45,.12);
+      border-radius: 8px;
+      background: rgba(255,255,255,.72);
+    }
+
+    .legend-panel h2 { margin-bottom: 11px; font-size: 16px; letter-spacing: 0; }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 7px;
+    }
+
+    .swatch {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      min-height: 34px;
+      color: var(--muted);
+      font-size: 11.5px;
+    }
+
+    .color {
+      flex: 0 0 22px;
+      width: 22px;
+      height: 22px;
+      border: 1px solid rgba(29,38,45,.12);
+      border-radius: 4px;
+    }
+
+    .arrow-legend { display: grid; gap: 9px; }
+
+    .arrow-row {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 9px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .arrow-line { position: relative; height: 16px; }
+
+    .arrow-line::before {
+      content: "";
+      position: absolute;
+      left: 0; right: 8px; top: 7px;
+      border-top: 3px solid var(--line);
+    }
+
+    .arrow-line::after {
+      content: "";
+      position: absolute;
+      top: 2px; right: 0;
+      border-left: 9px solid var(--line);
+      border-top: 6px solid transparent;
+      border-bottom: 6px solid transparent;
+    }
+
+    .arrow-line.reads::before { border-top-style: dashed; border-top-color: #5e7c2a; }
+    .arrow-line.reads::after  { border-left-color: #5e7c2a; }
+
+    /* ── Responsive ─────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .tools-row      { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .knowledge-row  { grid-template-columns: repeat(4, minmax(0,1fr)); }
+    }
+
+    @media (max-width: 820px) {
+      header, .legend { grid-template-columns: 1fr; }
+      .tools-row      { grid-template-columns: 1fr; }
+      .util-row       { grid-template-columns: 1fr; }
+      .knowledge-row  { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .scripts-row    { grid-template-columns: 1fr; }
+      .swatches       { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+
+    @media (max-width: 600px) {
+      main    { width: min(100% - 16px, 1480px); padding-top: 16px; }
+      h1      { font-size: 32px; }
+      .diagram { padding: 12px; }
+      .knowledge-row { grid-template-columns: 1fr; }
+      .card.wide { grid-template-columns: 1fr; }
+      .card.wide .kicker,
+      .card.wide h2,
+      .card.wide p,
+      .card.wide .chips { grid-column:1; grid-row:auto; max-width:none; justify-content:flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>scvi-tools-mcp block diagram</h1>
+        <p>
+          Architecture map for the <code>scvi-tools-mcp</code> package: MCP client consumers,
+          a <code>FastMCP</code> stdio server, seven tool-module groups
+          (<em>model guidance</em>, <em>data preparation</em>, <em>tutorials</em>,
+          <em>workflows</em>, <em>API reference</em>, <em>hub</em>, <em>troubleshooting</em>),
+          shared utilities, a structured Markdown/JSON knowledge base bundled with the package,
+          and an offline build-script pipeline that populates the knowledge base
+          from upstream notebooks, documentation, community sources, and Hugging Face Hub metadata.
+        </p>
+      </div>
+      <aside class="stamp" aria-label="Diagram scope">
+        <strong>Scope</strong><br>
+        <code>main</code> · <code>e35aaa8</code><br>
+        Transport: stdio (FastMCP)<br>
+        <code>src/scvi_tools_mcp/</code>
+      </aside>
+    </header>
+
+    <section class="diagram" aria-label="scvi-tools-mcp architecture block diagram">
+
+      <!-- ── Legend ──────────────────────────────────────── -->
+      <section class="legend" aria-label="Diagram legend">
+        <div class="legend-panel">
+          <h2>Layer colors</h2>
+          <div class="swatches">
+            <div class="swatch">
+              <span class="color" style="background:var(--client);"></span>
+              MCP clients
+            </div>
+            <div class="swatch">
+              <span class="color" style="background:var(--transport);"></span>
+              FastMCP server
+            </div>
+            <div class="swatch">
+              <span class="color" style="background:var(--tool);"></span>
+              Tool modules
+            </div>
+            <div class="swatch">
+              <span class="color" style="background:var(--util);"></span>
+              Shared utilities
+            </div>
+            <div class="swatch">
+              <span class="color" style="background:var(--knowledge);"></span>
+              Knowledge base
+            </div>
+            <div class="swatch">
+              <span class="color" style="background:var(--script);"></span>
+              Build scripts
+            </div>
+          </div>
+        </div>
+        <div class="legend-panel">
+          <h2>Arrows</h2>
+          <div class="arrow-legend">
+            <div class="arrow-row">
+              <div class="arrow-line"></div>
+              MCP protocol / call chain
+            </div>
+            <div class="arrow-row">
+              <div class="arrow-line reads"></div>
+              file read (knowledge base)
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 1. CLIENT LAYER ─────────────────────────────── -->
+      <div class="row stack">
+        <div class="card client wide">
+          <span class="kicker">Consumer</span>
+          <h2>MCP clients</h2>
+          <p>
+            Any MCP-compatible AI client connects over the Model Context Protocol.
+            Claude Desktop and Claude Code are the primary consumers;
+            any agent framework that supports MCP (Zed, Cursor, custom LLM agents)
+            works out of the box. The server exposes 17 registered tools.
+          </p>
+          <div class="chips">
+            <span class="chip client-chip">Claude Desktop</span>
+            <span class="chip client-chip">Claude Code</span>
+            <span class="chip client-chip">MCP agent SDKs</span>
+            <span class="chip client-chip">17 tools exposed</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="connector"><span>stdio · MCP</span></div>
+
+      <!-- ── 2. SERVER LAYER ─────────────────────────────── -->
+      <div class="row stack">
+        <div class="card transport wide">
+          <span class="kicker">MCP Server · FastMCP · src/scvi_tools_mcp/</span>
+          <h2>scvi-tools-mcp server</h2>
+          <p>
+            <code>main.py</code> is the CLI entry point — <code>run_app()</code> calls
+            <code>mcp.run(transport="stdio")</code>.
+            <code>mcp.py</code> holds the <code>FastMCP</code> singleton and its system prompt.
+            Tool modules self-register via <code>@mcp.tool()</code> on import —
+            no manual wiring needed. Deployable as a Docker container or via <code>pip install</code>.
+          </p>
+          <div class="chips">
+            <span class="chip transport-chip">main.py · run_app()</span>
+            <span class="chip transport-chip">mcp.py · FastMCP</span>
+            <span class="chip">Dockerfile</span>
+            <span class="chip">pip install</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="connector"><span>@mcp.tool()</span></div>
+
+      <!-- ── 3. TOOL MODULES ─────────────────────────────── -->
+      <div class="group">
+        <div class="group-header">
+          <h2>Tool modules</h2>
+          <p>src/scvi_tools_mcp/tools/ — 7 modules · 17 registered tools</p>
+        </div>
+        <div class="tools-row">
+
+          <div class="card tool">
+            <span class="kicker">Model guidance · _model_guidance.py</span>
+            <h3>Model Guidance</h3>
+            <p>
+              Recommends and explains scvi-tools models ranked by suitability for a given task
+              and data type. Entry point for any model-selection workflow.
+            </p>
+            <div class="chips">
+              <span class="chip tool-chip">recommend_model</span>
+              <span class="chip tool-chip">get_model_overview</span>
+              <span class="chip tool-chip">get_model_parameters</span>
+            </div>
+          </div>
+
+          <div class="card tool">
+            <span class="kicker">Data preparation · _data_prep.py</span>
+            <h3>Data Preparation</h3>
+            <p>
+              Generates exact <code>setup_anndata()</code> calls and validates AnnData
+              obs / var requirements for each model before training.
+            </p>
+            <div class="chips">
+              <span class="chip tool-chip">get_setup_anndata_guide</span>
+              <span class="chip tool-chip">validate_data_requirements</span>
+            </div>
+          </div>
+
+          <div class="card tool">
+            <span class="kicker">Hub models · _hub.py</span>
+            <h3>Hugging Face Hub</h3>
+            <p>
+              Lists, inspects, and suggests official scvi-tools Hugging Face Hub model repos
+              from a bundled quarterly snapshot. No runtime network calls.
+            </p>
+            <div class="chips">
+              <span class="chip tool-chip">list_hub_models</span>
+              <span class="chip tool-chip">get_hub_model</span>
+              <span class="chip tool-chip">suggest_hub_models</span>
+            </div>
+          </div>
+
+          <div class="card tool">
+            <span class="kicker">Tutorials · _tutorials.py</span>
+            <h3>Tutorials</h3>
+            <p>
+              Lists, retrieves, and keyword-searches paginated Markdown tutorials
+              derived from scvi-tools Jupyter notebooks across 12 categories.
+            </p>
+            <div class="chips">
+              <span class="chip tool-chip">list_tutorials</span>
+              <span class="chip tool-chip">get_tutorial</span>
+              <span class="chip tool-chip">search_tutorials</span>
+            </div>
+          </div>
+
+          <div class="card tool">
+            <span class="kicker">Workflows · _workflows.py</span>
+            <h3>Workflow Templates</h3>
+            <p>
+              Returns runnable, commented Python templates for common analysis tasks
+              and downstream result extraction after training.
+            </p>
+            <div class="chips">
+              <span class="chip tool-chip">get_workflow_template</span>
+              <span class="chip tool-chip">get_downstream_guide</span>
+            </div>
+          </div>
+
+          <div class="card tool">
+            <span class="kicker">API reference · _api_reference.py</span>
+            <h3>API Reference</h3>
+            <p>
+              Looks up and keyword-searches the full scvi-tools public API surface —
+              class signatures, method docs, and parameter tables.
+            </p>
+            <div class="chips">
+              <span class="chip tool-chip">get_api_reference</span>
+              <span class="chip tool-chip">search_api</span>
+            </div>
+          </div>
+
+          <div class="card tool">
+            <span class="kicker">Troubleshooting · _troubleshooting.py</span>
+            <h3>Troubleshooting &amp; FAQ</h3>
+            <p>
+              Surfaces FAQ answers from Discourse community threads and runs broad
+              keyword search across all knowledge files.
+            </p>
+            <div class="chips">
+              <span class="chip tool-chip">get_faq</span>
+              <span class="chip tool-chip">search_knowledge</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="connector"><span>call</span></div>
+
+      <!-- ── 4. SHARED UTILITIES ─────────────────────────── -->
+      <div class="util-row">
+        <div class="card util">
+          <span class="kicker">Shared utilities · tools/utils.py</span>
+          <h3>Utilities</h3>
+          <p>
+            <code>get_knowledge_dir()</code> resolves the package-bundled knowledge path at runtime.
+            <code>truncate()</code> enforces MCP response size limits.
+            <code>paginate()</code> handles multi-page tutorial delivery, returning
+            <code>page</code> and <code>total_pages</code> for large files.
+          </p>
+          <div class="chips">
+            <span class="chip util-chip">get_knowledge_dir()</span>
+            <span class="chip util-chip">truncate()</span>
+            <span class="chip util-chip">paginate()</span>
+          </div>
+        </div>
+        <div class="card util">
+          <span class="kicker">Constants · tools/_constants.py</span>
+          <h3>Constants</h3>
+          <p>
+            <code>MODEL_NAMES</code> — a typed <code>Literal</code> union of all 30+ supported model names.
+            Shared across tool modules for Pydantic parameter validation.
+          </p>
+          <div class="chips">
+            <span class="chip util-chip">MODEL_NAMES</span>
+            <span class="chip util-chip">30+ models</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="connector reads"><span>file I/O</span></div>
+
+      <!-- ── 5. KNOWLEDGE BASE ───────────────────────────── -->
+      <div class="group">
+        <div class="group-header">
+          <h2>Knowledge base</h2>
+          <p>src/scvi_tools_mcp/knowledge/ — static Markdown and JSON, bundled with the package</p>
+        </div>
+        <div class="knowledge-row">
+
+          <div class="k-card">
+            <span class="kicker">models/</span>
+            <h3>Model Docs</h3>
+            <p>30+ MD files. One per model: scvi, scanvi, totalvi, peakvi, multivi, mrvi, resolvi, …</p>
+          </div>
+
+          <div class="k-card">
+            <span class="kicker">api/</span>
+            <h3>API Reference</h3>
+            <p>15 MD files. Per-model API signatures, parameter tables, and docstrings.</p>
+          </div>
+
+          <div class="k-card">
+            <span class="kicker">tutorials/</span>
+            <h3>Tutorials</h3>
+            <p>12 categories (scrna, multimodal, spatial, atac, hub, r, cytometry, …). Notebook-derived MD.</p>
+          </div>
+
+          <div class="k-card">
+            <span class="kicker">hub/</span>
+            <h3>Hub Registry</h3>
+            <p>Quarterly Hugging Face snapshot: 121 pretrained scvi-tools repos with class, modality, tissue, and files.</p>
+          </div>
+
+          <div class="k-card">
+            <span class="kicker">skills/</span>
+            <h3>Skills</h3>
+            <p>20+ MD files. Step-by-step workflow recipes referenced by Claude Code skills.</p>
+          </div>
+
+          <div class="k-card">
+            <span class="kicker">user_guide/</span>
+            <h3>User Guide</h3>
+            <p>8 guides: training config, callbacks, multi-GPU, model saving, hyperparameter tuning, criticism.</p>
+          </div>
+
+          <div class="k-card">
+            <span class="kicker">background/</span>
+            <h3>Background</h3>
+            <p>5 MD files: variational inference, DE, transfer learning, counterfactual prediction.</p>
+          </div>
+
+          <div class="k-card">
+            <span class="kicker">faq/</span>
+            <h3>FAQ</h3>
+            <p>Discourse thread extracts. Community-sourced answers to common scvi-tools questions.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="connector reads"><span>generates ↑</span></div>
+
+      <!-- ── 6. BUILD SCRIPTS ────────────────────────────── -->
+      <div class="group">
+        <div class="group-header">
+          <h2>Build scripts</h2>
+          <p>scripts/ — run offline to populate and refresh the knowledge base</p>
+        </div>
+        <div class="scripts-row">
+
+          <div class="s-card">
+            <span class="kicker">scripts/convert_notebooks.py</span>
+            <h3>Notebook Converter</h3>
+            <p>Downloads scvi-tools Jupyter notebooks from upstream and converts them to Markdown for the
+               <code>tutorials/</code> knowledge directory.</p>
+          </div>
+
+          <div class="s-card">
+            <span class="kicker">scripts/scrape_external.py</span>
+            <h3>External Scraper</h3>
+            <p>Scrapes upstream documentation (ReadTheDocs, Discourse, GitHub) into
+               <code>background/</code> and <code>faq/</code> knowledge.</p>
+          </div>
+
+          <div class="s-card">
+            <span class="kicker">scripts/extract_api_docs.py</span>
+            <h3>API Doc Extractor</h3>
+            <p>Extracts API signatures and docstrings from the installed scvi-tools package into
+               <code>api/</code> knowledge files.</p>
+          </div>
+
+          <div class="s-card">
+            <span class="kicker">scripts/scrape_huggingface_hub.py</span>
+            <h3>Hub Snapshotter</h3>
+            <p>Fetches public scvi-tools Hugging Face model metadata into
+               <code>hub/models.json</code> and <code>hub/summary.md</code>.</p>
+          </div>
+
+        </div>
+      </div>
+
+    </section><!-- /.diagram -->
+  </main>
+</body>
+</html>

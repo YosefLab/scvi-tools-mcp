@@ -1,5 +1,4 @@
-# tests/test_tools.py
-import pytest
+import asyncio
 
 
 def test_recommend_model_returns_content(mock_knowledge):
@@ -205,14 +204,94 @@ def test_search_knowledge_no_match(mock_knowledge):
     assert result.content is not None
 
 
+def test_search_knowledge_includes_hub_summary(mock_knowledge):
+    from scvi_tools_mcp.tools._troubleshooting import search_knowledge
+
+    result = search_knowledge(query="heart atlas pretrained hub")
+    assert result.error is None
+    assert result.content is not None
+    assert "hub/summary" in result.content or "heart-cell-atlas-scvi" in result.content
+
+
+def test_search_knowledge_includes_hub_model_records(mock_knowledge):
+    from scvi_tools_mcp.tools._troubleshooting import search_knowledge
+
+    result = search_knowledge(query="mdata h5mu totalvi protein")
+    assert result.error is None
+    assert result.content is not None
+    assert "hub/models" in result.content
+    assert "haniffa_covid_pbmc_totalvi" in result.content
+
+
+# --- Task 13: _hub ---
+
+
+def test_list_hub_models_returns_content(mock_knowledge):
+    from scvi_tools_mcp.tools._hub import list_hub_models
+
+    result = list_hub_models()
+    assert result.error is None
+    assert result.content is not None
+    assert "human-lung-cell-atlas-scanvi" in result.content
+    assert "haniffa_covid_pbmc_totalvi" in result.content
+
+
+def test_list_hub_models_filters_metadata(mock_knowledge):
+    from scvi_tools_mcp.tools._hub import list_hub_models
+
+    result = list_hub_models(model_class="SCANVI", tissue="lung", annotated=True)
+    assert result.error is None
+    assert result.content is not None
+    assert "human-lung-cell-atlas-scanvi" in result.content
+    assert "heart-cell-atlas-scvi" not in result.content
+
+
+def test_get_hub_model_valid(mock_knowledge):
+    from scvi_tools_mcp.tools._hub import get_hub_model
+
+    result = get_hub_model(model_id="scvi-tools/heart-cell-atlas-scvi")
+    assert result.error is None
+    assert result.content is not None
+    assert "https://huggingface.co/scvi-tools/heart-cell-atlas-scvi" in result.content
+    assert "SCVI" in result.content
+    assert "heart" in result.content
+    assert "load_from_hub" in result.content
+
+
+def test_get_hub_model_unknown(mock_knowledge):
+    from scvi_tools_mcp.tools._hub import get_hub_model
+
+    result = get_hub_model(model_id="missing/repo")
+    assert result.error is not None
+    assert "not found" in result.error.lower()
+
+
+def test_suggest_hub_models_prefers_scanvi_for_label_transfer(mock_knowledge):
+    from scvi_tools_mcp.tools._hub import suggest_hub_models
+
+    result = suggest_hub_models(task="label_transfer", tissue="lung", require_annotated=True)
+    assert result.error is None
+    assert result.content is not None
+    first_recommendation = next(line for line in result.content.splitlines() if line.startswith("1. "))
+    assert "human-lung-cell-atlas-scanvi" in first_recommendation
+
+
+def test_suggest_hub_models_prefers_totalvi_for_cite_seq(mock_knowledge):
+    from scvi_tools_mcp.tools._hub import suggest_hub_models
+
+    result = suggest_hub_models(task="cite_seq", modality="protein")
+    assert result.error is None
+    assert result.content is not None
+    assert "haniffa_covid_pbmc_totalvi" in result.content
+
+
 # --- Task 13: smoke test — all tools registered ---
 
 
-@pytest.mark.asyncio
-async def test_all_tools_registered():
+def test_all_tools_registered():
     from scvi_tools_mcp.mcp import mcp
 
-    tools = await mcp.list_tools()
+    tools = asyncio.run(mcp.list_tools())
     names = {t.name for t in tools}
     expected = {
         "recommend_model",
@@ -229,5 +308,8 @@ async def test_all_tools_registered():
         "get_downstream_guide",
         "get_faq",
         "search_knowledge",
+        "list_hub_models",
+        "get_hub_model",
+        "suggest_hub_models",
     }
     assert expected == names, f"Missing: {expected - names}, Extra: {names - expected}"

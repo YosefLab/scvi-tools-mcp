@@ -16,3 +16,7 @@ htmlcov/
 .coverage
 .idea/
 node_modules/
+
+# Local Superpowers planning artifacts
+docs/superpowers/plans/
+docs/superpowers/specs/

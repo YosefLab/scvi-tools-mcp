@@ -18,6 +18,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `.github/ISSUE_TEMPLATE/` (bug report, feature request, release checklist)
 - Updated `.pre-commit-config.yaml` to match scvi-tools pattern (blacken-docs, prettier, mdformat, markdownlint-fix, pre-commit-hooks)
 - Second Discourse source URL in `scrape_external.py`; topics deduplicated and sorted by views
+- Hugging Face Hub knowledge source for the official `scvi-tools` organization:
+  - `knowledge/hub/models.json` and `knowledge/hub/summary.md` bundled offline snapshot
+  - `list_hub_models`, `get_hub_model`, `suggest_hub_models` MCP tools
+  - `scripts/scrape_huggingface_hub.py` and quarterly `sync_huggingface_hub.yaml` refresh workflow
 
 ### Fixed
 
