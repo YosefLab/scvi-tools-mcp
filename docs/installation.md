@@ -53,7 +53,7 @@ pip install "scvi-tools-mcp[scvi]"
 ## Development install
 
 ```bash
-git clone https://github.com/ori-kron-wis/scvi-tools-mcp
+git clone https://github.com/Yoseflab/scvi-tools-mcp
 cd scvi-tools-mcp
 pip install -e ".[dev]"
 pre-commit install

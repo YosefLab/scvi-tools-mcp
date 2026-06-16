@@ -99,7 +99,7 @@ ______________________________________________________________________
 ## Development
 
 ```bash
-git clone https://github.com/ori-kron-wis/scvi-tools-mcp
+git clone https://github.com/Yoseflab/scvi-tools-mcp
 cd scvi-tools-mcp
 pip install -e ".[dev]"
 pytest
