@@ -174,7 +174,7 @@ sc.tl.umap(adata)
 sc.pl.umap(adata, color="cell_type", frameon=False)
 ```
 
-# Differential expression analysis
+## Differential expression analysis
 
 We now use the generative model to test hypotheses of differential expression between the niches. We'll focus on endothelial cells.
 
