@@ -57,7 +57,7 @@ save_dir = tempfile.TemporaryDirectory()
 %config InlineBackend.figure_format="retina"
 ```
 
-### Data Acquisition
+### Data Acquisition 
 
 ```python
 adata_rna_path = os.path.join(save_dir.name, "ad_diss.h5ad")
@@ -138,9 +138,9 @@ sc.pl.embedding(ad_diss, basis="X_umap", color="celltype_harmonized")
 
 We register each AnnData object with DiagVI using `setup_anndata`. To run a (semi-)supervised model, a `label_key` can be specified for each AnnData object separately.
 
-In this tutorial, we model a common scenario in single cell analysis: Integration of an unannotated spatial transcriptomics dataset in an annotated scRNA-seq reference atlas. Therefore, we provide the `label_key` only for the scRNA-seq modality.
+In this tutorial, we model a common scenario in single cell analysis: Integration of an unannotated spatial transcriptomics dataset in an annotated scRNA-seq reference atlas. Therefore, we provide the `label_key` only for the scRNA-seq modality. 
 
-Furthermore, we enable a Gaussian mixture prior for both modalities with `gmm_prior=True`.
+Furthermore, we enable a Gaussian mixture prior for both modalities with `gmm_prior=True`. 
 For the unannotated spatial transcriptomics dataset, we set `n_mixture_components=29` to match the number of cell types in the annotated scRNA-seq reference.
 
 ```{important}
@@ -149,9 +149,9 @@ Key parameters for `setup_anndata`:
 - `layer`: Specifies which layer contains raw counts for model input (e.g., `"counts"`)
 - `batch_key`: Column in `.obs` containing batch information to correct for
 - `labels_key`: Column in `.obs` containing cell type labels (optional). When provided, labels inform the latent space structure
-- `likelihood`: Likelihood function used to model gene expression counts. Supported options include:
-  - `"nb"`: Negative binomial (default; recommended for count data)
-  - `"zinb"`: Zero-inflated negative binomial
+- `likelihood`: Likelihood function used to model gene expression counts. Supported options include:  
+  - `"nb"`: Negative binomial (default; recommended for count data)  
+  - `"zinb"`: Zero-inflated negative binomial  
 - `gmm_prior`: If `True`, uses a Gaussian mixture model (GMM) prior on the latent space
 - `n_mixture_components`: Number of GMM components. Only required when `labels_key` is not provided; otherwise, the number of unique labels is used automatically
 
@@ -329,7 +329,7 @@ with warnings.catch_warnings():
 
 ### Transfer cell type labels
 
-Another key application is transferring cell type annotations from an annotated reference to unannotated or partially annotated query data.
+Another key application is transferring cell type annotations from an annotated reference to unannotated or partially annotated query data. 
 Here, we treat the spatial dataset as unlabeled and transfer cell type annotations from the scRNA-seq reference using the DiagVI latent space.
 We use [CellMapper](https://cellmapper.readthedocs.io/) to perform k-nearest neighbor (KNN)–based mapping and to compute prediction confidence scores for each transferred label.
 
@@ -416,7 +416,7 @@ scanvi_model.train(max_epochs=100, check_val_every_n_epoch=1)
 combined.obsm[SCANVI_LATENT_KEY] = scanvi_model.get_latent_representation()
 ```
 
-To qualitative compyrison, we visualize the latent representations of the shared PCA space, scVI, scANVI and DiagVI side by side.
+To qualitative compyrison, we visualize the latent representations of the shared PCA space, scVI, scANVI and DiagVI side by side. 
 
 ```python
 embedding_keys = {
