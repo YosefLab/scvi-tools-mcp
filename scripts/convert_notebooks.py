@@ -14,7 +14,6 @@ import argparse
 import json
 from pathlib import Path
 
-SCVI_NOTEBOOKS = Path(__file__).parent.parent.parent / "/scvi-tutorials/"
 KNOWLEDGE_TUTORIALS = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/tutorials"
 
 
@@ -53,7 +52,7 @@ def convert_all(src_root: Path, dst_root: Path) -> list[Path]:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert scvi-tools notebooks to Markdown")
-    parser.add_argument("--src", type=Path, default=SCVI_NOTEBOOKS)
+    parser.add_argument("--src", type=Path, required=True, help="Root directory containing .ipynb files")
     parser.add_argument("--dst", type=Path, default=KNOWLEDGE_TUTORIALS)
     args = parser.parse_args()
     print(f"Converting notebooks from {args.src} to {args.dst}")
