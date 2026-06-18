@@ -16,7 +16,7 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@davemcg)**: Thanks - I’ll keep track of this thread and I hope if anyone gets scVI working on a nightly (or better, stable) branch of pytorch they will report it here!
 
 ## MrVI input and interpretation
-**Posts:** 29 | **Views:** 1883
+**Posts:** 29 | **Views:** 1884
 
 **Question**: @Justin_Hong Thanks so much for the MrVI tool and preprint. Really enjoyed reading it. I am just wondering whether the input should be an anndata object of highly variable genes or just the whole cellxgene matrix? I presume hvg selection before hand will bias the analysis depending on what you use as the batch key for hvg selection? Also, any help of further documentation on interpretation of the output would be fab. As I understood it, the distance metrics can compare across samples, clusters or other condition variable, but it wasn’t clear if I can account for sample variation and across disease states at the same time? Thanks for any insight you can offer.
 
