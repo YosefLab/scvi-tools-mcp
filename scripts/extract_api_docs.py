@@ -14,7 +14,6 @@ from pathlib import Path
 
 KNOWLEDGE_MODELS = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/models"
 KNOWLEDGE_API = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/api"
-SCVI_DOCS = Path(__file__).parent.parent.parent / "scvi-tools2/docs/user_guide/models"
 
 MODEL_CLASSES = {
     "scvi": "scvi.model.SCVI",
@@ -110,17 +109,21 @@ def class_to_md(name: str, cls: type) -> str:
     return "\n".join(lines)
 
 
-def merge_with_user_guide(model_name: str, api_md: str) -> str:
-    guide_path = SCVI_DOCS / f"{model_name}.md"
+def merge_with_user_guide(model_name: str, api_md: str, docs_models_dir: Path | None) -> str:
+    if docs_models_dir is None:
+        return api_md
+    guide_path = docs_models_dir / f"{model_name}.md"
     if guide_path.exists():
         guide = guide_path.read_text(encoding="utf-8")
         return f"{api_md}\n\n---\n\n## User Guide\n\n{guide}"
     return api_md
 
 
-def run() -> None:
+def run(docs_dir: Path | None = None) -> None:
     KNOWLEDGE_MODELS.mkdir(parents=True, exist_ok=True)
     KNOWLEDGE_API.mkdir(parents=True, exist_ok=True)
+
+    docs_models_dir = (docs_dir / "models") if docs_dir else None
 
     for model_name, dotted in MODEL_CLASSES.items():
         cls = get_class(dotted)
@@ -128,7 +131,7 @@ def run() -> None:
             print(f"  SKIP (not found): {dotted}")
             continue
         md = class_to_md(model_name, cls)
-        md = merge_with_user_guide(model_name, md)
+        md = merge_with_user_guide(model_name, md, docs_models_dir)
         out = KNOWLEDGE_MODELS / f"{model_name}.md"
         out.write_text(md, encoding="utf-8")
         print(f"  wrote: {out.name}")
@@ -142,18 +145,18 @@ def run() -> None:
         out = KNOWLEDGE_API / f"{model_name}.md"
         out.write_text(md, encoding="utf-8")
 
-    # Update synced version
-    version_file = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/.last_synced_version"
-    try:
-        import scvi
-
-        version_file.write_text(scvi.__version__, encoding="utf-8")
-        print(f"  synced version: {scvi.__version__}")
-    except Exception:
-        pass
-
     print("Done.")
 
 
 if __name__ == "__main__":
-    run()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Extract API docs from scvi-tools")
+    parser.add_argument(
+        "--docs-dir",
+        type=Path,
+        default=None,
+        help="Directory containing fetched scvi-tools user guide docs (subdirs: models/, use_case/)",
+    )
+    args = parser.parse_args()
+    run(docs_dir=args.docs_dir)
