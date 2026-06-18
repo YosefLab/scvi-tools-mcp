@@ -1,6 +1,6 @@
 # MrVI analysis over Tahoe100M cells dataset
 
-MrVI (Multi-resolution Variational Inference) is a model for analyzing multi-sample single-cell RNA-seq data. 
+MrVI (Multi-resolution Variational Inference) is a model for analyzing multi-sample single-cell RNA-seq data.
 This tutorial show how to do run MrVI in PyTorch version over the [Tahoe100M](https://doi.org/10.1101/2025.02.20.639398) cells dataset and perform basic analysis.
 
 

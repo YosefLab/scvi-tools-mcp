@@ -444,14 +444,13 @@ See more [here](https://docs.scvi-tools.org/en/stable/user_guide/use_case/custom
 
 In SCVI-tools a custom dataloader class is a LightningDataModule inherited class which should create batches of data from an external source and feed them into a scvi pytorch model during training and inference.
 
-Beucase it is tailored made for a specific data source, custom dataloders differ from each other. 
+Beucase it is tailored made for a specific data source, custom dataloders differ from each other.
 Nevertheless, there are some common bulding blocks that are required in order to create it:
 - a 'linkage' to the data source that the custom data loder need to query from.
-- `batch_key` is the key for batch information. 
-- `labels_key` is the key for label information. 
-- `unlabeled_category` is the key for the unlabeled groyp information. 
+- `batch_key` is the key for batch information.
+- `labels_key` is the key for label information.
+- `unlabeled_category` is the key for the unlabeled groyp information.
 - `train_dataloader` a function to create a training set pytorch Dataloder
 - `val_dataloader` a function to create a validation set pytorch Dataloder
 - `registry` its the manual implementaion of the scvi tools registry as a dict filled with information taken from the datamodule itself.
   Note that each datamodule will have its own registry implementation and also it should be extended to work with other models (currently only SCVI and SCANVI are supported, but it should be generic enough to work with any model)
-

@@ -1,7 +1,7 @@
 # ATAC-seq analysis in R
 
 
-In this tutorial, we go over how to use scvi-tools functionality in R for analyzing ATAC-seq data. We will closely follow the PBMC tutorial from [Signac](https://satijalab.org/signac/articles/pbmc_vignette.html), using scvi-tools when appropriate. In particular, we will 
+In this tutorial, we go over how to use scvi-tools functionality in R for analyzing ATAC-seq data. We will closely follow the PBMC tutorial from [Signac](https://satijalab.org/signac/articles/pbmc_vignette.html), using scvi-tools when appropriate. In particular, we will
 
 1. Use PeakVI for dimensionality reduction and differential accessiblity for the ATAC-seq data
 2. Use scVI to integrate the unpaired ATAC-seq dataset with a match scRNA-seq dataset of PBMCs
@@ -72,7 +72,7 @@ pbmc <- CreateSeuratObject(
 ```
 
 ```python
-pbmc = UpdateSeuratObject(object = pbmc) 
+pbmc = UpdateSeuratObject(object = pbmc)
 pbmc
 ```
 
@@ -221,7 +221,7 @@ FeaturePlot(
 
 We can integrate the gene activity matrix with annotated scRNA-seq data using scANVI.
 
-First we download the Seurat-processed PBMC 10k dataset (as in their tutorial). 
+First we download the Seurat-processed PBMC 10k dataset (as in their tutorial).
 
 ```python
 pbmc_rna <- readRDS(url("https://www.dropbox.com/s/3f3p5nxrn5b3y4y/pbmc_10k_v3.rds?dl=1"))
@@ -255,10 +255,10 @@ head(py_to_r(adata_both$obs))
 
 ```python
 sc$pp$highly_variable_genes(
-    adata_both, 
-    flavor="seurat_v3", 
-    n_top_genes=r_to_py(3000), 
-    batch_key="batch", 
+    adata_both,
+    flavor="seurat_v3",
+    n_top_genes=r_to_py(3000),
+    batch_key="batch",
     subset=TRUE
 )
 scvi$model$SCVI$setup_anndata(adata_both, labels_key="celltype", batch_key="batch")
@@ -274,7 +274,7 @@ lvae <- scvi$model$SCANVI$from_scvi_model(model, "Unknown", adata=adata_both)
 lvae$train(max_epochs = as.integer(100), n_samples_per_label = as.integer(100))
 ```
 
-Here we only use the prediction functionality of scANVI, but we also could have viewed an integrated representation of the ATAC and RNA using UMAP. 
+Here we only use the prediction functionality of scANVI, but we also could have viewed an integrated representation of the ATAC and RNA using UMAP.
 
 ```python
 adata_both$obs$insert(adata_both$obs$shape[1], "predicted.labels", lvae$predict())
@@ -318,7 +318,7 @@ adata$obs$insert(adata$obs$shape[1], "predicted_ct", pbmc[["predicted.labels"]][
 Using our trained PEAKVI model, we call the `differential_accessibility()` (DA) method
 We pass `predicted_ct` to the groupby argument and compare between naive CD4s and CD14 monocytes.
 
-The output of DA is a DataFrame with the bayes factors. Bayes factors > 3 have high probability of being differentially expressed. You can also set fdr_target, which will return the differentially expressed genes based on the posteior expected FDR. 
+The output of DA is a DataFrame with the bayes factors. Bayes factors > 3 have high probability of being differentially expressed. You can also set fdr_target, which will return the differentially expressed genes based on the posteior expected FDR.
 
 ```python
 DA <- pvi$differential_accessibility(adata, groupby="predicted_ct", group1 = "CD4 Naive", group2 = "CD14+ Monocytes")
