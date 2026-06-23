@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "MCP server for scvi-tools - deep probabilistic analysis of single-cell omics data"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = {file = "LICENSE"}
 dependencies = [
     "fastmcp>=3.0",
     "pydantic>=2.0",
