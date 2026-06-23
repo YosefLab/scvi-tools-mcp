@@ -133,4 +133,8 @@ ______________________________________________________________________
 
 ## License
 
-MIT
+BSD 3-Clause License
+
+[![BioContextAI - Registry](https://img.shields.io/badge/Registry-package?style=flat&label=BioContextAI&labelColor=%23fff&color=%233555a1&link=https%3A%2F%2Fbiocontext.ai%2Fregistry)](https://biocontext.ai/registry/YosefLab/scvi-tools-mcp)
+
+Copyright (c) 2026, Yosef Lab, Weizmann Institute of Science
