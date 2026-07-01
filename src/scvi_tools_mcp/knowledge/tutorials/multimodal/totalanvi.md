@@ -1,5 +1,5 @@
- # Semi-supervised CITE-seq analysis with TotalANVI                                                                                                             
-  With TotalANVI, we can perform semi-supervised analysis of CITE-seq data by leveraging partial cell type annotations to jointly model RNA and protein. Starting from a pretrained totalVI model, TotalANVI fine-tunes the latent space to predict cell type labels for unannotated cells, impute missing protein measurements, and perform differential abundance analysis. Here we demonstrate this functionality with an immune aging CITE-seq dataset spanning multiple tissues and donors, measured across two protein panels.                                                                                   
+ # Semi-supervised CITE-seq analysis with TotalANVI
+  With TotalANVI, we can perform semi-supervised analysis of CITE-seq data by leveraging partial cell type annotations to jointly model RNA and protein. Starting from a pretrained totalVI model, TotalANVI fine-tunes the latent space to predict cell type labels for unannotated cells, impute missing protein measurements, and perform differential abundance analysis. Here we demonstrate this functionality with an immune aging CITE-seq dataset spanning multiple tissues and donors, measured across two protein panels.
 
 ```python
 !pip install --quiet scvi-colab
@@ -275,8 +275,8 @@ def extract_protein_prediction(mdata, model, model_name, n_samples=25, gene_list
 extract_protein_prediction(mdata_concat, totalvi, model_name="totalvi")
 ```
 
-*** Note *** 
- You can use `transform_batch=batches` during protein imputation  to generate predictions relative to specific donor_tissue batches. Example for the current dataset: 
+*** Note ***
+ You can use `transform_batch=batches` during protein imputation  to generate predictions relative to specific donor_tissue batches. Example for the current dataset:
 
 batches = list(
     mdata[mdata.obs['donor'].isin(['778C', 'D523'])]
@@ -399,7 +399,7 @@ mdataf_orig.mod["rna"].obsm["X_scVI"] = sub.obsm["X_scVI"]
 mdataf_orig.write(os.path.join(save_dir.name, "mdataf_orig.h5mu"))
 ```
 
-# Comparing integration metrics using scib-metrics package  
+# Comparing integration metrics using scib-metrics package
 
 
 Compute multiple integration metrics across the scvi, scANVI, totalVI, and totalANVI embeddings to quantitatively compare biological conservation and batch integration performance. We use the scib-metrics package
@@ -492,7 +492,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-###  Distribution divergence 
+###  Distribution divergence
 Jensen-Shannon (JS) divergence measures how much the predicted cell-type
 proportions differ from the true proportions.
 JS = 0 → predicted distribution is identical to the true distribution.
@@ -554,7 +554,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-# Visualizing the embeddings and denoised protein values  
+# Visualizing the embeddings and denoised protein values
 
 ```python
 mdata = md.read_h5mu(os.path.join(save_dir.name, "mdataf_orig.h5mu"))
