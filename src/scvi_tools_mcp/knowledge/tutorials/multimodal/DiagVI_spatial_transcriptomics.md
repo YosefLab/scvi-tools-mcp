@@ -61,13 +61,17 @@ save_dir = tempfile.TemporaryDirectory()
 
 ```python
 adata_rna_path = os.path.join(save_dir.name, "ad_diss.h5ad")
-ad_diss = sc.read(adata_rna_path, backup_url="https://ndownloader.figshare.com/files/54145217")
+ad_diss = sc.read(
+    adata_rna_path, backup_url="https://exampledata.scverse.org/scvi-tools/dissociated.h5ad"
+)
 ad_diss
 ```
 
 ```python
 adata_protein_path = os.path.join(save_dir.name, "ad_sp.h5ad")
-ad_sp = sc.read(adata_protein_path, backup_url="https://ndownloader.figshare.com/files/54145250")
+ad_sp = sc.read(
+    adata_protein_path, backup_url="https://exampledata.scverse.org/scvi-tools/spatial.h5ad"
+)
 ad_sp
 ```
 
@@ -259,13 +263,14 @@ Then we use the DiagVI latent space, to recalculate and plot the joint embedding
 ```python
 PCA_LATENT_KEY = "X_joint_pca"
 DIAGVI_UMAP_KEY = "X_umap_diagvi"
+import rapids_singlecell as rsc
 
-sc.tl.pca(combined, key_added=PCA_LATENT_KEY)
+rsc.tl.pca(combined, key_added=PCA_LATENT_KEY)
 ```
 
 ```python
-sc.pp.neighbors(combined, use_rep=DIAGVI_LATENT_KEY, metric="cosine")
-sc.tl.umap(combined, key_added=DIAGVI_UMAP_KEY)
+rsc.pp.neighbors(combined, use_rep=DIAGVI_LATENT_KEY, metric="cosine")
+rsc.tl.umap(combined, key_added=DIAGVI_UMAP_KEY)
 sc.pl.embedding(
     combined,
     basis="umap_diagvi",
@@ -427,8 +432,8 @@ embedding_keys = {
 }
 
 for _, (latent_key, umap_key) in embedding_keys.items():
-    sc.pp.neighbors(combined, use_rep=latent_key, metric="cosine")
-    sc.tl.umap(combined, key_added=umap_key)
+    rsc.pp.neighbors(combined, use_rep=latent_key, metric="cosine")
+    rsc.tl.umap(combined, key_added=umap_key)
 ```
 
 ```python
@@ -464,8 +469,15 @@ In the scVI embedding, the two modalities do not overlap at all. In contrast, sc
 For quantitative comparison, we use the [scib-metrics](https://scib-metrics.readthedocs.io/en/stable/) package, which implements a standardized collection of metrics for evaluating integration performance and biological signal preservation in latent representations.
 
 ```python
+from scvi.external import cytovi
+
+combined.obs_names_make_unique()
+combined_sub = cytovi.subsample(combined, n_obs=10000, groupby="modality")
+```
+
+```python
 bm = Benchmarker(
-    combined,
+    combined_sub,
     batch_key="batch",
     label_key="celltype_harmonized",
     embedding_obsm_keys=[PCA_LATENT_KEY, DIAGVI_LATENT_KEY, SCVI_LATENT_KEY, SCANVI_LATENT_KEY],
@@ -523,7 +535,9 @@ model_sub.train(
         "lam_class": 70,
     }
 )
+```
 
+```python
 # Get latent representations and create combined object
 latents_sub = model_sub.get_latent_representation()
 ad_diss_sub.obsm[DIAGVI_LATENT_KEY], ad_sp_sub.obsm[DIAGVI_LATENT_KEY] = (
@@ -531,8 +545,13 @@ ad_diss_sub.obsm[DIAGVI_LATENT_KEY], ad_sp_sub.obsm[DIAGVI_LATENT_KEY] = (
     latents_sub["seqFISH"],
 )
 combined_sub = sc.concat([ad_diss_sub, ad_sp_sub], axis=0, join="inner")
-sc.tl.pca(combined_sub, key_added=PCA_LATENT_KEY)
+```
 
+```python
+rsc.tl.pca(combined_sub, key_added=PCA_LATENT_KEY)
+```
+
+```python
 # Train scVI + scanVI baseline on combined subset
 combined_sub.obs["celltype_scvi"] = np.concatenate(
     [
@@ -547,7 +566,9 @@ scvi.model.SCVI.setup_anndata(combined_sub, layer="counts", batch_key="batch")
 scvi_model_sub = scvi.model.SCVI(combined_sub)
 scvi_model_sub.train()
 combined_sub.obsm[SCVI_LATENT_KEY] = scvi_model_sub.get_latent_representation()
+```
 
+```python
 scanvi_sub = scvi.model.SCANVI.from_scvi_model(
     scvi_model_sub, adata=combined_sub, labels_key="celltype_scvi", unlabeled_category="unknown"
 )
@@ -557,8 +578,8 @@ combined_sub.obsm[SCANVI_LATENT_KEY] = scanvi_sub.get_latent_representation()
 
 ```python
 for _, (latent_key, umap_key) in embedding_keys.items():
-    sc.pp.neighbors(combined_sub, use_rep=latent_key, metric="cosine")
-    sc.tl.umap(combined_sub, key_added=umap_key)
+    rsc.pp.neighbors(combined_sub, use_rep=latent_key, metric="cosine")
+    rsc.tl.umap(combined_sub, key_added=umap_key)
 ```
 
 ```python
@@ -594,9 +615,14 @@ plt.show()
 ```
 
 ```python
+combined_sub.obs_names_make_unique()
+combined_sub_sub = cytovi.subsample(combined_sub, n_obs=10000, groupby="modality")
+```
+
+```python
 # Run scib-metrics benchmark on subset
 bm_sub = Benchmarker(
-    combined_sub,
+    combined_sub_sub,
     batch_key="batch",
     label_key="celltype_harmonized",
     embedding_obsm_keys=[PCA_LATENT_KEY, DIAGVI_LATENT_KEY, SCVI_LATENT_KEY, SCANVI_LATENT_KEY],

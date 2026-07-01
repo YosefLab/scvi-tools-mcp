@@ -183,7 +183,6 @@ Ray by default plots the metrics and results into tensorboard. It can be accesse
 
 Starting SCVI-Tools v1.3 we are now able to hyperparameter tune for optimal scib-metrics of any choice.
 This is currently works only for SCVI and SCANVI models.
-Note that youll need to update for the recent scib-metrics jax based package.
 
 The idea in performing this is very much the same as before, we just need to select a metric that can be optimize from the pool of metrics that scib-metrics holds as seen in the following list:
 "Silhouette label",

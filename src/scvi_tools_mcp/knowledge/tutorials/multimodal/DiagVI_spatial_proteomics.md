@@ -92,7 +92,7 @@ save_dir = tempfile.TemporaryDirectory()
 adata_rna_path = os.path.join(save_dir.name, "10x_rcc_rna.h5ad")
 adata_rna = sc.read(
     adata_rna_path,
-    backup_url="https://ndownloader.figshare.com/files/61982293",
+    backup_url="https://exampledata.scverse.org/scvi-tools/10x_rcc_rna.h5ad",
 )
 adata_rna
 ```
@@ -103,7 +103,7 @@ For count data, such as scRNA-seq data, DiagVI expects a raw count expression ma
 adata_protein_path = os.path.join(save_dir.name, "10x_rcc_protein.h5ad")
 adata_protein = sc.read(
     adata_protein_path,
-    backup_url="https://ndownloader.figshare.com/files/61982290",
+    backup_url="https://exampledata.scverse.org/scvi-tools/10x_rcc_protein.h5ad",
 )
 adata_protein
 ```
@@ -513,7 +513,7 @@ Given the large size of our dataset, we first subsample the data to 20,000 cells
 
 ```python
 adata_combined.obs_names_make_unique()
-adata_combined_sub = cytovi.subsample(adata_combined, n_obs=40000, groupby="modality")
+adata_combined_sub = cytovi.subsample(adata_combined, n_obs=10000, groupby="modality")
 ```
 
 We exclude the PCR comparison metric from the benchmark. This metric quantifies how much batch variance is removed relative to an unintegrated baseline, which is well-defined for single-modality batch correction (where all cells share the same feature space) but not for multi-modal integration with non-overlapping features. The remaining batch correction metrics, alongside the FOSCTTM metric, still provide a comprehensive evaluation of modality alignment.

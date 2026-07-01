@@ -136,7 +136,7 @@ train_ind, valid_ind = train_test_split(
 
 ### Init the model
 
-We will initialize the MRVI model with its "pytorch" backend. A JAX backend version can be also be used using backend="jax".
+We will initialize the MRVI model with its "pytorch" backend.
 
 ```python
 sample_key = "sample"  # target covariate sample/cell_line_id

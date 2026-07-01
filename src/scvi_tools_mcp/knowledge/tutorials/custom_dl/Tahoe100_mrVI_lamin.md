@@ -150,7 +150,7 @@ print(datamodule.n_obs, datamodule.n_vars, datamodule.n_batch)
 
 ## Train mrVI with LaminDB
 
-We will initialize the MRVI model with its "pytorch" backend. A JAX backend version can be also be used using backend="jax".
+We will initialize the MRVI model with its "pytorch" backend.
 
 ```python
 # Init the model
