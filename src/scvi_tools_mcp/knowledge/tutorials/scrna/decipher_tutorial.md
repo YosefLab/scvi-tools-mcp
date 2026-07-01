@@ -35,7 +35,7 @@ adata_path = os.path.join(save_dir.name, "decipher_tutorial_data.h5ad")
 
 adata = sc.read(
     adata_path,
-    backup_url="https://github.com/azizilab/decipher_data/raw/refs/heads/main/data_decipher_tutorial.h5ad",
+    backup_url="https://exampledata.scverse.org/scvi-tools/data_decipher_tutorial.h5ad",
 )
 adata = adata[
     ~adata.obs["cell_type"].isin(["mep", "ery", "lympho"])

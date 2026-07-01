@@ -55,7 +55,7 @@ sc.pp.highly_variable_genes(
 adata
 ```
 
-Before training, we need to specify which covariates in `obs` should be used as target (`sample_key`) and nuisance variables (`batch_key`).
+Before training, we need to specify which covariates in `obs` should be used as target (`sample_key`) and nuisance variables (`batch_key`). 
 In this tutorial, we will use donor IDs (`patient_id`) as the target variable, and leave the batch variable empty since the data is already subsetted to the Newcastle cohort (denoted in `Site`).
 
 Otherwise, we will focus on the following `obs` keys for the analysis:
@@ -63,7 +63,7 @@ Otherwise, we will focus on the following `obs` keys for the analysis:
 - `Status`: whether the donor had COVID-19 or was healthy.
 - `Days_from_onset`: how many days it had been since the onset of symptoms before the sample was taken.
 
-We will initialize the MRVI model with its "pytorch" backend. A JAX backend version can be also be used using backend="jax".
+We will initialize the MRVI model with its "pytorch" backend.
 
 ```python
 sample_key = "patient_id"  # target covariate

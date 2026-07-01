@@ -59,7 +59,7 @@ adata_path = os.path.join(save_dir.name, "adata.h5ad")
 
 sc_adata = sc.read(
     adata_path,
-    backup_url="https://ndownloader.figshare.com/files/26153564",
+    backup_url="https://exampledata.scverse.org/scvi-tools/hca_heart_LV_stereoscope_subset_raw_ctl201217.h5ad",
 )
 sc_adata
 ```

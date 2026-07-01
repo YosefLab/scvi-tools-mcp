@@ -19,7 +19,7 @@ from scvi_colab import install
 install()
 ```
 
-## Training the model
+## Training the model 
 
 Let's start by importing the necessary dependencies.
 
@@ -202,7 +202,7 @@ We will now load the model back and use it to generate cell embeddings (the late
 
 ## Generate cell embeddings
 
-We will now generate the cell embeddings for this model, using the `get_latent_representation` function available in scvi-tools.
+We will now generate the cell embeddings for this model, using the `get_latent_representation` function available in scvi-tools. 
 
 We can use another instance of the `SCVIDataModule` for the forward pass, so we don't need to load the whole dataset in memory. This will have shuffling disabled to make it easier to join the embeddings later. We also want to restore the list of scVI batch labels from the training data, ensuring our forward pass will map batch labels to tensors in the expected way (although this specific example would work regardless, since it reuses the same query).
 
@@ -280,7 +280,7 @@ sc.pl.umap(
 sc.pl.umap(adata, color="cell_type", title="SCVI")
 ```
 
-lets train the actual adata that we extracted the normal way in order to see the integration
+lets train the actual adata that we extracted the normal way in order to see the integration 
 
 ```python
 adata.obs["batch"] = adata.obs[batch_keys].agg("//".join, axis=1).astype("category")
@@ -640,6 +640,6 @@ bm.benchmark()
 bm.plot_results_table(min_max_scale=False)
 ```
 
-As expected SCANVI outperforms the SCVI using the labels data,
+As expected SCANVI outperforms the SCVI using the labels data, 
 however as can be seen the regular use of Anndataloader dataloader
 gives 5% better integration results that the census dataloader

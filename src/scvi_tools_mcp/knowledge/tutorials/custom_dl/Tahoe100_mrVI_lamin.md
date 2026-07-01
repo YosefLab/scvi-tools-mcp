@@ -1,6 +1,6 @@
 # MrVI analysis over Tahoe100M cells dataset using LaminDB Custom Dataloader
 
-MrVI (Multi-resolution Variational Inference) is a model for analyzing multi-sample single-cell RNA-seq data.
+MrVI (Multi-resolution Variational Inference) is a model for analyzing multi-sample single-cell RNA-seq data. 
 This tutorial show how to do run MrVI in PyTorch version over the [Tahoe100M](https://doi.org/10.1101/2025.02.20.639398) cells dataset and perform basic analysis, using [Lamin](https://lamin.ai/) custom dataloader.
 
 
@@ -150,7 +150,7 @@ print(datamodule.n_obs, datamodule.n_vars, datamodule.n_batch)
 
 ## Train mrVI with LaminDB
 
-We will initialize the MRVI model with its "pytorch" backend. A JAX backend version can be also be used using backend="jax".
+We will initialize the MRVI model with its "pytorch" backend.
 
 ```python
 # Init the model

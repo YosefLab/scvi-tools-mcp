@@ -97,7 +97,7 @@ adata
 
 ## Defining the tuner and discovering hyperparameters
 
-The first part of our workflow is the same as the standard `scvi-tools` workflow: we start with our desired model class, and we register our dataset with it using `setup_anndata`. All datasets must be registered prior to hyperparameter tuning.
+The first part of our workflow is the same as the standard `scvi-tools` workflow: we start with our desired model class, and we register our dataset with it using `setup_anndata`. All datasets must be registered prior to hyperparameter tuning. 
 It important that batch_key and labels_key will be explicitly defined to use it scib-autotune (later on).
 
 ```python
@@ -181,9 +181,8 @@ Ray by default plots the metrics and results into tensorboard. It can be accesse
 
 ## Tuning over integration metrics with `scib-metrics`
 
-Starting SCVI-Tools v1.3 we are now able to hyperparameter tune for optimal scib-metrics of any choice.
-This is currently works only for SCVI and SCANVI models.
-Note that youll need to update for the recent scib-metrics jax based package.
+Starting SCVI-Tools v1.3 we are now able to hyperparameter tune for optimal scib-metrics of any choice. 
+This is currently works only for SCVI and SCANVI models. 
 
 The idea in performing this is very much the same as before, we just need to select a metric that can be optimize from the pool of metrics that scib-metrics holds as seen in the following list:
 "Silhouette label",

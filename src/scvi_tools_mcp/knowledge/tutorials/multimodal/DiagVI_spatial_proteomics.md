@@ -92,7 +92,7 @@ save_dir = tempfile.TemporaryDirectory()
 adata_rna_path = os.path.join(save_dir.name, "10x_rcc_rna.h5ad")
 adata_rna = sc.read(
     adata_rna_path,
-    backup_url="https://ndownloader.figshare.com/files/61982293",
+    backup_url="https://exampledata.scverse.org/scvi-tools/10x_rcc_rna.h5ad",
 )
 adata_rna
 ```
@@ -103,12 +103,12 @@ For count data, such as scRNA-seq data, DiagVI expects a raw count expression ma
 adata_protein_path = os.path.join(save_dir.name, "10x_rcc_protein.h5ad")
 adata_protein = sc.read(
     adata_protein_path,
-    backup_url="https://ndownloader.figshare.com/files/61982290",
+    backup_url="https://exampledata.scverse.org/scvi-tools/10x_rcc_protein.h5ad",
 )
 adata_protein
 ```
 
-For continuous data, such as protein intensities, DiagVI expects a transformed (and optionally scaled) expression matrix as input. Optionally, users can provide experimental covariates (e.g., batch annotations) or other confounding variables and cell label annotations. Similar to the RNA AnnData object, the loaded protein AnnData object contains raw protein intensities and cell labels.
+For continuous data, such as protein intensities, DiagVI expects a transformed (and optionally scaled) expression matrix as input. Optionally, users can provide experimental covariates (e.g., batch annotations) or other confounding variables and cell label annotations. Similar to the RNA AnnData object, the loaded protein AnnData object contains raw protein intensities and cell labels. 
 
 Before training DiagVI, these intensities must be transformed and normalized to make them suitable for modeling. This is required due to antibody-based single-cell measurements being relative. For example, cytometry data are typically transformed using functions such as hyperbolic arcsinh (arcsinh), logicle, or biexponential to compress dynamic range and stabilize variance. Subsequently, the data is usually scaled feature-wise to ensure that marker expression values are on comparable scales across all channels (see for instance Liechti et al., 2021, [Nature Immunology](https://doi.org/10.1038/s41590-021-01006-z)).
 
@@ -513,7 +513,7 @@ Given the large size of our dataset, we first subsample the data to 20,000 cells
 
 ```python
 adata_combined.obs_names_make_unique()
-adata_combined_sub = cytovi.subsample(adata_combined, n_obs=40000, groupby="modality")
+adata_combined_sub = cytovi.subsample(adata_combined, n_obs=10000, groupby="modality")
 ```
 
 We exclude the PCR comparison metric from the benchmark. This metric quantifies how much batch variance is removed relative to an unintegrated baseline, which is well-defined for single-modality batch correction (where all cells share the same feature space) but not for multi-modal integration with non-overlapping features. The remaining batch correction metrics, alongside the FOSCTTM metric, still provide a comprehensive evaluation of modality alignment.

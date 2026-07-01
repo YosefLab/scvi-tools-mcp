@@ -57,17 +57,21 @@ save_dir = tempfile.TemporaryDirectory()
 %config InlineBackend.figure_format="retina"
 ```
 
-### Data Acquisition
+### Data Acquisition 
 
 ```python
 adata_rna_path = os.path.join(save_dir.name, "ad_diss.h5ad")
-ad_diss = sc.read(adata_rna_path, backup_url="https://ndownloader.figshare.com/files/54145217")
+ad_diss = sc.read(
+    adata_rna_path, backup_url="https://exampledata.scverse.org/scvi-tools/dissociated.h5ad"
+)
 ad_diss
 ```
 
 ```python
 adata_protein_path = os.path.join(save_dir.name, "ad_sp.h5ad")
-ad_sp = sc.read(adata_protein_path, backup_url="https://ndownloader.figshare.com/files/54145250")
+ad_sp = sc.read(
+    adata_protein_path, backup_url="https://exampledata.scverse.org/scvi-tools/spatial.h5ad"
+)
 ad_sp
 ```
 
@@ -138,9 +142,9 @@ sc.pl.embedding(ad_diss, basis="X_umap", color="celltype_harmonized")
 
 We register each AnnData object with DiagVI using `setup_anndata`. To run a (semi-)supervised model, a `label_key` can be specified for each AnnData object separately.
 
-In this tutorial, we model a common scenario in single cell analysis: Integration of an unannotated spatial transcriptomics dataset in an annotated scRNA-seq reference atlas. Therefore, we provide the `label_key` only for the scRNA-seq modality.
+In this tutorial, we model a common scenario in single cell analysis: Integration of an unannotated spatial transcriptomics dataset in an annotated scRNA-seq reference atlas. Therefore, we provide the `label_key` only for the scRNA-seq modality. 
 
-Furthermore, we enable a Gaussian mixture prior for both modalities with `gmm_prior=True`.
+Furthermore, we enable a Gaussian mixture prior for both modalities with `gmm_prior=True`. 
 For the unannotated spatial transcriptomics dataset, we set `n_mixture_components=29` to match the number of cell types in the annotated scRNA-seq reference.
 
 ```{important}
@@ -149,9 +153,9 @@ Key parameters for `setup_anndata`:
 - `layer`: Specifies which layer contains raw counts for model input (e.g., `"counts"`)
 - `batch_key`: Column in `.obs` containing batch information to correct for
 - `labels_key`: Column in `.obs` containing cell type labels (optional). When provided, labels inform the latent space structure
-- `likelihood`: Likelihood function used to model gene expression counts. Supported options include:
-  - `"nb"`: Negative binomial (default; recommended for count data)
-  - `"zinb"`: Zero-inflated negative binomial
+- `likelihood`: Likelihood function used to model gene expression counts. Supported options include:  
+  - `"nb"`: Negative binomial (default; recommended for count data)  
+  - `"zinb"`: Zero-inflated negative binomial  
 - `gmm_prior`: If `True`, uses a Gaussian mixture model (GMM) prior on the latent space
 - `n_mixture_components`: Number of GMM components. Only required when `labels_key` is not provided; otherwise, the number of unique labels is used automatically
 
@@ -259,13 +263,14 @@ Then we use the DiagVI latent space, to recalculate and plot the joint embedding
 ```python
 PCA_LATENT_KEY = "X_joint_pca"
 DIAGVI_UMAP_KEY = "X_umap_diagvi"
+import rapids_singlecell as rsc
 
-sc.tl.pca(combined, key_added=PCA_LATENT_KEY)
+rsc.tl.pca(combined, key_added=PCA_LATENT_KEY)
 ```
 
 ```python
-sc.pp.neighbors(combined, use_rep=DIAGVI_LATENT_KEY, metric="cosine")
-sc.tl.umap(combined, key_added=DIAGVI_UMAP_KEY)
+rsc.pp.neighbors(combined, use_rep=DIAGVI_LATENT_KEY, metric="cosine")
+rsc.tl.umap(combined, key_added=DIAGVI_UMAP_KEY)
 sc.pl.embedding(
     combined,
     basis="umap_diagvi",
@@ -329,7 +334,7 @@ with warnings.catch_warnings():
 
 ### Transfer cell type labels
 
-Another key application is transferring cell type annotations from an annotated reference to unannotated or partially annotated query data.
+Another key application is transferring cell type annotations from an annotated reference to unannotated or partially annotated query data. 
 Here, we treat the spatial dataset as unlabeled and transfer cell type annotations from the scRNA-seq reference using the DiagVI latent space.
 We use [CellMapper](https://cellmapper.readthedocs.io/) to perform k-nearest neighbor (KNN)–based mapping and to compute prediction confidence scores for each transferred label.
 
@@ -416,7 +421,7 @@ scanvi_model.train(max_epochs=100, check_val_every_n_epoch=1)
 combined.obsm[SCANVI_LATENT_KEY] = scanvi_model.get_latent_representation()
 ```
 
-To qualitative compyrison, we visualize the latent representations of the shared PCA space, scVI, scANVI and DiagVI side by side.
+To qualitative compyrison, we visualize the latent representations of the shared PCA space, scVI, scANVI and DiagVI side by side. 
 
 ```python
 embedding_keys = {
@@ -427,8 +432,8 @@ embedding_keys = {
 }
 
 for _, (latent_key, umap_key) in embedding_keys.items():
-    sc.pp.neighbors(combined, use_rep=latent_key, metric="cosine")
-    sc.tl.umap(combined, key_added=umap_key)
+    rsc.pp.neighbors(combined, use_rep=latent_key, metric="cosine")
+    rsc.tl.umap(combined, key_added=umap_key)
 ```
 
 ```python
@@ -464,8 +469,15 @@ In the scVI embedding, the two modalities do not overlap at all. In contrast, sc
 For quantitative comparison, we use the [scib-metrics](https://scib-metrics.readthedocs.io/en/stable/) package, which implements a standardized collection of metrics for evaluating integration performance and biological signal preservation in latent representations.
 
 ```python
+from scvi.external import cytovi
+
+combined.obs_names_make_unique()
+combined_sub = cytovi.subsample(combined, n_obs=10000, groupby="modality")
+```
+
+```python
 bm = Benchmarker(
-    combined,
+    combined_sub,
     batch_key="batch",
     label_key="celltype_harmonized",
     embedding_obsm_keys=[PCA_LATENT_KEY, DIAGVI_LATENT_KEY, SCVI_LATENT_KEY, SCANVI_LATENT_KEY],
@@ -523,7 +535,9 @@ model_sub.train(
         "lam_class": 70,
     }
 )
+```
 
+```python
 # Get latent representations and create combined object
 latents_sub = model_sub.get_latent_representation()
 ad_diss_sub.obsm[DIAGVI_LATENT_KEY], ad_sp_sub.obsm[DIAGVI_LATENT_KEY] = (
@@ -531,8 +545,13 @@ ad_diss_sub.obsm[DIAGVI_LATENT_KEY], ad_sp_sub.obsm[DIAGVI_LATENT_KEY] = (
     latents_sub["seqFISH"],
 )
 combined_sub = sc.concat([ad_diss_sub, ad_sp_sub], axis=0, join="inner")
-sc.tl.pca(combined_sub, key_added=PCA_LATENT_KEY)
+```
 
+```python
+rsc.tl.pca(combined_sub, key_added=PCA_LATENT_KEY)
+```
+
+```python
 # Train scVI + scanVI baseline on combined subset
 combined_sub.obs["celltype_scvi"] = np.concatenate(
     [
@@ -547,7 +566,9 @@ scvi.model.SCVI.setup_anndata(combined_sub, layer="counts", batch_key="batch")
 scvi_model_sub = scvi.model.SCVI(combined_sub)
 scvi_model_sub.train()
 combined_sub.obsm[SCVI_LATENT_KEY] = scvi_model_sub.get_latent_representation()
+```
 
+```python
 scanvi_sub = scvi.model.SCANVI.from_scvi_model(
     scvi_model_sub, adata=combined_sub, labels_key="celltype_scvi", unlabeled_category="unknown"
 )
@@ -557,8 +578,8 @@ combined_sub.obsm[SCANVI_LATENT_KEY] = scanvi_sub.get_latent_representation()
 
 ```python
 for _, (latent_key, umap_key) in embedding_keys.items():
-    sc.pp.neighbors(combined_sub, use_rep=latent_key, metric="cosine")
-    sc.tl.umap(combined_sub, key_added=umap_key)
+    rsc.pp.neighbors(combined_sub, use_rep=latent_key, metric="cosine")
+    rsc.tl.umap(combined_sub, key_added=umap_key)
 ```
 
 ```python
@@ -594,9 +615,14 @@ plt.show()
 ```
 
 ```python
+combined_sub.obs_names_make_unique()
+combined_sub_sub = cytovi.subsample(combined_sub, n_obs=10000, groupby="modality")
+```
+
+```python
 # Run scib-metrics benchmark on subset
 bm_sub = Benchmarker(
-    combined_sub,
+    combined_sub_sub,
     batch_key="batch",
     label_key="celltype_harmonized",
     embedding_obsm_keys=[PCA_LATENT_KEY, DIAGVI_LATENT_KEY, SCVI_LATENT_KEY, SCANVI_LATENT_KEY],
