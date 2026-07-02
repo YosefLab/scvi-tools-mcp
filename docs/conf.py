@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+from datetime import datetime
+
 project = "scvi-tools-mcp"
-author = "YosefLab"
-copyright = "2024, YosefLab"
+author = "Ori Kronfeld"
+copyright = f"{datetime.now():%Y}, {author}."
 
 extensions = [
     "myst_parser",
