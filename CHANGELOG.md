@@ -15,6 +15,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `.editorconfig` and `.vscode/` (settings, extensions, launch configs) for consistent contributor tooling
 - `zizmor`, `pyproject-fmt`, and `check-merge-conflict` pre-commit hooks
 - Structured YAML issue forms (`bug_report.yml`, `feature_request.yml`) replacing the old Markdown templates
+- Changelog and package API reference pages in the Read the Docs documentation
 
 ### Changed
 
@@ -23,10 +24,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Bumped pinned GitHub Actions versions (`actions/checkout` v4 → v5, `actions/setup-python` v5 → v6) across all workflows
 - Updated copyright notice in `docs/conf.py`
 - Enhanced `README.md` and `docs/installation.md` with Claude Code and OpenAI Codex MCP integration instructions
+- Standardized the human-facing project name as **scVI-Tools MCP**
 
 ### Fixed
 
 - HTML rendering of the architecture block diagram on Read the Docs
+- Set `GH_REPO` in the GitHub release job so `gh release create` can resolve the repository without a checkout
+- Updated development installation commands to install the PEP 735 `dev` dependency group
+- Encoded issue-form labels as arrays so GitHub accepts and displays both forms
 
 ## [0.1.4.1] - 2026-07-02
 

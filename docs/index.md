@@ -1,4 +1,4 @@
-# scvi-tools MCP
+# scVI-Tools MCP
 
 An MCP (Model Context Protocol) server that gives LLMs structured access to [scvi-tools](https://scvi-tools.org) — a Python library for deep probabilistic analysis of single-cell omics data.
 
@@ -11,6 +11,8 @@ and the official scvi-tools Hugging Face Hub model registry.
 
 installation
 architecture/index
+api
 faq
 references
+changelog
 ```

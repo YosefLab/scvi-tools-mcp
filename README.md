@@ -1,4 +1,4 @@
-# scvi-tools-mcp
+# scVI-Tools MCP
 
 An MCP (Model Context Protocol) server that gives LLMs structured access to [scvi-tools](https://scvi-tools.org)
 knowledge: model documentation, tutorials, API reference, workflow templates, pretrained Hugging Face Hub models,

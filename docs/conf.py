@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-project = "scvi-tools-mcp"
+project = "scVI-Tools MCP"
 author = "Ori Kronfeld"
 copyright = f"{datetime.now():%Y}, {author}."
 
@@ -18,7 +18,7 @@ source_suffix = {
 }
 
 html_theme = "furo"
-html_title = "scvi-tools MCP"
+html_title = "scVI-Tools MCP"
 
 exclude_patterns = ["superpowers"]
 
