@@ -14,15 +14,17 @@ jobs:
     name: Update model docs from scvi-tools main
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
 
       - name: Install scvi-tools + dev deps
-        run: pip install -e ".[dev,scvi]"
+        run: pip install -e ".[scvi]" --group dev
 
       - name: Clone scvi-tools (latest main)
         run: |
@@ -55,7 +57,9 @@ jobs:
 
       - name: Update last-synced commit
         if: steps.check.outputs.needed == 'true'
-        run: echo "${{ steps.check.outputs.sha }}" > src/scvi_tools_mcp/knowledge/.last_synced_commit
+        env:
+          SHA: ${{ steps.check.outputs.sha }}
+        run: echo "$SHA" > src/scvi_tools_mcp/knowledge/.last_synced_commit
 
       - name: Check for changes
         if: steps.check.outputs.needed == 'true'
@@ -69,7 +73,7 @@ jobs:
 
       - name: Create pull request
         if: steps.check.outputs.needed == 'true' && steps.diff.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: sync model knowledge from scvi-tools@${{ steps.check.outputs.sha }}"

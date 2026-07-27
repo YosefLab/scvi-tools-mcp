@@ -25,7 +25,23 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-### Cursor / other clients
+### Claude Code (CLI)
+
+```bash
+claude mcp add scvi-tools-mcp -s user -- uvx scvi-tools-mcp
+```
+
+### OpenAI Codex CLI
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.scvi-tools-mcp]
+command = "uvx"
+args   = ["scvi-tools-mcp"]
+```
+
+### Cursor / Windsurf / other clients
 
 ```json
 { "command": "uvx", "args": ["scvi-tools-mcp"] }

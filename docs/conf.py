@@ -21,3 +21,5 @@ html_theme = "furo"
 html_title = "scvi-tools MCP"
 
 exclude_patterns = ["superpowers"]
+
+html_extra_path = ["architecture/scvi-tools-mcp-block-diagram.html"]

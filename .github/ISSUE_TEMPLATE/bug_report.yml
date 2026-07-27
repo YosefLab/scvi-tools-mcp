@@ -1,0 +1,49 @@
+name: Bug report
+description: Report something that is broken or incorrect
+labels: bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please provide exact steps to reproduce the bug in a clean environment,
+        including which MCP client (Claude Desktop, Claude Code, Cursor, etc.) you're using.
+
+  - type: textarea
+    id: report
+    attributes:
+      label: Report
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: To reproduce
+      description: Steps, tool calls, or code used to trigger the bug. Include error output if applicable.
+      render: python
+    validations:
+      required: false
+
+  - type: input
+    id: mcp-client
+    attributes:
+      label: MCP client
+      description: Which client are you using scvi-tools-mcp with?
+      placeholder: "Claude Desktop / Claude Code / Cursor / Windsurf / other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: |
+        Output of:
+        ```console
+        $ python -c "import scvi_tools_mcp; print(scvi_tools_mcp.__version__)"
+        $ python --version
+        ```
+      render: python
+    validations:
+      required: true

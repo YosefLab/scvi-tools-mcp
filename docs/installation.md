@@ -32,10 +32,20 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ### Claude Code (CLI)
 
 ```bash
-claude mcp add scvi-tools-mcp uvx scvi-tools-mcp -s user
+claude mcp add scvi-tools-mcp -s user -- uvx scvi-tools-mcp
 ```
 
-### Cursor / other MCP clients
+### OpenAI Codex CLI
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.scvi-tools-mcp]
+command = "uvx"
+args   = ["scvi-tools-mcp"]
+```
+
+### Cursor / Windsurf / other MCP clients
 
 ```json
 { "command": "uvx", "args": ["scvi-tools-mcp"] }
@@ -62,6 +72,6 @@ pytest
 
 ## Requirements
 
-- Python ≥ 3.11
+- Python 3.12, 3.13, or 3.14
 - fastmcp ≥ 3.0
 - pydantic ≥ 2.0
