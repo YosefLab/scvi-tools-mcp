@@ -6,6 +6,8 @@ and community FAQ.
 
 No runtime model execution — pure knowledge layer. Works with Claude Desktop, Cursor, and any MCP-compatible client.
 
+Docs: [scvi-tools-mcp.readthedocs.io](https://scvi-tools-mcp.readthedocs.io)
+
 ______________________________________________________________________
 
 ## Quick Start
