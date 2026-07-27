@@ -72,6 +72,6 @@ pytest
 
 ## Requirements
 
-- Python ≥ 3.11
+- Python 3.12, 3.13, or 3.14
 - fastmcp ≥ 3.0
 - pydantic ≥ 2.0

@@ -7,6 +7,42 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [0.1.5] - 2026-07-27
+
+### Added
+
+- `.github/dependabot.yml` — weekly grouped updates for GitHub Actions
+- `.editorconfig` and `.vscode/` (settings, extensions, launch configs) for consistent contributor tooling
+- `zizmor`, `pyproject-fmt`, and `check-merge-conflict` pre-commit hooks
+- Structured YAML issue forms (`bug_report.yml`, `feature_request.yml`) replacing the old Markdown templates
+
+### Changed
+
+- Adopted the parts of the scverse cookiecutter template refresh that fit this repo: `pyproject.toml` dev/doc extras moved to `[dependency-groups]`, hardened and digest-pinned `test.yaml`/`release.yaml`, `fail_on_warning` enabled for the Read the Docs Sphinx build
+- Dropped Python 3.11 support; now supports 3.12, 3.13, and 3.14 (default 3.13)
+- Bumped pinned GitHub Actions versions (`actions/checkout` v4 → v5, `actions/setup-python` v5 → v6) across all workflows
+- Updated copyright notice in `docs/conf.py`
+- Enhanced `README.md` and `docs/installation.md` with Claude Code and OpenAI Codex MCP integration instructions
+
+### Fixed
+
+- HTML rendering of the architecture block diagram on Read the Docs
+
+## [0.1.4.1] - 2026-07-02
+
+### Fixed
+
+- Added the `fastmcp[server]` extra to `pyproject.toml` — installs the `starlette` dependency required by fastmcp/mcp that was missing
+
+## [0.1.4] - 2026-07-02
+
+### Changed
+
+- License changed from MIT to BSD 3-Clause, with badge added to `README.md`
+- Knowledge base refreshed via the automated monthly sync workflows (external knowledge snapshot, scvi-tools model docs, tutorials, Hugging Face Hub snapshot)
+
+---
+
 ## [0.1.3] - 2026-06-18
 
 ### Added
