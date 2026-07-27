@@ -65,7 +65,7 @@ pip install "scvi-tools-mcp[scvi]"
 ```bash
 git clone https://github.com/Yoseflab/scvi-tools-mcp
 cd scvi-tools-mcp
-pip install -e ".[dev]"
+pip install -e . --group dev
 pre-commit install
 pytest
 ```
