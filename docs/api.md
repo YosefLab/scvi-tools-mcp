@@ -45,6 +45,20 @@ scVI-Tools MCP server. MCP clients discover these tools automatically.
    :members: list_hub_models, get_hub_model, suggest_hub_models
 ```
 
+## scviva-tools
+
+```{eval-rst}
+.. automodule:: scvi_tools_mcp.tools._scviva
+   :members: list_scviva_models, get_scviva_model, list_scviva_tutorials, get_scviva_tutorial
+```
+
+## scib-metrics
+
+```{eval-rst}
+.. automodule:: scvi_tools_mcp.tools._scib_metrics
+   :members: list_scib_metrics, get_scib_metric, list_scib_metrics_tutorials, get_scib_metrics_tutorial
+```
+
 ## Workflows
 
 ```{eval-rst}

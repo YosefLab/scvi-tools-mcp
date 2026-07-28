@@ -8,9 +8,12 @@ Usage:
 
 from __future__ import annotations
 
-import importlib
-import inspect
 from pathlib import Path
+
+try:
+    from scripts._apidoc_utils import merge_with_user_guide, render_doc, resolve_dotted
+except ImportError:  # running as `python scripts/extract_api_docs.py`, not as a package
+    from _apidoc_utils import merge_with_user_guide, render_doc, resolve_dotted
 
 KNOWLEDGE_MODELS = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/models"
 KNOWLEDGE_API = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/api"
@@ -40,110 +43,27 @@ MODEL_CLASSES = {
 }
 
 
-def get_class(dotted: str) -> type | None:
-    parts = dotted.rsplit(".", 1)
-    if len(parts) != 2:
-        return None
-    try:
-        mod = importlib.import_module(parts[0])
-        return getattr(mod, parts[1], None)
-    except Exception:
-        return None
-
-
-def class_to_md(name: str, cls: type) -> str:
-    sig = ""
-    try:
-        sig = str(inspect.signature(cls.__init__)).replace("(self, ", "(")
-    except Exception:
-        pass
-    doc = inspect.getdoc(cls) or "No docstring available."
-    lines = [
-        f"# {name.upper()} — API Reference",
-        "",
-        f"**Class:** `{cls.__module__}.{cls.__name__}`",
-        "",
-        f"**Signature:** `{cls.__name__}{sig}`",
-        "",
-        "## Docstring",
-        "",
-        doc,
-        "",
-    ]
-    # Add setup_anndata signature
-    setup = getattr(cls, "setup_anndata", None)
-    if setup:
-        try:
-            setup_sig = str(inspect.signature(setup))
-            setup_doc = inspect.getdoc(setup) or ""
-            lines += [
-                "## setup_anndata",
-                "",
-                "```python",
-                f"{cls.__name__}.setup_anndata{setup_sig}",
-                "```",
-                "",
-                setup_doc,
-                "",
-            ]
-        except Exception:
-            pass
-    # Add train signature
-    train = getattr(cls, "train", None)
-    if train:
-        try:
-            train_sig = str(inspect.signature(train))
-            train_doc = inspect.getdoc(train) or ""
-            lines += [
-                "## train",
-                "",
-                "```python",
-                f"{cls.__name__}.train{train_sig}",
-                "```",
-                "",
-                train_doc,
-                "",
-            ]
-        except Exception:
-            pass
-    return "\n".join(lines)
-
-
-def merge_with_user_guide(model_name: str, api_md: str, docs_models_dir: Path | None) -> str:
-    if docs_models_dir is None:
-        return api_md
-    guide_path = docs_models_dir / f"{model_name}.md"
-    if guide_path.exists():
-        guide = guide_path.read_text(encoding="utf-8")
-        return f"{api_md}\n\n---\n\n## User Guide\n\n{guide}"
-    return api_md
+EXTRA_METHODS = ("setup_anndata", "train")
 
 
 def run(docs_dir: Path | None = None) -> None:
     KNOWLEDGE_MODELS.mkdir(parents=True, exist_ok=True)
     KNOWLEDGE_API.mkdir(parents=True, exist_ok=True)
 
-    docs_models_dir = (docs_dir / "models") if docs_dir else None
-
     for model_name, dotted in MODEL_CLASSES.items():
-        cls = get_class(dotted)
+        cls = resolve_dotted(dotted)
         if cls is None:
             print(f"  SKIP (not found): {dotted}")
             continue
-        md = class_to_md(model_name, cls)
-        md = merge_with_user_guide(model_name, md, docs_models_dir)
-        out = KNOWLEDGE_MODELS / f"{model_name}.md"
-        out.write_text(md, encoding="utf-8")
-        print(f"  wrote: {out.name}")
+        md = render_doc(model_name.upper(), [cls], extra_methods=EXTRA_METHODS)
 
-    # Also write per-model API files (without user_guide merge)
-    for model_name, dotted in MODEL_CLASSES.items():
-        cls = get_class(dotted)
-        if cls is None:
-            continue
-        md = class_to_md(model_name, cls)
-        out = KNOWLEDGE_API / f"{model_name}.md"
-        out.write_text(md, encoding="utf-8")
+        out_api = KNOWLEDGE_API / f"{model_name}.md"
+        out_api.write_text(md, encoding="utf-8")
+
+        merged = merge_with_user_guide(model_name, md, docs_dir)
+        out_model = KNOWLEDGE_MODELS / f"{model_name}.md"
+        out_model.write_text(merged, encoding="utf-8")
+        print(f"  wrote: {out_model.name}")
 
     print("Done.")
 

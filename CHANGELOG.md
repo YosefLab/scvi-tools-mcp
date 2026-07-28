@@ -7,6 +7,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- scviva-tools knowledge source and tools — the companion spatial toolkit (ResolVI, DestVI, scVIVA, GIMVI, DiagVI, Stereoscope, Tangram, Harreman):
+  - `knowledge/scviva_tools/models/`, `knowledge/scviva_tools/api/`, and `knowledge/scviva_tools/tutorials/` bundled offline snapshot
+  - `list_scviva_models`, `get_scviva_model`, `list_scviva_tutorials`, `get_scviva_tutorial` MCP tools
+  - `scripts/extract_scviva_api_docs.py` and monthly `sync_scviva_tools_knowledge.yaml` / `sync_scviva_tools_tutorials.yaml` refresh workflows
+- scib-metrics knowledge source and tools — accelerated integration-benchmarking metrics (12 metric functions plus the `Benchmarker`/`BioConservation`/`BatchCorrection` orchestration classes):
+  - `knowledge/scib_metrics/api/` and `knowledge/scib_metrics/tutorials/` bundled offline snapshot
+  - `list_scib_metrics`, `get_scib_metric`, `list_scib_metrics_tutorials`, `get_scib_metrics_tutorial` MCP tools
+  - `scripts/extract_scib_metrics_api_docs.py` and monthly `sync_scib_metrics_knowledge.yaml` / `sync_scib_metrics_tutorials.yaml` refresh workflows
+- `scripts/_apidoc_utils.py` — shared class/function signature and docstring extraction helpers, used by `extract_api_docs.py` and the two new extraction scripts
+- `optional-dependencies.scviva` and `optional-dependencies.scib` extras in `pyproject.toml`
+
 ## [0.1.5] - 2026-07-27
 
 ### Added

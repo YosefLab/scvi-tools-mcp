@@ -1,0 +1,85 @@
+name: Sync scviva-tools Knowledge
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Update scviva-tools docs from YosefLab/scviva-tools main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install scviva-tools + dev deps
+        run: pip install -e ".[scviva]" --group dev
+
+      - name: Clone scviva-tools (latest main)
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse \
+            https://github.com/YosefLab/scviva-tools.git /tmp/scviva-tools
+          git -C /tmp/scviva-tools sparse-checkout set docs/user_guide
+          echo "Cloned scviva-tools at $(git -C /tmp/scviva-tools rev-parse --short HEAD)"
+
+      - name: Check if update needed
+        id: check
+        run: |
+          SHA=$(git -C /tmp/scviva-tools rev-parse --short HEAD)
+          SYNCED=$(cat src/scvi_tools_mcp/knowledge/scviva_tools/.last_synced_commit 2>/dev/null || echo "none")
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "synced=$SYNCED" >> "$GITHUB_OUTPUT"
+          if [ "$SYNCED" = "$SHA" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Regenerate scviva-tools model/API knowledge
+        if: steps.check.outputs.needed == 'true'
+        run: python scripts/extract_scviva_api_docs.py --docs-dir /tmp/scviva-tools/docs/user_guide
+
+      - name: Update last-synced commit
+        if: steps.check.outputs.needed == 'true'
+        env:
+          SHA: ${{ steps.check.outputs.sha }}
+        run: echo "$SHA" > src/scvi_tools_mcp/knowledge/scviva_tools/.last_synced_commit
+
+      - name: Check for changes
+        if: steps.check.outputs.needed == 'true'
+        id: diff
+        run: |
+          if git status --porcelain src/scvi_tools_mcp/knowledge/scviva_tools/ | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pull request
+        if: steps.check.outputs.needed == 'true' && steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: sync scviva-tools knowledge from scviva-tools@${{ steps.check.outputs.sha }}"
+          branch: chore/sync-scviva-tools-knowledge-${{ github.run_id }}
+          title: "chore: sync scviva-tools knowledge from scviva-tools@${{ steps.check.outputs.sha }}"
+          body: |
+            Automated model/API knowledge sync from YosefLab/scviva-tools main.
+
+            Commit: YosefLab/scviva-tools@${{ steps.check.outputs.sha }}
+            Previous synced: ${{ steps.check.outputs.synced }}
+
+            Re-runs `scripts/extract_scviva_api_docs.py` with user guide docs from main.
+            Review changes before merging.
+          labels: automated

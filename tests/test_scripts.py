@@ -1,8 +1,128 @@
 from pathlib import Path
 
+from scripts._apidoc_utils import merge_with_user_guide, render_doc, resolve_dotted
 from scripts.convert_notebooks import convert_all, convert_notebook
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+class _Dummy:
+    """dummy class for testing"""
+
+    def __init__(self, x: int = 1):
+        pass
+
+
+class _DummyTwo:
+    """another dummy class"""
+
+    def __init__(self, y: str = "a"):
+        pass
+
+
+def _dummy_func(a: int, b: str = "x") -> None:
+    """dummy function docstring"""
+
+
+def test_resolve_dotted_imports_object():
+    cls = resolve_dotted("pathlib.Path")
+    assert cls is Path
+
+
+def test_resolve_dotted_returns_none_for_missing():
+    assert resolve_dotted("nonexistent.module.Thing") is None
+    assert resolve_dotted("badformat") is None
+
+
+def test_render_doc_single_object():
+    md = render_doc("DUMMY", [_Dummy])
+    assert "# DUMMY — API Reference" in md
+    assert "**Class:**" in md
+    assert "dummy class for testing" in md
+    assert "Signature:" in md
+
+
+def test_render_doc_combines_multiple_objects():
+    md = render_doc("STEREOSCOPE", [_Dummy, _DummyTwo])
+    assert "# STEREOSCOPE — API Reference" in md
+    assert "_Dummy" in md
+    assert "_DummyTwo" in md
+    assert "dummy class for testing" in md
+    assert "another dummy class" in md
+
+
+def test_render_doc_includes_extra_methods():
+    class WithTrain:
+        """has a train method"""
+
+        def __init__(self):
+            pass
+
+        def train(self, max_epochs: int = 10):
+            """train docstring"""
+
+    md = render_doc("WITHTRAIN", [WithTrain], extra_methods=("train",))
+    assert "train" in md
+    assert "train docstring" in md
+
+
+def test_merge_with_user_guide_appends_when_present(tmp_path):
+    docs_dir = tmp_path / "docs"
+    (docs_dir / "models").mkdir(parents=True)
+    (docs_dir / "models" / "resolvi.md").write_text("Narrative guide for ResolVI.", encoding="utf-8")
+
+    merged = merge_with_user_guide("resolvi", "# API content", docs_dir)
+
+    assert "# API content" in merged
+    assert "## User Guide" in merged
+    assert "Narrative guide for ResolVI." in merged
+
+
+def test_extract_scviva_api_docs_model_classes_cover_all_eight_models():
+    from scripts.extract_scviva_api_docs import MODEL_CLASSES
+
+    assert set(MODEL_CLASSES) == {
+        "resolvi",
+        "destvi",
+        "scviva",
+        "gimvi",
+        "diagvi",
+        "stereoscope",
+        "tangram",
+        "harreman",
+    }
+    assert MODEL_CLASSES["stereoscope"] == [
+        "scviva.external.stereoscope.RNAStereoscope",
+        "scviva.external.stereoscope.SpatialStereoscope",
+    ]
+    assert MODEL_CLASSES["resolvi"] == ["scviva.model.ResolVI"]
+    assert MODEL_CLASSES["harreman"] == ["scviva.tools.harreman.HarremanAnalysis"]
+
+
+def test_extract_scib_metrics_api_docs_covers_twelve_metrics():
+    from scripts.extract_scib_metrics_api_docs import BENCHMARK_CLASSES, METRIC_FUNCTIONS
+
+    assert len(METRIC_FUNCTIONS) == 12
+    assert "isolated_labels" in METRIC_FUNCTIONS
+    assert "ilisi_knn" in METRIC_FUNCTIONS
+    assert "kbet_per_label" in METRIC_FUNCTIONS
+    assert set(BENCHMARK_CLASSES) == {"benchmarker", "bioconservation", "batchcorrection"}
+    assert BENCHMARK_CLASSES["benchmarker"] == ["scib_metrics.benchmark.Benchmarker"]
+
+
+def test_render_doc_renders_plain_function():
+    md = render_doc("ISOLATED_LABELS", [_dummy_func])
+    assert "# ISOLATED_LABELS — API Reference" in md
+    assert "dummy function docstring" in md
+    assert "Signature:" in md
+
+
+def test_merge_with_user_guide_passthrough_when_missing(tmp_path):
+    assert merge_with_user_guide("resolvi", "# API content", None) == "# API content"
+
+    docs_dir = tmp_path / "docs"
+    (docs_dir / "models").mkdir(parents=True)
+    assert merge_with_user_guide("resolvi", "# API content", docs_dir) == "# API content"
 
 
 def test_convert_notebook_produces_md(tmp_path):

@@ -16,6 +16,8 @@ GitHub Actions jobs handle this automatically and open PRs when diffs are found:
 - `sync_tutorials.yaml` — syncs tutorial notebooks from scvi-tools
 - `sync_model_knowledge.yaml` — updates model docs from the scvi-tools CHANGELOG
 - `sync_huggingface_hub.yaml` — refreshes the Hugging Face Hub model registry quarterly
+- `sync_scviva_tools_knowledge.yaml` / `sync_scviva_tools_tutorials.yaml` — syncs scviva-tools docs + tutorials
+- `sync_scib_metrics_knowledge.yaml` / `sync_scib_metrics_tutorials.yaml` — syncs scib-metrics docs + tutorials
 
 You can also trigger them manually via `workflow_dispatch` or run the scripts locally:
 
@@ -24,6 +26,8 @@ python scripts/scrape_external.py
 python scripts/convert_notebooks.py --src /path/to/scvi-tutorials --dst src/scvi_tools_mcp/knowledge/tutorials
 python scripts/extract_api_docs.py
 python scripts/scrape_huggingface_hub.py
+python scripts/extract_scviva_api_docs.py --docs-dir /path/to/scviva-tools/docs/user_guide
+python scripts/extract_scib_metrics_api_docs.py
 ```
 
 ## Which models are covered?
@@ -34,6 +38,10 @@ veloVI, ContrastiveVI, SCBASSET, SysVI, DiagVI, and more.
 
 For pretrained model repos on the official scvi-tools Hugging Face organization, use
 `list_hub_models`, `get_hub_model`, or `suggest_hub_models`.
+
+The companion spatial toolkit scviva-tools (ResolVI, DestVI, scVIVA, GIMVI, DiagVI, Stereoscope,
+Tangram, Harreman) is covered via `list_scviva_models` and `get_scviva_model`. Integration-benchmarking
+metrics from scib-metrics are covered via `list_scib_metrics` and `get_scib_metric`.
 
 ## What is the `uvx` command?
 
