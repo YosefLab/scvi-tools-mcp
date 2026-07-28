@@ -1,6 +1,6 @@
 # KBET_PER_LABEL — API Reference
 
-**Class:** `scib_metrics.metrics._kbet.kbet_per_label`
+**Function:** `scib_metrics.metrics._kbet.kbet_per_label`
 
 **Signature:** `kbet_per_label(X: scib_metrics.nearest_neighbors._dataclass.NeighborsResults, batches: numpy.ndarray, labels: numpy.ndarray, alpha: float = 0.05, diffusion_n_comps: int = 100, return_df: bool = False) -> float | tuple[float, pandas.DataFrame]`
 

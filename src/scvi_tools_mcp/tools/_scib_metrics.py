@@ -1,30 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
 
 from pydantic import BaseModel
 
 from scvi_tools_mcp.mcp import mcp
 from scvi_tools_mcp.tools import utils
-
-ScibMetricName = Literal[
-    "isolated_labels",
-    "nmi_ari_cluster_labels_kmeans",
-    "nmi_ari_cluster_labels_leiden",
-    "pcr_comparison",
-    "silhouette_label",
-    "silhouette_batch",
-    "bras",
-    "ilisi_knn",
-    "clisi_knn",
-    "kbet",
-    "kbet_per_label",
-    "graph_connectivity",
-    "benchmarker",
-    "bioconservation",
-    "batchcorrection",
-]
 
 METRIC_CATEGORIES: dict[str, list[str]] = {
     "bio_conservation": [
@@ -89,12 +70,13 @@ def list_scib_metrics() -> ScibMetricsResult:
 
 
 @mcp.tool()
-def get_scib_metric(metric_name: ScibMetricName) -> ScibMetricsResult:
+def get_scib_metric(metric_name: str) -> ScibMetricsResult:
     """Get the API reference for one scib-metrics metric function or benchmark class.
 
     Args:
         metric_name: A metric or orchestration entry, e.g. isolated_labels, ilisi_knn,
             kbet, benchmarker, bioconservation, batchcorrection. Case-insensitive.
+            Call list_scib_metrics() for the full set of valid names.
     """
     try:
         key = metric_name.lower()

@@ -1,6 +1,6 @@
 # GRAPH_CONNECTIVITY — API Reference
 
-**Class:** `scib_metrics.metrics._graph_connectivity.graph_connectivity`
+**Function:** `scib_metrics.metrics._graph_connectivity.graph_connectivity`
 
 **Signature:** `graph_connectivity(X: scib_metrics.nearest_neighbors._dataclass.NeighborsResults, labels: numpy.ndarray) -> float`
 

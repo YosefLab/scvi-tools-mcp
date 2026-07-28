@@ -1,6 +1,6 @@
 # NMI_ARI_CLUSTER_LABELS_KMEANS — API Reference
 
-**Class:** `scib_metrics.metrics._nmi_ari.nmi_ari_cluster_labels_kmeans`
+**Function:** `scib_metrics.metrics._nmi_ari.nmi_ari_cluster_labels_kmeans`
 
 **Signature:** `nmi_ari_cluster_labels_kmeans(X: numpy.ndarray, labels: numpy.ndarray) -> dict[str, float]`
 

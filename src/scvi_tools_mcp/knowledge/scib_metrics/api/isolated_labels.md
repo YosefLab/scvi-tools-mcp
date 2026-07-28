@@ -1,9 +1,8 @@
 # ISOLATED_LABELS — API Reference
 
-**Class:** `scib_metrics.metrics._isolated_labels.isolated_labels`
+**Function:** `scib_metrics.metrics._isolated_labels.isolated_labels`
 
-**Signature:** `isolated_labels(X: numpy.ndarray, labels: numpy.ndarray, batch: numpy.ndarray,
-rescale: bool = True, iso_threshold: int | None = None) -> float`
+**Signature:** `isolated_labels(X: numpy.ndarray, labels: numpy.ndarray, batch: numpy.ndarray, rescale: bool = True, iso_threshold: int | None = None) -> float`
 
 ## Docstring
 

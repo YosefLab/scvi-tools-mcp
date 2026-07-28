@@ -1,6 +1,6 @@
 # PCR_COMPARISON — API Reference
 
-**Class:** `scib_metrics.metrics._pcr_comparison.pcr_comparison`
+**Function:** `scib_metrics.metrics._pcr_comparison.pcr_comparison`
 
 **Signature:** `pcr_comparison(X_pre: numpy.ndarray | jax.Array, X_post: numpy.ndarray | jax.Array, covariate: numpy.ndarray | jax.Array, scale: bool = True, **kwargs) -> float`
 

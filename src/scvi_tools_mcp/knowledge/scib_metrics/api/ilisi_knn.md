@@ -1,6 +1,6 @@
 # ILISI_KNN — API Reference
 
-**Class:** `scib_metrics.metrics._lisi.ilisi_knn`
+**Function:** `scib_metrics.metrics._lisi.ilisi_knn`
 
 **Signature:** `ilisi_knn(X: scib_metrics.nearest_neighbors._dataclass.NeighborsResults, batches: numpy.ndarray, perplexity: float = None, scale: bool = True) -> float`
 
