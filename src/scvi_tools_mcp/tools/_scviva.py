@@ -62,11 +62,16 @@ def list_scviva_models() -> ScvivaResult:
 
 
 @mcp.tool()
-def get_scviva_model(model_name: ScvivaModelName) -> ScvivaResult:
+def get_scviva_model(model_name: ScvivaModelName, page: int = 1, page_size: int = 200) -> ScvivaResult:
     """Get the API reference and user guide for one scviva-tools model.
+
+    Some entries (e.g. diagvi, stereoscope) exceed a single page — check total_pages
+    and call again with page=2, 3, etc. to read the rest, including the User Guide section.
 
     Args:
         model_name: One of resolvi, destvi, scviva, gimvi, diagvi, stereoscope, tangram, harreman.
+        page: Page number starting at 1.
+        page_size: Lines per page (default 200).
     """
     try:
         path = _scviva_dir() / "models" / f"{model_name}.md"
@@ -74,8 +79,14 @@ def get_scviva_model(model_name: ScvivaModelName) -> ScvivaResult:
             return ScvivaResult(
                 error=f"scviva-tools model '{model_name}' not found. Call list_scviva_models() for options."
             )
-        result = utils.truncate(path.read_text(encoding="utf-8"))
-        return ScvivaResult(content=result.content, truncated=result.truncated)
+        lines = path.read_text(encoding="utf-8").splitlines()
+        result = utils.paginate(lines, page=page, page_size=page_size)
+        return ScvivaResult(
+            content="\n".join(result.lines),
+            page=result.page,
+            total_pages=result.total_pages,
+            truncated=result.total_pages > 1,
+        )
     except Exception as e:
         return ScvivaResult(error=str(e))
 

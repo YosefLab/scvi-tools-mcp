@@ -326,6 +326,25 @@ def test_get_scviva_model_valid(mock_knowledge):
     assert "User Guide" in result.content
 
 
+def test_get_scviva_model_paginates_long_content(mock_knowledge):
+    from scvi_tools_mcp.tools._scviva import get_scviva_model
+
+    long_path = mock_knowledge / "scviva_tools" / "models" / "resolvi.md"
+    lines = [f"line {i}" for i in range(500)]
+    lines += ["", "## User Guide", "", "Narrative guide content lives at the very end."]
+    long_path.write_text("\n".join(lines), encoding="utf-8")
+
+    first_page = get_scviva_model(model_name="resolvi", page=1, page_size=200)
+    assert first_page.error is None
+    assert first_page.total_pages == 3
+    assert "User Guide" not in first_page.content
+
+    last_page = get_scviva_model(model_name="resolvi", page=3, page_size=200)
+    assert last_page.error is None
+    assert "User Guide" in last_page.content
+    assert "Narrative guide content lives at the very end." in last_page.content
+
+
 def test_get_scviva_model_unknown(mock_knowledge):
     from scvi_tools_mcp.tools._scviva import get_scviva_model
 
@@ -394,12 +413,36 @@ def test_get_scib_metric_case_insensitive(mock_knowledge):
     assert upper_result.content == result.content
 
 
+def test_get_scib_metric_accepts_uppercase_through_mcp_schema(mock_knowledge):
+    # Regression test: metric_name must be a plain str, not a lowercase-only Literal,
+    # otherwise FastMCP's generated JSON schema rejects "ISOLATED_LABELS" before the
+    # tool function (and its .lower() normalization) ever runs.
+    from scvi_tools_mcp.mcp import mcp
+
+    result = asyncio.run(mcp.call_tool("get_scib_metric", {"metric_name": "ISOLATED_LABELS"}))
+    assert result.structured_content["error"] is None
+    assert "isolated_labels" in result.structured_content["content"].lower()
+
+
 def test_get_scib_metric_unknown(mock_knowledge):
     from scvi_tools_mcp.tools._scib_metrics import get_scib_metric
 
     result = get_scib_metric(metric_name="nonexistent")
     assert result.error is not None
     assert "not found" in result.error.lower()
+
+
+def test_get_scib_metric_rejects_path_traversal(mock_knowledge):
+    # Regression test: metric_name is str (not a Literal) for case-insensitivity, so it
+    # must be validated against the known allowlist before being used to build a path —
+    # otherwise a caller could read arbitrary Markdown files off disk (e.g. scviva-tools
+    # model docs in a sibling knowledge directory, or any other readable .md file).
+    from scvi_tools_mcp.tools._scib_metrics import get_scib_metric
+
+    result = get_scib_metric(metric_name="../../scviva_tools/models/resolvi")
+    assert result.error is not None
+    assert "not found" in result.error.lower()
+    assert result.content is None
 
 
 def test_list_scib_metrics_tutorials_returns_content(mock_knowledge):

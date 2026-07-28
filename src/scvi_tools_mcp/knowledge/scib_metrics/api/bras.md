@@ -1,6 +1,6 @@
 # BRAS — API Reference
 
-**Class:** `scib_metrics.metrics._silhouette.bras`
+**Function:** `scib_metrics.metrics._silhouette.bras`
 
 **Signature:** `bras(X: numpy.ndarray, labels: numpy.ndarray, batch: numpy.ndarray, chunk_size: int = 256, metric: Literal['euclidean', 'cosine'] = 'cosine', between_cluster_distances: Literal['mean_other', 'furthest'] = 'mean_other') -> float`
 

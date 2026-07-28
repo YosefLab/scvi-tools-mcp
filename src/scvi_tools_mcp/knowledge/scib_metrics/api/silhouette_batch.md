@@ -1,6 +1,6 @@
 # SILHOUETTE_BATCH — API Reference
 
-**Class:** `scib_metrics.metrics._silhouette.silhouette_batch`
+**Function:** `scib_metrics.metrics._silhouette.silhouette_batch`
 
 **Signature:** `silhouette_batch(X: numpy.ndarray, labels: numpy.ndarray, batch: numpy.ndarray, rescale: bool = True, chunk_size: int = 256, metric: Literal['euclidean', 'cosine'] = 'euclidean', between_cluster_distances: Literal['nearest', 'mean_other', 'furthest'] = 'nearest') -> float`
 

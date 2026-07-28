@@ -1,6 +1,6 @@
 # NMI_ARI_CLUSTER_LABELS_LEIDEN — API Reference
 
-**Class:** `scib_metrics.metrics._nmi_ari.nmi_ari_cluster_labels_leiden`
+**Function:** `scib_metrics.metrics._nmi_ari.nmi_ari_cluster_labels_leiden`
 
 **Signature:** `nmi_ari_cluster_labels_leiden(X: scib_metrics.nearest_neighbors._dataclass.NeighborsResults, labels: numpy.ndarray, optimize_resolution: bool = True, resolution: float = 1.0, n_jobs: int = 1, seed: int = 42) -> dict[str, float]`
 

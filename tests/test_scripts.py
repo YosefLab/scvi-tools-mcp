@@ -113,6 +113,8 @@ def test_extract_scib_metrics_api_docs_covers_twelve_metrics():
 def test_render_doc_renders_plain_function():
     md = render_doc("ISOLATED_LABELS", [_dummy_func])
     assert "# ISOLATED_LABELS — API Reference" in md
+    assert "**Function:**" in md
+    assert "**Class:**" not in md
     assert "dummy function docstring" in md
     assert "Signature:" in md
 

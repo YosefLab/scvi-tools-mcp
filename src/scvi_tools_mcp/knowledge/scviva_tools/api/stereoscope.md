@@ -21,7 +21,7 @@ sc_adata
 
 Examples
 --------
->>> scvi.external.RNAStereoscope.setup_anndata(sc_adata, labels_key="labels")
+>>> scviva.external.RNAStereoscope.setup_anndata(sc_adata, labels_key="labels")
 >>> sc_model = RNAStereoscope(sc_adata)
 >>> sc_model.train()
 
@@ -29,7 +29,7 @@ Notes
 -----
 See further usage examples in the following tutorial:
 
-1. :doc:`/tutorials/notebooks/spatial/stereoscope_heart_LV_tutorial`
+1. :doc:`/tutorials/stereoscope_heart_LV_tutorial`
 
 ### setup_anndata
 
@@ -134,7 +134,7 @@ Notes
 -----
 See further usage examples in the following tutorial:
 
-1. :doc:`/tutorials/notebooks/spatial/stereoscope_heart_LV_tutorial`
+1. :doc:`/tutorials/stereoscope_heart_LV_tutorial`
 
 ### setup_anndata
 

@@ -1,6 +1,6 @@
 # KBET — API Reference
 
-**Class:** `scib_metrics.metrics._kbet.kbet`
+**Function:** `scib_metrics.metrics._kbet.kbet`
 
 **Signature:** `kbet(X: scib_metrics.nearest_neighbors._dataclass.NeighborsResults, batches: numpy.ndarray, alpha: float = 0.05) -> float`
 

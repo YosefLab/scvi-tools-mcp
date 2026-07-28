@@ -38,11 +38,12 @@ def _render_one(obj: object, extra_methods: tuple[str, ...], nested: bool) -> li
     module = getattr(obj, "__module__", "unknown")
     sig = _signature_of(obj)
     doc = inspect.getdoc(obj) or "No docstring available."
+    kind = "Class" if inspect.isclass(obj) else "Function"
     if nested:
         lines = [f"## `{module}.{qualname}`", "", f"**Signature:** `{qualname}{sig}`", "", doc, ""]
     else:
         lines = [
-            f"**Class:** `{module}.{qualname}`",
+            f"**{kind}:** `{module}.{qualname}`",
             "",
             f"**Signature:** `{qualname}{sig}`",
             "",

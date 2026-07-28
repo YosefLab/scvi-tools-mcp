@@ -36,11 +36,19 @@ jobs:
       - name: Check if update needed
         id: check
         run: |
+          # Docstrings/signatures come from the installed PyPI release; the narrative
+          # user-guide merge comes from the cloned main branch. Track both so a change
+          # in either one (an unreleased main commit, or a new PyPI release with no doc
+          # changes on main) triggers a re-sync.
           SHA=$(git -C /tmp/scviva-tools rev-parse --short HEAD)
+          VERSION=$(python -c "import scviva; print(scviva.__version__)")
+          KEY="${VERSION}+${SHA}"
           SYNCED=$(cat src/scvi_tools_mcp/knowledge/scviva_tools/.last_synced_commit 2>/dev/null || echo "none")
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "key=$KEY" >> "$GITHUB_OUTPUT"
           echo "synced=$SYNCED" >> "$GITHUB_OUTPUT"
-          if [ "$SYNCED" = "$SHA" ]; then
+          if [ "$SYNCED" = "$KEY" ]; then
             echo "needed=false" >> "$GITHUB_OUTPUT"
           else
             echo "needed=true" >> "$GITHUB_OUTPUT"
@@ -53,8 +61,8 @@ jobs:
       - name: Update last-synced commit
         if: steps.check.outputs.needed == 'true'
         env:
-          SHA: ${{ steps.check.outputs.sha }}
-        run: echo "$SHA" > src/scvi_tools_mcp/knowledge/scviva_tools/.last_synced_commit
+          KEY: ${{ steps.check.outputs.key }}
+        run: echo "$KEY" > src/scvi_tools_mcp/knowledge/scviva_tools/.last_synced_commit
 
       - name: Check for changes
         if: steps.check.outputs.needed == 'true'
@@ -71,15 +79,17 @@ jobs:
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: sync scviva-tools knowledge from scviva-tools@${{ steps.check.outputs.sha }}"
+          commit-message: "chore: sync scviva-tools knowledge (scviva-tools ${{ steps.check.outputs.version }} @ ${{ steps.check.outputs.sha }})"
           branch: chore/sync-scviva-tools-knowledge-${{ github.run_id }}
-          title: "chore: sync scviva-tools knowledge from scviva-tools@${{ steps.check.outputs.sha }}"
+          title: "chore: sync scviva-tools knowledge (scviva-tools ${{ steps.check.outputs.version }} @ ${{ steps.check.outputs.sha }})"
           body: |
-            Automated model/API knowledge sync from YosefLab/scviva-tools main.
+            Automated model/API knowledge sync from YosefLab/scviva-tools.
 
-            Commit: YosefLab/scviva-tools@${{ steps.check.outputs.sha }}
-            Previous synced: ${{ steps.check.outputs.synced }}
+            Installed PyPI release: scviva-tools@${{ steps.check.outputs.version }}
+            Docs/main commit: YosefLab/scviva-tools@${{ steps.check.outputs.sha }}
+            Previous synced key: ${{ steps.check.outputs.synced }}
 
-            Re-runs `scripts/extract_scviva_api_docs.py` with user guide docs from main.
+            Re-runs `scripts/extract_scviva_api_docs.py` (docstrings from the installed
+            release) with narrative user-guide docs merged in from main.
             Review changes before merging.
           labels: automated

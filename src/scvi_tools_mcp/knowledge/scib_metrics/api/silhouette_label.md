@@ -1,6 +1,6 @@
 # SILHOUETTE_LABEL — API Reference
 
-**Class:** `scib_metrics.metrics._silhouette.silhouette_label`
+**Function:** `scib_metrics.metrics._silhouette.silhouette_label`
 
 **Signature:** `silhouette_label(X: numpy.ndarray, labels: numpy.ndarray, rescale: bool = True, chunk_size: int = 256, metric: Literal['euclidean', 'cosine'] = 'euclidean') -> float`
 

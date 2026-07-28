@@ -1,6 +1,6 @@
 # CLISI_KNN — API Reference
 
-**Class:** `scib_metrics.metrics._lisi.clisi_knn`
+**Function:** `scib_metrics.metrics._lisi.clisi_knn`
 
 **Signature:** `clisi_knn(X: scib_metrics.nearest_neighbors._dataclass.NeighborsResults, labels: numpy.ndarray, perplexity: float = None, scale: bool = True) -> float`
 
