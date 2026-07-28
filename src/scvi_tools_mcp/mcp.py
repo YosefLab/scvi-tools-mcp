@@ -17,6 +17,8 @@ from scvi_tools_mcp.tools import (  # noqa: E402, F401
     _data_prep,
     _hub,
     _model_guidance,
+    _scib_metrics,
+    _scviva,
     _troubleshooting,
     _tutorials,
     _workflows,

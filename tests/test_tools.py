@@ -226,6 +226,24 @@ def test_search_knowledge_includes_hub_model_records(mock_knowledge):
 # --- Task 13: _hub ---
 
 
+def test_search_knowledge_includes_scviva_tools(mock_knowledge):
+    from scvi_tools_mcp.tools._troubleshooting import search_knowledge
+
+    result = search_knowledge(query="resolvi segmentation spatial denoising")
+    assert result.error is None
+    assert result.content is not None
+    assert "scviva_tools/models/resolvi" in result.content
+
+
+def test_search_knowledge_includes_scib_metrics(mock_knowledge):
+    from scvi_tools_mcp.tools._troubleshooting import search_knowledge
+
+    result = search_knowledge(query="isolated label silhouette score")
+    assert result.error is None
+    assert result.content is not None
+    assert "scib_metrics/api/isolated_labels" in result.content
+
+
 def test_list_hub_models_returns_content(mock_knowledge):
     from scvi_tools_mcp.tools._hub import list_hub_models
 
@@ -285,6 +303,131 @@ def test_suggest_hub_models_prefers_totalvi_for_cite_seq(mock_knowledge):
     assert "haniffa_covid_pbmc_totalvi" in result.content
 
 
+# --- Task 4: _scviva ---
+
+
+def test_list_scviva_models_returns_content(mock_knowledge):
+    from scvi_tools_mcp.tools._scviva import list_scviva_models
+
+    result = list_scviva_models()
+    assert result.error is None
+    assert result.content is not None
+    assert "resolvi" in result.content
+    assert "harreman" in result.content
+
+
+def test_get_scviva_model_valid(mock_knowledge):
+    from scvi_tools_mcp.tools._scviva import get_scviva_model
+
+    result = get_scviva_model(model_name="resolvi")
+    assert result.error is None
+    assert result.content is not None
+    assert "scviva.model.ResolVI" in result.content
+    assert "User Guide" in result.content
+
+
+def test_get_scviva_model_unknown(mock_knowledge):
+    from scvi_tools_mcp.tools._scviva import get_scviva_model
+
+    result = get_scviva_model(model_name="nonexistent")
+    assert result.error is not None
+    assert "not found" in result.error.lower()
+
+
+def test_list_scviva_tutorials_returns_content(mock_knowledge):
+    from scvi_tools_mcp.tools._scviva import list_scviva_tutorials
+
+    result = list_scviva_tutorials()
+    assert result.error is None
+    assert result.content is not None
+    assert "resolvi_tutorial" in result.content
+
+
+def test_get_scviva_tutorial_valid(mock_knowledge):
+    from scvi_tools_mcp.tools._scviva import get_scviva_tutorial
+
+    result = get_scviva_tutorial(tutorial_name="resolvi_tutorial")
+    assert result.error is None
+    assert result.content is not None
+    assert "ResolVI" in result.content
+
+
+def test_get_scviva_tutorial_missing(mock_knowledge):
+    from scvi_tools_mcp.tools._scviva import get_scviva_tutorial
+
+    result = get_scviva_tutorial(tutorial_name="nonexistent")
+    assert result.error is not None
+    assert "not found" in result.error.lower()
+
+
+# --- Task 7: _scib_metrics ---
+
+
+def test_list_scib_metrics_returns_content(mock_knowledge):
+    from scvi_tools_mcp.tools._scib_metrics import list_scib_metrics
+
+    result = list_scib_metrics()
+    assert result.error is None
+    assert result.content is not None
+    assert "isolated_labels" in result.content
+    assert "Bio Conservation" in result.content
+    assert "Batch Correction" in result.content
+
+
+def test_get_scib_metric_valid(mock_knowledge):
+    from scvi_tools_mcp.tools._scib_metrics import get_scib_metric
+
+    result = get_scib_metric(metric_name="isolated_labels")
+    assert result.error is None
+    assert result.content is not None
+    assert "scib_metrics" in result.content
+    assert "Isolated label score" in result.content
+
+
+def test_get_scib_metric_case_insensitive(mock_knowledge):
+    from scvi_tools_mcp.tools._scib_metrics import get_scib_metric
+
+    result = get_scib_metric(metric_name="isolated_labels")
+    assert result.error is None
+    upper_result = get_scib_metric(metric_name="ISOLATED_LABELS")
+    assert upper_result.error is None
+    assert upper_result.content == result.content
+
+
+def test_get_scib_metric_unknown(mock_knowledge):
+    from scvi_tools_mcp.tools._scib_metrics import get_scib_metric
+
+    result = get_scib_metric(metric_name="nonexistent")
+    assert result.error is not None
+    assert "not found" in result.error.lower()
+
+
+def test_list_scib_metrics_tutorials_returns_content(mock_knowledge):
+    from scvi_tools_mcp.tools._scib_metrics import list_scib_metrics_tutorials
+
+    result = list_scib_metrics_tutorials()
+    assert result.error is None
+    assert result.content is not None
+    assert "lung_example" in result.content
+
+
+def test_get_scib_metrics_tutorial_valid(mock_knowledge):
+    from scvi_tools_mcp.tools._scib_metrics import get_scib_metrics_tutorial
+
+    result = get_scib_metrics_tutorial(tutorial_name="lung_example")
+    assert result.error is None
+    assert result.content is not None
+    assert "Benchmarker" in result.content
+
+
+def test_get_scib_metrics_tutorial_missing(mock_knowledge):
+    from scvi_tools_mcp.tools._scib_metrics import get_scib_metrics_tutorial
+
+    result = get_scib_metrics_tutorial(tutorial_name="nonexistent")
+    assert result.error is not None
+    assert "not found" in result.error.lower()
+
+
 # --- Task 13: smoke test — all tools registered ---
 
 
@@ -311,5 +454,13 @@ def test_all_tools_registered():
         "list_hub_models",
         "get_hub_model",
         "suggest_hub_models",
+        "list_scviva_models",
+        "get_scviva_model",
+        "list_scviva_tutorials",
+        "get_scviva_tutorial",
+        "list_scib_metrics",
+        "get_scib_metric",
+        "list_scib_metrics_tutorials",
+        "get_scib_metrics_tutorial",
     }
     assert expected == names, f"Missing: {expected - names}, Extra: {names - expected}"

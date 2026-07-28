@@ -436,9 +436,10 @@
         <h1>scvi-tools-mcp block diagram</h1>
         <p>
           Architecture map for the <code>scvi-tools-mcp</code> package: MCP client consumers,
-          a <code>FastMCP</code> stdio server, seven tool-module groups
+          a <code>FastMCP</code> stdio server, nine tool-module groups
           (<em>model guidance</em>, <em>data preparation</em>, <em>tutorials</em>,
-          <em>workflows</em>, <em>API reference</em>, <em>hub</em>, <em>troubleshooting</em>),
+          <em>workflows</em>, <em>API reference</em>, <em>hub</em>, <em>scviva-tools</em>,
+          <em>scib-metrics</em>, <em>troubleshooting</em>),
           shared utilities, a structured Markdown/JSON knowledge base bundled with the package,
           and an offline build-script pipeline that populates the knowledge base
           from upstream notebooks, documentation, community sources, and Hugging Face Hub metadata.
@@ -509,13 +510,13 @@
             Any MCP-compatible AI client connects over the Model Context Protocol.
             Claude Desktop and Claude Code are the primary consumers;
             any agent framework that supports MCP (Zed, Cursor, custom LLM agents)
-            works out of the box. The server exposes 17 registered tools.
+            works out of the box. The server exposes 25 registered tools.
           </p>
           <div class="chips">
             <span class="chip client-chip">Claude Desktop</span>
             <span class="chip client-chip">Claude Code</span>
             <span class="chip client-chip">MCP agent SDKs</span>
-            <span class="chip client-chip">17 tools exposed</span>
+            <span class="chip client-chip">25 tools exposed</span>
           </div>
         </div>
       </div>
@@ -549,7 +550,7 @@
       <div class="group">
         <div class="group-header">
           <h2>Tool modules</h2>
-          <p>src/scvi_tools_mcp/tools/ — 7 modules · 17 registered tools</p>
+          <p>src/scvi_tools_mcp/tools/ — 9 modules · 25 registered tools</p>
         </div>
         <div class="tools-row">
 
@@ -591,6 +592,38 @@
               <span class="chip tool-chip">list_hub_models</span>
               <span class="chip tool-chip">get_hub_model</span>
               <span class="chip tool-chip">suggest_hub_models</span>
+            </div>
+          </div>
+
+          <div class="card tool">
+            <span class="kicker">scviva-tools · _scviva.py</span>
+            <h3>scviva-tools</h3>
+            <p>
+              Lists and retrieves API reference + user guide docs for the companion spatial
+              toolkit (ResolVI, DestVI, scVIVA, GIMVI, DiagVI, Stereoscope, Tangram, Harreman)
+              plus its embedded tutorials. Synced monthly, no runtime network calls.
+            </p>
+            <div class="chips">
+              <span class="chip tool-chip">list_scviva_models</span>
+              <span class="chip tool-chip">get_scviva_model</span>
+              <span class="chip tool-chip">list_scviva_tutorials</span>
+              <span class="chip tool-chip">get_scviva_tutorial</span>
+            </div>
+          </div>
+
+          <div class="card tool">
+            <span class="kicker">scib-metrics · _scib_metrics.py</span>
+            <h3>scib-metrics</h3>
+            <p>
+              Lists and retrieves API reference for the 12 scib-metrics integration-benchmarking
+              functions and the Benchmarker/BioConservation/BatchCorrection orchestration classes,
+              plus its tutorials. Synced monthly, no runtime network calls.
+            </p>
+            <div class="chips">
+              <span class="chip tool-chip">list_scib_metrics</span>
+              <span class="chip tool-chip">get_scib_metric</span>
+              <span class="chip tool-chip">list_scib_metrics_tutorials</span>
+              <span class="chip tool-chip">get_scib_metrics_tutorial</span>
             </div>
           </div>
 
@@ -718,6 +751,18 @@
           </div>
 
           <div class="k-card">
+            <span class="kicker">scviva_tools/</span>
+            <h3>scviva-tools</h3>
+            <p>8 model docs + API reference + 11 tutorials for the companion spatial toolkit (ResolVI, DestVI, scVIVA, …).</p>
+          </div>
+
+          <div class="k-card">
+            <span class="kicker">scib_metrics/</span>
+            <h3>scib-metrics</h3>
+            <p>15 API MD files (12 metrics + Benchmarker/BioConservation/BatchCorrection) + 2 tutorials.</p>
+          </div>
+
+          <div class="k-card">
             <span class="kicker">skills/</span>
             <h3>Skills</h3>
             <p>20+ MD files. Step-by-step workflow recipes referenced by Claude Code skills.</p>
@@ -780,6 +825,21 @@
             <h3>Hub Snapshotter</h3>
             <p>Fetches public scvi-tools Hugging Face model metadata into
                <code>hub/models.json</code> and <code>hub/summary.md</code>.</p>
+          </div>
+
+          <div class="s-card">
+            <span class="kicker">scripts/extract_scviva_api_docs.py</span>
+            <h3>scviva-tools Extractor</h3>
+            <p>Extracts API signatures/docstrings from the installed scviva-tools package into
+               <code>scviva_tools/models/</code> and <code>scviva_tools/api/</code>, via shared
+               <code>_apidoc_utils.py</code>.</p>
+          </div>
+
+          <div class="s-card">
+            <span class="kicker">scripts/extract_scib_metrics_api_docs.py</span>
+            <h3>scib-metrics Extractor</h3>
+            <p>Extracts API signatures/docstrings from the installed scib-metrics package into
+               <code>scib_metrics/api/</code>, via shared <code>_apidoc_utils.py</code>.</p>
           </div>
 
         </div>

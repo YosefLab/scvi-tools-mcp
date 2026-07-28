@@ -60,25 +60,33 @@ ______________________________________________________________________
 
 ## Tools
 
-| Tool                         | Description                                            |
-| ---------------------------- | ------------------------------------------------------ |
-| `recommend_model`            | Rank models by task and data type — start here         |
-| `get_model_overview`         | Full model description, use cases, inputs, outputs     |
-| `get_model_parameters`       | Key `__init__` and `train()` parameters with defaults  |
-| `get_setup_anndata_guide`    | Exact `setup_anndata()` call + required obs/var fields |
-| `validate_data_requirements` | Pass/fail checklist for your AnnData against a model   |
-| `list_tutorials`             | Browse tutorials by category                           |
-| `get_tutorial`               | Paginated tutorial content (code + prose, no outputs)  |
-| `search_tutorials`           | Keyword search across all tutorials                    |
-| `get_api_reference`          | Signature + docstring for any public class or function |
-| `search_api`                 | Search public symbols by keyword                       |
-| `get_workflow_template`      | Step-by-step code template for an analysis task        |
-| `get_downstream_guide`       | Guide for DE, clustering, embedding, label transfer    |
-| `list_hub_models`            | Browse official scvi-tools Hugging Face Hub models     |
-| `get_hub_model`              | Inspect one pretrained HubModel repo                   |
-| `suggest_hub_models`         | Suggest Hub models for reference/query workflows       |
-| `get_faq`                    | Curated FAQ from docs, GitHub issues, and Discourse    |
-| `search_knowledge`           | Cross-search all knowledge (catch-all)                 |
+| Tool                          | Description                                             |
+| ----------------------------- | ------------------------------------------------------- |
+| `recommend_model`             | Rank models by task and data type — start here          |
+| `get_model_overview`          | Full model description, use cases, inputs, outputs      |
+| `get_model_parameters`        | Key `__init__` and `train()` parameters with defaults   |
+| `get_setup_anndata_guide`     | Exact `setup_anndata()` call + required obs/var fields  |
+| `validate_data_requirements`  | Pass/fail checklist for your AnnData against a model    |
+| `list_tutorials`              | Browse tutorials by category                            |
+| `get_tutorial`                | Paginated tutorial content (code + prose, no outputs)   |
+| `search_tutorials`            | Keyword search across all tutorials                     |
+| `get_api_reference`           | Signature + docstring for any public class or function  |
+| `search_api`                  | Search public symbols by keyword                        |
+| `get_workflow_template`       | Step-by-step code template for an analysis task         |
+| `get_downstream_guide`        | Guide for DE, clustering, embedding, label transfer     |
+| `list_hub_models`             | Browse official scvi-tools Hugging Face Hub models      |
+| `get_hub_model`               | Inspect one pretrained HubModel repo                    |
+| `suggest_hub_models`          | Suggest Hub models for reference/query workflows        |
+| `list_scviva_models`          | Browse scviva-tools spatial models (ResolVI, DestVI, …) |
+| `get_scviva_model`            | API reference + user guide for one scviva-tools model   |
+| `list_scviva_tutorials`       | Browse scviva-tools tutorials                           |
+| `get_scviva_tutorial`         | Paginated scviva-tools tutorial content                 |
+| `list_scib_metrics`           | Browse scib-metrics integration-benchmarking metrics    |
+| `get_scib_metric`             | API reference for one scib-metrics metric or benchmark  |
+| `list_scib_metrics_tutorials` | Browse scib-metrics tutorials                           |
+| `get_scib_metrics_tutorial`   | Paginated scib-metrics tutorial content                 |
+| `get_faq`                     | Curated FAQ from docs, GitHub issues, and Discourse     |
+| `search_knowledge`            | Cross-search all knowledge (catch-all)                  |
 
 ______________________________________________________________________
 
@@ -94,6 +102,11 @@ All knowledge is baked into the package as Markdown files at build time. No netw
 | `knowledge/hub/models.json`          | Normalized Hugging Face Hub model registry snapshot       |
 | `knowledge/hub/summary.md`           | Searchable summary of Hub model classes and modalities    |
 | `knowledge/user_guide/`              | Narrative documentation from the scvi-tools user guide    |
+| `knowledge/scviva_tools/models/`     | scviva-tools model docs (ResolVI, DestVI, scVIVA, …)      |
+| `knowledge/scviva_tools/api/`        | Extracted scviva-tools class signatures and docstrings    |
+| `knowledge/scviva_tools/tutorials/`  | scviva-tools tutorials converted from `.ipynb`            |
+| `knowledge/scib_metrics/api/`        | Extracted scib-metrics function/class signatures          |
+| `knowledge/scib_metrics/tutorials/`  | scib-metrics tutorials converted from `.ipynb`            |
 | `knowledge/faq/github_issues.md`     | Top GitHub issues snapshot                                |
 | `knowledge/faq/discourse_threads.md` | Discourse forum thread snapshot                           |
 
@@ -103,12 +116,16 @@ ______________________________________________________________________
 
 Automated GitHub Actions jobs keep knowledge current — each opens a PR if a diff is found:
 
-| Workflow                    | Schedule     | What it does                                                |
-| --------------------------- | ------------ | ----------------------------------------------------------- |
-| `refresh_knowledge.yaml`    | 1st of month | Re-scrapes GitHub issues + Discourse threads                |
-| `sync_tutorials.yaml`       | 1st of month | Fetches new `.ipynb` from scvi-tools, converts to `.md`     |
-| `sync_model_knowledge.yaml` | 1st of month | Checks CHANGELOG, regenerates model docs for changed models |
-| `sync_huggingface_hub.yaml` | Quarterly    | Refreshes the scvi-tools Hugging Face Hub model registry    |
+| Workflow                           | Schedule     | What it does                                                |
+| ---------------------------------- | ------------ | ----------------------------------------------------------- |
+| `refresh_knowledge.yaml`           | 1st of month | Re-scrapes GitHub issues + Discourse threads                |
+| `sync_tutorials.yaml`              | 1st of month | Fetches new `.ipynb` from scvi-tools, converts to `.md`     |
+| `sync_model_knowledge.yaml`        | 1st of month | Checks CHANGELOG, regenerates model docs for changed models |
+| `sync_huggingface_hub.yaml`        | Quarterly    | Refreshes the scvi-tools Hugging Face Hub model registry    |
+| `sync_scviva_tools_knowledge.yaml` | 1st of month | Regenerates scviva-tools model/API docs from main           |
+| `sync_scviva_tools_tutorials.yaml` | 1st of month | Fetches new `.ipynb` from scviva-tools, converts to `.md`   |
+| `sync_scib_metrics_knowledge.yaml` | 1st of month | Regenerates scib-metrics API docs from the latest release   |
+| `sync_scib_metrics_tutorials.yaml` | 1st of month | Fetches new `.ipynb` from scib-metrics, converts to `.md`   |
 
 All workflows also support `workflow_dispatch` for manual runs.
 

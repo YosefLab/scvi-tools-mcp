@@ -1,0 +1,79 @@
+name: Sync scib-metrics Knowledge
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Update scib-metrics API docs from the latest PyPI release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install scib-metrics + dev deps
+        run: pip install -e ".[scib]" --group dev --upgrade
+
+      - name: Check if update needed
+        id: check
+        run: |
+          VERSION=$(python -c "import scib_metrics; print(scib_metrics.__version__)")
+          SYNCED=$(cat src/scvi_tools_mcp/knowledge/scib_metrics/.last_synced_version 2>/dev/null || echo "none")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "synced=$SYNCED" >> "$GITHUB_OUTPUT"
+          if [ "$SYNCED" = "$VERSION" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Regenerate scib-metrics API knowledge
+        if: steps.check.outputs.needed == 'true'
+        run: python scripts/extract_scib_metrics_api_docs.py
+
+      - name: Update last-synced version
+        if: steps.check.outputs.needed == 'true'
+        env:
+          VERSION: ${{ steps.check.outputs.version }}
+        run: echo "$VERSION" > src/scvi_tools_mcp/knowledge/scib_metrics/.last_synced_version
+
+      - name: Check for changes
+        if: steps.check.outputs.needed == 'true'
+        id: diff
+        run: |
+          if git status --porcelain src/scvi_tools_mcp/knowledge/scib_metrics/ | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pull request
+        if: steps.check.outputs.needed == 'true' && steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: sync scib-metrics knowledge from scib-metrics@${{ steps.check.outputs.version }}"
+          branch: chore/sync-scib-metrics-knowledge-${{ github.run_id }}
+          title: "chore: sync scib-metrics knowledge from scib-metrics@${{ steps.check.outputs.version }}"
+          body: |
+            Automated API knowledge sync from the latest scib-metrics PyPI release.
+
+            Version: scib-metrics@${{ steps.check.outputs.version }}
+            Previous synced: ${{ steps.check.outputs.synced }}
+
+            Re-runs `scripts/extract_scib_metrics_api_docs.py` (pure docstring/signature
+            introspection; scib-metrics does not publish per-metric doc pages).
+            Review changes before merging.
+          labels: automated

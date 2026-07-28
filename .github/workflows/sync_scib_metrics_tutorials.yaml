@@ -1,0 +1,72 @@
+name: Sync scib-metrics Tutorials
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Fetch + convert notebooks from scib-metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -e . --group dev
+
+      - name: Clone scib-metrics (latest main)
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse \
+            https://github.com/YosefLab/scib-metrics.git /tmp/scib-metrics
+          git -C /tmp/scib-metrics sparse-checkout set docs/notebooks
+          echo "Cloned scib-metrics at $(git -C /tmp/scib-metrics rev-parse --short HEAD)"
+
+      - name: Convert notebooks to markdown
+        run: |
+          python scripts/convert_notebooks.py \
+            --src /tmp/scib-metrics/docs/notebooks \
+            --dst src/scvi_tools_mcp/knowledge/scib_metrics/tutorials
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git status --porcelain src/scvi_tools_mcp/knowledge/scib_metrics/tutorials/ | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get scib-metrics commit
+        if: steps.diff.outputs.changed == 'true'
+        id: version
+        run: |
+          SHA=$(git -C /tmp/scib-metrics rev-parse --short HEAD)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: sync scib-metrics tutorials from scib-metrics@${{ steps.version.outputs.sha }}"
+          branch: chore/sync-scib-metrics-tutorials-${{ github.run_id }}
+          title: "chore: sync scib-metrics tutorials from scib-metrics@${{ steps.version.outputs.sha }}"
+          body: |
+            Monthly automated sync of tutorial notebooks from YosefLab/scib-metrics main.
+
+            Commit: YosefLab/scib-metrics@${{ steps.version.outputs.sha }}
+
+            Notebooks are converted to Markdown with outputs stripped (code + prose only).
+          labels: automated
