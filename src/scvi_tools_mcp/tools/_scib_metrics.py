@@ -28,6 +28,10 @@ METRIC_CATEGORIES: dict[str, list[str]] = {
 
 BENCHMARK_ENTRIES = ["benchmarker", "bioconservation", "batchcorrection"]
 
+VALID_METRIC_NAMES = frozenset(
+    METRIC_CATEGORIES["bio_conservation"] + METRIC_CATEGORIES["batch_correction"] + BENCHMARK_ENTRIES
+)
+
 
 class ScibMetricsResult(BaseModel):
     content: str | None = None
@@ -79,7 +83,11 @@ def get_scib_metric(metric_name: str) -> ScibMetricsResult:
             Call list_scib_metrics() for the full set of valid names.
     """
     try:
-        key = metric_name.lower()
+        key = metric_name.strip().lower()
+        if key not in VALID_METRIC_NAMES:
+            return ScibMetricsResult(
+                error=f"scib-metrics entry '{metric_name}' not found. Call list_scib_metrics() for options."
+            )
         path = _scib_metrics_dir() / "api" / f"{key}.md"
         if not path.exists():
             return ScibMetricsResult(

@@ -432,6 +432,19 @@ def test_get_scib_metric_unknown(mock_knowledge):
     assert "not found" in result.error.lower()
 
 
+def test_get_scib_metric_rejects_path_traversal(mock_knowledge):
+    # Regression test: metric_name is str (not a Literal) for case-insensitivity, so it
+    # must be validated against the known allowlist before being used to build a path —
+    # otherwise a caller could read arbitrary Markdown files off disk (e.g. scviva-tools
+    # model docs in a sibling knowledge directory, or any other readable .md file).
+    from scvi_tools_mcp.tools._scib_metrics import get_scib_metric
+
+    result = get_scib_metric(metric_name="../../scviva_tools/models/resolvi")
+    assert result.error is not None
+    assert "not found" in result.error.lower()
+    assert result.content is None
+
+
 def test_list_scib_metrics_tutorials_returns_content(mock_knowledge):
     from scvi_tools_mcp.tools._scib_metrics import list_scib_metrics_tutorials
 
