@@ -1,8 +1,8 @@
 # Using SHAP values and IntegratedGradients for cell type classification interpretability
 
-Previously we saw semi-supervised models, like SCANVI being used for tasks like cell type classification, enabling researchers to uncover complex biological patterns. However, as these models become more sophisticated, it is essential to understand not just the predictions they make, but why they make them. This is where interpretability methods like [SHAP (SHapley Additive exPlanations)](https://shap.readthedocs.io/en/latest/generated/shap.DeepExplainer.html#shap.DeepExplainer) and [CAPTUM IntegratedGradients](https://captum.ai/api/integrated_gradients.html) come into play. By providing insights into the influence of individual features on model predictions, these methods help us trust and validate our models in critical biological contexts.
+Previously we saw semi-supervised models, like SCANVI being used for tasks like cell type classification, enabling researchers to uncover complex biological patterns. However, as these models become more sophisticated, it is essential to understand not just the predictions they make, but why they make them. This is where interpretability methods like [SHAP (SHapley Additive exPlanations)](https://shap.readthedocs.io/en/latest/generated/shap.DeepExplainer.html#shap.DeepExplainer) and [CAPTUM IntegratedGradients](https://captum.ai/api/integrated_gradients.html) come into play. By providing insights into the influence of individual features on model predictions, these methods help us trust and validate our models in critical biological contexts. 
 
-In this tutorial, we'll explore the significance of interpretability techniques in supervised cell classification using ScanVI, which are now avialble as part of SCVI-Tools.
+In this tutorial, we'll explore the significance of interpretability techniques in supervised cell classification using ScanVI, which are now avialble as part of SCVI-Tools. 
 
 ```{note}
 Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
@@ -265,7 +265,7 @@ plt.show()
 
 SHAP (SHapley Additive exPlanations) values are a popular interpretability technique based on cooperative game theory. The core idea is to fairly allocate the "credit" for a model's prediction to each feature, by considering all possible combinations of features and their impact on the prediction. SHAP values are additive, meaning the sum of the SHAP values for all features equals the difference between the model’s output and the average prediction. This method works for any model type, providing a consistent way to explain individual predictions, making it highly versatile and widely applicable. Deep SHAP is an extension of the SHAP method designed specifically for deep learning models, such as the ones in SCVI-Tools. For more information see [this](https://www.nature.com/articles/s41592-024-02511-3)
 
-Calcualtion of SHAP for SC data usually takes a lot of time. In SCVI-Tools we are running an approximation of FastSHAP in order to reduce runtime, where we train a shallow surrogate model to imitate the original model prediction and than run the SHAP over the surrogate model. See [this]("https://arxiv.org/abs/2107.07436")
+Calcualtion of SHAP for SC data usually takes a lot of time. In SCVI-Tools we are running an approximation of FastSHAP in order to reduce runtime, where we train a shallow surrogate model to imitate the original model prediction and than run the SHAP over the surrogate model. See [this](https://arxiv.org/abs/2107.07436)
 
 ```python
 import torch.nn as nn

@@ -33,15 +33,15 @@ print("Last run with scvi-tools version:", scvi.__version__)
 
 ### Prepare features
 
-In general, it is important that the feature characteristics match across systems, as this is key for successful integration. For example, if you used the model on scRNA-seq data it needs to be correctly preprocessed, as described below, and similarly, if you tested it on other data types, such as image features, good preprocessing is likewise vital. Furthermore, please keep in mind that the model assumes Gaussian noise distribution of features.
+In general, it is important that the feature characteristics match across systems, as this is key for successful integration. For example, if you used the model on scRNA-seq data it needs to be correctly preprocessed, as described below, and similarly, if you tested it on other data types, such as image features, good preprocessing is likewise vital. Furthermore, please keep in mind that the model assumes Gaussian noise distribution of features. 
 
-For scRNA-seq data the integration should be performed on normalized and log-transformed data, with normalization being set to a fixed number of counts per cell. We recomend that data should be subsetted to HVGs before integration. In our paper we selected HVGs per system (e.g. species) with Scanpy function `pp.highly_variable_genes` using within-system batches as the `batch_key`, starting with genes present in all systems. Then, we took the intersection of HVGs across systems to obtain ~2000 shared HVGs. The here-used example data was already preprocessed accordingly and has normalized data in X.
+For scRNA-seq data the integration should be performed on normalized and log-transformed data, with normalization being set to a fixed number of counts per cell. We recomend that data should be subsetted to HVGs before integration. In our paper we selected HVGs per system (e.g. species) with Scanpy function `pp.highly_variable_genes` using within-system batches as the `batch_key`, starting with genes present in all systems. Then, we took the intersection of HVGs across systems to obtain ~2000 shared HVGs. The here-used example data was already preprocessed accordingly and has normalized data in X. 
 
 ### Prepare covariates
 
-For integration we must define covariates to be corrected for by the model. The `batch_key` covariate should represent the covariate capturing the substantial batch effects, also referred to as "system" in our publication. Besides system covariate, any other relatively weaker batch effects of a continuous or categorical nature can be corrected for as part of the standard conditioning within cVAE training. This can be for example samples within systems, denoted by obs column "batch" in the below example.
+For integration we must define covariates to be corrected for by the model. The `batch_key` covariate should represent the covariate capturing the substantial batch effects, also referred to as "system" in our publication. Besides system covariate, any other relatively weaker batch effects of a continuous or categorical nature can be corrected for as part of the standard conditioning within cVAE training. This can be for example samples within systems, denoted by obs column "batch" in the below example. 
 
-If you have more than one type of system, such as species and technology, you can try to set the system to their combination. For example, if integrating cell and nuclei data from mouse and human the systems should be: mouse-nuclei, mouse-cell, human-nuclei, human-cell. This system grouping should be likewise used for data preprocessing, such as HVG selection.
+If you have more than one type of system, such as species and technology, you can try to set the system to their combination. For example, if integrating cell and nuclei data from mouse and human the systems should be: mouse-nuclei, mouse-cell, human-nuclei, human-cell. This system grouping should be likewise used for data preprocessing, such as HVG selection. 
 
 If the number of categories in additional categorical covariates is extensive, the one-hot encoding would lead to large memory usage. In this case, categorical covariates should be embedded by setting `embed_cat = True` during `Model` initialization, as explained below.
 
@@ -93,7 +93,7 @@ model.train(
 
 To increase batch correction you can increase cycle-consistency loss weight and to improve biological preservation you can decrease the KL loss weight or also cycle-consistency loss weight. In a few cases we observed the best integration performance with cycle-consistency loss weight as high as 50, although the range of 2-10 was usually preferred.
 
-The number of epochs can be reduced when using a dataset with more cells. Please inspect the loss plots below to confirm that the number of epochs is sufficient for the loss to stabilize.
+The number of epochs can be reduced when using a dataset with more cells. Please inspect the loss plots below to confirm that the number of epochs is sufficient for the loss to stabilize. 
 
 Another thing to keep in mind is that model performance may vary depending on the used random seed, as reported in our paper. Thus, it may be beneficial to run a few (e.g. three) models with different random seeds and pick the best one. Random seed for `scvi-tools` can be set as shown below, before training the model.
 

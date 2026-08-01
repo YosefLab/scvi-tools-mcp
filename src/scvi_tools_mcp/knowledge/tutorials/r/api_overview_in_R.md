@@ -1,8 +1,8 @@
 # Introduction to scvi-tools in R
 
-In this introductory tutorial, we go through the different steps of an scvi-tools workflow. It is the R version of [this]("https://docs.scvi-tools.org/en/latest/tutorials/notebooks/quick_start/api_overview.html") python tutorial.
+In this introductory tutorial, we go through the different steps of an scvi-tools workflow. It is the R version of [this](https://docs.scvi-tools.org/en/latest/tutorials/notebooks/quick_start/api_overview.html) python tutorial.
 
-While we focus on scVI in this tutorial, the API is consistent across all models.
+While we focus on scVI in this tutorial, the API is consistent across all models. 
 
 ```python
 library(reticulate)
@@ -17,7 +17,7 @@ Before we use reticulate, we will need to point it to the correct conda env we u
 use_condaenv("base", required = TRUE)
 ```
 
-### Import Python libraries with reticulate
+## Import Python libraries with reticulate
 
 ```python
 sc <- import('scanpy', convert = FALSE)
@@ -67,7 +67,7 @@ sc$pp$highly_variable_genes(
 adata
 ```
 
-### Creating and training a model
+## Creating and training a model
 
 ```python
 # run setup_anndata
@@ -93,7 +93,7 @@ model$train(max_epochs = 400L)
 str(py_to_r(model$registry))
 ```
 
-### Show trainning curves
+## Show trainning curves
 
 ```python
 elbo_train <- py_to_r(model$history[['elbo_train']])
@@ -111,7 +111,7 @@ ggplot(elbo_train, aes(x = epoch, y = elbo_train)) +
   labs(title = "Negative ELBO over training epochs")
 ```
 
-### Saving and loading
+## Saving and loading
 
 ```python
 model_dir = file.path(getwd(), "scvi_model")
@@ -123,7 +123,7 @@ model = scvi$model$SCVI$load(model_dir, adata=adata)
 model
 ```
 
-### Obtaining model outputs
+## Obtaining model outputs
 
 ```python
 SCVI_LATENT_KEY = "X_scVI"
@@ -150,7 +150,7 @@ SCVI_NORMALIZED_KEY = "scvi_normalized"
 adata$layers[SCVI_NORMALIZED_KEY] = model$get_normalized_expression(library_size=10e4)
 ```
 
-### Visualization without batch correction
+## Visualization without batch correction
 
 ```python
 # run PCA then generate UMAP plots
@@ -191,7 +191,7 @@ fig2$savefig("pca_donor_source.png", bbox_inches="tight")
 display_png(file = "pca_donor_source.png", width = 1400, height = 1200)
 ```
 
-### Visualization with batch correction (scVI)
+## Visualization with batch correction (scVI)
 
 ```python
 # use scVI latent space for UMAP generation
@@ -224,7 +224,7 @@ fig4$savefig("scvi_donor_source.png", bbox_inches="tight")
 display_png(file = "scvi_donor_source.png", width = 1400, height = 1200)
 ```
 
-### Clustering on the scVI latent space
+## Clustering on the scVI latent space
 
 ```python
 # neighbors were already computed using scVI
@@ -244,7 +244,7 @@ fig5$savefig("scvi_leiden_cluster.png", bbox_inches="tight")
 display_png(file = "scvi_leiden_cluster.png", width = 800, height = 600)
 ```
 
-### Differential expression
+## Differential expression
 
 ```python
 de_df = py_to_r(model$differential_expression(
@@ -262,7 +262,7 @@ head(de_df)
 sc$tl$dendrogram(adata, groupby="cell_type", use_rep="X_scVI")
 ```
 
-### Session Info Summary
+## Session Info Summary
 
 ```python
 #reticulate::py_last_error()

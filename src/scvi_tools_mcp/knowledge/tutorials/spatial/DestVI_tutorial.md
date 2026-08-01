@@ -29,6 +29,7 @@ install()
 ```
 
 ```python
+import os
 import tempfile
 
 import destvi_utils
@@ -63,19 +64,24 @@ save_dir = tempfile.TemporaryDirectory()
 Let's download our data from a comparative study of murine lymph nodes, comparing wild-type with a stimulation after injection of a mycobacteria. We have at disposal a 10x Visium dataset as well as a matching scRNA-seq dataset from the same tissue.
 
 ```python
-url1 = "https://github.com/romain-lopez/DestVI-reproducibility/blob/master/lymph_node/deconvolution/ST-LN-compressed.h5ad?raw=true"
-url2 = "https://github.com/romain-lopez/DestVI-reproducibility/blob/master/lymph_node/deconvolution/scRNA-LN-compressed.h5ad?raw=true"
-out1 = "data/ST-LN-compressed.h5ad"
-out2 = "data/scRNA-LN-compressed.h5ad"
+url1 = os.path.join(save_dir.name, "ST-LN-compressed.h5ad")
+st_adata = sc.read(
+    url1, backup_url="https://exampledata.scverse.org/scvi-tools/ST-LN-compressed.h5ad"
+)
+st_adata
+```
+
+```python
+url2 = os.path.join(save_dir.name, "scRNA-LN-compressed.h5ad")
+sc_adata = sc.read(
+    url2, backup_url="https://exampledata.scverse.org/scvi-tools/scRNA-LN-compressed.h5ad"
+)
+sc_adata
 ```
 
 ## Data loading & processing
 
 First, let's load the single-cell data. We profiled immune cells from murine lymph nodes with 10x Chromium, as a control / case study to study the immune response to exposure to a mycobacteria (refer to our paper for more info). We provide the preprocessed data from our reproducibility repository: it contains the raw counts (DestVI always takes raw counts as input).
-
-```python
-sc_adata = sc.read(out2, backup_url=url2)
-```
 
 We clustered the single-cell data by major immune cell types. DestVI can resolve beyond discrete clusters, but need to work with an existing level of clustering. A rule of thumb to keep in mind while clsutering is that DestVI assumes only a single state from each cell type exists in each spot. For example, resting and inflammed monocytes cannot co-exist in one unique spot according to our assumption. Users may cluster their data so that this modeling assumption is as accurate as possible.
 
@@ -100,10 +106,6 @@ sc_adata.raw = sc_adata
 ```
 
 Now, let's load the spatial data and choose a common gene subset. Users will note that having a common gene set is a prerequisite of the method.
-
-```python
-st_adata = sc.read(out1, backup_url=url1)
-```
 
 ```python
 st_adata.layers["counts"] = st_adata.X.copy()

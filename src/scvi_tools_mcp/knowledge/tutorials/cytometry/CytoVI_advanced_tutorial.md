@@ -178,7 +178,7 @@ This analysis demonstrated that the model was less certain when imputing Ki67 ex
 sc.pl.umap(adata, color=["obs_imp_uncertainty", "batch"])
 ```
 
-Visualizing the aggregated imputation uncertainty per cell provides an estimate of how reliably missing markers can be imputed. In this example, the uncertainty plot reveals that the model is especially uncertain for cells in regions of CytoVI’s latent space where batch representation is imbalanced. This underscores the importance of imputing markers only when integrating biologically comparable studies.
+Visualizing the aggregated imputation uncertainty per cell provides an estimate of how reliably missing markers can be imputed. In this example, the uncertainty plot reveals that the model is especially uncertain for cells in regions of CytoVI’s latent space where batch representation is imbalanced. This underscores the importance of imputing markers only when integrating biologically comparable studies. 
 We can also query and visualize the imputation uncertainty of individual markers to judge how much we can trust the imputation results in downstream analyses.
 
 ```python
@@ -263,7 +263,7 @@ adata.obs = pd.concat(
 sc.pl.umap(adata, color=da_res.columns, cmap="icefire", ncols=3, vmin=-3, vmax=3)
 ```
 
-In a next step we want to use these DA scores to determine differentially abundant clusters that are associated with disease. For this we will concatenate the DA scores for each tumor entity to the CytoVI latent space and perform Kmeans clustering.
+In a next step we want to use these DA scores to determine differentially abundant clusters that are associated with disease. For this we will concatenate the DA scores for each tumor entity to the CytoVI latent space and perform Kmeans clustering.  
 
 ```python
 da_latent = np.hstack((da_res, adata.obsm["X_CytoVI"]))

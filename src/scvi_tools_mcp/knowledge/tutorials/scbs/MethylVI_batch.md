@@ -1,6 +1,5 @@
 # Integrating single-cell methylation data from different scBS-seq experiments with methylVI
 
----
 
 A common problem when analyzing single-cell omics datasets across multiple experiments is the presence of batch effects (i.e., systematic variations due to differences in sequencing platform). Here we demonstrate how methylVI can be used to integrate data from different single-cell bisulfite sequencing platforms. As an example, we'll consider single-cell methylomes from the dentate gyrus region of the brain collected in ["DNA methylation atlas of the mouse brain at single-cell resolution"](https://www.nature.com/articles/s41586-020-03182-8) (Liu et al., Nature, 2021) using two sequencing protocols: snmC-seq2 and snm-3C-seq.
 
@@ -115,7 +114,7 @@ In the next section, we'll see how methylVI can alleviate these issues.
 
 ## Prepare and run model
 
-Before training our model, we'll use methylVI's `setup_mudata` function to prepare our `MuData` object for training.
+Before training our model, we'll use methylVI's `setup_mudata` function to prepare our `MuData` object for training. 
 
 First, we need to tell methylVI which modalities in our MuData object to consider via the `methylation_contexts` argument. Here we'll jointly model both CpG and non-CpG methylation features, so we'll set this argument to a list containing the names of both modalities. Next, methylVI directly models the total coverage and number of methylated cytosines in each region. Thus, for each modality in our `MuData` object, we need layers containing the coverage in each region (specified by `cov_layer`) and layers with the number of methylated cytosines (specified by `mc_layer`). Finally, we'll provide methylVI with a categorical covariate specifying the sequencing protocol used for each cell.
 

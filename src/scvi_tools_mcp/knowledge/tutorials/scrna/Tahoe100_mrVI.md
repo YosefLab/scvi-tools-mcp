@@ -1,6 +1,6 @@
 # MrVI analysis over Tahoe100M cells dataset
 
-MrVI (Multi-resolution Variational Inference) is a model for analyzing multi-sample single-cell RNA-seq data.
+MrVI (Multi-resolution Variational Inference) is a model for analyzing multi-sample single-cell RNA-seq data. 
 This tutorial show how to do run MrVI in PyTorch version over the [Tahoe100M](https://doi.org/10.1101/2025.02.20.639398) cells dataset and perform basic analysis.
 
 
@@ -12,11 +12,13 @@ install()
 ```
 
 ```python
+import os
 import tempfile
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import rapids_singlecell as rsc
 import scanpy as sc
 import scvi
 import scvi.hub
@@ -42,6 +44,7 @@ sc.set_figure_params(figsize=(6, 6), frameon=False)
 sns.set_theme()
 torch.set_float32_matmul_precision("high")
 save_dir = tempfile.TemporaryDirectory()
+tahoe_data_dir = os.environ.get("TAHOE_DATA_DIR", "Tahoe100M")
 
 %config InlineBackend.print_figure_kwargs={"facecolor": "w"}
 %config InlineBackend.figure_format="retina"
@@ -71,17 +74,13 @@ tahoe_hubmodel.model.adata.obs.head()
 
 ```python
 # Load Cell Line Metadata
-cell_lines = pd.read_csv(
-    "/home/access/PycharmProjects/scvi-tools/Tahoe100M/cell_line_metadata.h5ad"
-)
+cell_lines = pd.read_csv(os.path.join(tahoe_data_dir, "cell_line_metadata.h5ad"))
 cell_lines.head()
 ```
 
 ```python
 # Load the .h5ad file
-adata = sc.read_h5ad(
-    "/home/access/PycharmProjects/scvi-tools/Tahoe100M/tahoe100m_sample_100000_rand.h5ad"
-)
+adata = sc.read_h5ad(os.path.join(tahoe_data_dir, "tahoe100m_sample_100000_rand.h5ad"))
 adata.obs.head()
 ```
 
@@ -136,13 +135,14 @@ train_ind, valid_ind = train_test_split(
 
 ### Init the model
 
-We will initialize the MRVI model with its "pytorch" backend.
-
 ```python
 sample_key = "sample"  # target covariate sample/cell_line_id
 batch_key = "plate"  # nuisance variable identifier
 MRVI.setup_anndata(
-    adata, sample_key=sample_key, batch_key=batch_key, layer="counts", backend="torch"
+    adata,
+    sample_key=sample_key,
+    batch_key=batch_key,
+    layer="counts",
 )
 ```
 
@@ -154,7 +154,7 @@ import time
 
 gc.collect()
 start = time.time()
-model = MRVI(adata, backend="torch")
+model = MRVI(adata)
 model.train(
     max_epochs=400,
     early_stopping=True,
@@ -166,14 +166,6 @@ model.train(
 )
 end = time.time()
 print(f"Elapsed time: {end - start:.2f} seconds")
-```
-
-```python
-train_ind
-```
-
-```python
-valid_ind
 ```
 
 ```python
@@ -218,9 +210,9 @@ The latent representations of the cells can also be accessed and visualized usin
 
 ```python
 # run PCA then generate UMAP plots
-sc.tl.pca(adata)
-sc.pp.neighbors(adata, n_pcs=50, n_neighbors=50)
-sc.tl.umap(adata, min_dist=0.1)
+rsc.tl.pca(adata)
+rsc.pp.neighbors(adata, n_pcs=50, n_neighbors=50)
+rsc.tl.umap(adata, min_dist=0.1)
 ```
 
 ```python
@@ -235,8 +227,8 @@ sc.pl.umap(
 ```python
 u = model.get_latent_representation()
 adata.obsm["X_mrVI_Torch"] = u
-sc.pp.neighbors(adata, use_rep="X_mrVI_Torch")
-sc.tl.umap(adata, min_dist=0.3)
+rsc.pp.neighbors(adata, use_rep="X_mrVI_Torch")
+rsc.tl.umap(adata, min_dist=0.3)
 ```
 
 ```python
@@ -305,8 +297,8 @@ latent.shape
 
 ```python
 # use scVI latent space for UMAP generation
-sc.pp.neighbors(adata, use_rep=SCVI_LATENT_KEY)
-sc.tl.umap(adata, min_dist=0.3)
+rsc.pp.neighbors(adata, use_rep=SCVI_LATENT_KEY)
+rsc.tl.umap(adata, min_dist=0.3)
 ```
 
 ```python

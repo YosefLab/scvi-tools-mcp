@@ -87,7 +87,7 @@ model = HubModel.pull_from_s3(
 adata, model
 ```
 
-### Setup minified model
+## Setup minified model
 
 Census was trained on all primary cells. We don't encode covariates so inference and generating latent codes works without retraining on these batches. We have to subset to all training batches.
 The setup will be optimized in a future version of scvi-tools.
@@ -255,7 +255,7 @@ sc.pl.umap(
 
 Now we perform DE between each cell type vs all other cells and make a dotplot of the result.
 
-#### Performing differential expression
+### Performing differential expression
 
 ```python
 # here we do a 1-vs-all DE test, which compares each cell type with all others

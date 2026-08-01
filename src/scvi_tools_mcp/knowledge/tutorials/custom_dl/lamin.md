@@ -47,7 +47,7 @@ pbmc_dataset = scvi.data.pbmc_dataset(
 pbmc_seurat_v4_cite_seq = scvi.data.pbmc_seurat_v4_cite_seq(save_path=".")
 ```
 
-### Preprocessing of the data
+## Preprocessing of the data
 
 In this case we read 2 PBMC data so that we will later show the integration power.
 We will select the intersection of those 2 datasets gene names, and consolidate cell types names so that they will be alligned
@@ -94,7 +94,7 @@ pbmc_dataset_filtered.obs.loc[
 pbmc_dataset_filtered
 ```
 
-The list of different cell types for the first dataaset can be seen
+The list of different cell types for the first dataaset can be seen 
 
 ```python
 pbmc_dataset_filtered.obs["cell_type"].value_counts()
@@ -365,7 +365,7 @@ plt.ylabel("Observed")
 
 ## Run regulary using adata and compare
 
-We will use the adata we already extracted and train an SCVI and SCANVI models under the
+We will use the adata we already extracted and train an SCVI and SCANVI models under the 
 same conditions as was done for Lamin, in order to compare the results
 
 ```python
@@ -513,6 +513,6 @@ bm.benchmark()
 bm.plot_results_table(min_max_scale=False)
 ```
 
-As expected SCANVI outperforms the SCVI using the labels data,
+As expected SCANVI outperforms the SCVI using the labels data, 
 however as can be seen the regular use of Anndataloader dataloader
 gives 5% better integration results comparing to the lamin dataloader

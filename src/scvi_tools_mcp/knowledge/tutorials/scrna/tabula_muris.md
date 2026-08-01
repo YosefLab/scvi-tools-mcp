@@ -218,7 +218,7 @@ We can also try to obtain a better latent representation/predictions by using th
 - the sample identifier for each cell (as in scVI), which in this case is the technology (10x vs SS2)
 - the cell type, or an unnassigned label for each cell
 
-#### scANVI labels
+### scANVI labels
 
 We assume that the SS2 data is annotated and the 10X data is not. Only the labels of the cells from the labelled SS2 dataset will be kept in the `adata.obs` column `'celltype_scanvi'`. All the 10X cells will have `'celltype_scanvi'` of value 'Unknown'.
 

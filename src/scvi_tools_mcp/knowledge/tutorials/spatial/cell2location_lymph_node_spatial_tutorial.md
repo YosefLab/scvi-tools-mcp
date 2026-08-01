@@ -92,7 +92,7 @@ Note
 Here we rename genes to ENSEMBL ID for correct matching between single cell and spatial data.
 </div>
 
-You can still plot gene expression by name using standard scanpy functions as follows:
+You can still plot gene expression by name using standard scanpy functions as follows: 
 ```python
 sc.pl.spatial(color="PTPRC", gene_symbols="SYMBOL", ...)
 ```
