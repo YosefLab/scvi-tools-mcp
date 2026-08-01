@@ -298,7 +298,7 @@ Both methods are practically the same
 The input of it is a list of 3 np.arrays (train/valid/test) of integer indices of the data.
 The train split is always mandatory but the validation and test splits are not (and can be left empty or None), and in any case there must not be duplicates and it should cover the whole data.
 
-If external indices are used it will bypass any tain or valid size or proportion. 
+If external indices are used it will bypass any tain or valid size or proportion.
 
 Example:
 
@@ -312,7 +312,7 @@ data_splitter = DataSplitter(
 )
 model.train(datamodule=datamodule)
 
-#Or insert indices directly in train with datasplitter_kwargs 
+#Or insert indices directly in train with datasplitter_kwargs
 model.train(
     datasplitter_kwargs={
         "external_indexing": [train_ind, valid_ind, test_ind]
