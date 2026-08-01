@@ -2,7 +2,7 @@
 
 **Class:** `scvi.external.sysvi._model.SysVI`
 
-**Signature:** `SysVI(adata: 'AnnData', prior: "Literal['standard_normal', 'vamp']" = 'vamp', n_prior_components: 'int' = 5, pseudoinputs_data_indices: 'np.array | None' = None, **model_kwargs)`
+**Signature:** `SysVI(adata: 'AnnData | None' = None, registry: 'dict | None' = None, prior: "Literal['standard_normal', 'vamp']" = 'vamp', n_prior_components: 'int' = 5, pseudoinputs_data_indices: 'np.array | None' = None, **model_kwargs)`
 
 ## Docstring
 

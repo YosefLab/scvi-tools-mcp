@@ -2,7 +2,7 @@
 
 **Class:** `scvi.model._peakvi.PEAKVI`
 
-**Signature:** `PEAKVI(adata: 'AnnData', n_hidden: 'int | None' = None, n_latent: 'int | None' = None, n_layers_encoder: 'int' = 2, n_layers_decoder: 'int' = 2, dropout_rate: 'float' = 0.1, model_depth: 'bool' = True, region_factors: 'bool' = True, use_batch_norm: "Literal['encoder', 'decoder', 'none', 'both']" = 'none', use_layer_norm: "Literal['encoder', 'decoder', 'none', 'both']" = 'both', latent_distribution: "Literal['normal', 'ln']" = 'normal', deeply_inject_covariates: 'bool' = False, encode_covariates: 'bool' = False, **model_kwargs)`
+**Signature:** `PEAKVI(adata: 'AnnData | None' = None, registry: 'dict | None' = None, n_hidden: 'int | None' = None, n_latent: 'int | None' = None, n_layers_encoder: 'int' = 2, n_layers_decoder: 'int' = 2, dropout_rate: 'float' = 0.1, model_depth: 'bool' = True, region_factors: 'bool' = True, use_batch_norm: "Literal['encoder', 'decoder', 'none', 'both']" = 'none', use_layer_norm: "Literal['encoder', 'decoder', 'none', 'both']" = 'both', latent_distribution: "Literal['normal', 'ln']" = 'normal', deeply_inject_covariates: 'bool' = False, encode_covariates: 'bool' = False, **model_kwargs)`
 
 ## Docstring
 
@@ -93,7 +93,7 @@ layer
 ## train
 
 ```python
-PEAKVI.train(self, max_epochs: 'int' = 500, lr: 'float' = 0.0001, accelerator: 'str' = 'auto', devices: 'int | list[int] | str' = 'auto', train_size: 'float | None' = None, validation_size: 'float | None' = None, shuffle_set_split: 'bool' = True, batch_size: 'int' = 128, weight_decay: 'float' = 0.001, eps: 'float' = 1e-08, early_stopping: 'bool' = True, early_stopping_patience: 'int' = 50, check_val_every_n_epoch: 'int | None' = None, n_steps_kl_warmup: 'int | None' = None, n_epochs_kl_warmup: 'int | None' = 50, datasplitter_kwargs: 'dict | None' = None, plan_kwargs: 'dict | None' = None, **kwargs)
+PEAKVI.train(self, max_epochs: 'int' = 500, lr: 'float' = 0.0001, accelerator: 'str' = 'auto', devices: 'int | list[int] | str' = 'auto', train_size: 'float | None' = None, validation_size: 'float | None' = None, shuffle_set_split: 'bool' = True, batch_size: 'int' = 128, weight_decay: 'float' = 0.001, eps: 'float' = 1e-08, early_stopping: 'bool' = True, early_stopping_patience: 'int' = 50, check_val_every_n_epoch: 'int | None' = None, n_steps_kl_warmup: 'int | None' = None, n_epochs_kl_warmup: 'int | None' = 50, datasplitter_kwargs: 'dict | None' = None, plan_kwargs: 'dict | None' = None, datamodule=None, **kwargs)
 ```
 
 Trains the model using amortized variational inference.
@@ -147,5 +147,8 @@ datasplitter_kwargs
 plan_kwargs
     Keyword args for :class:`~scvi.train.TrainingPlan`. Keyword arguments passed to
     `train()` will overwrite values present in `plan_kwargs`, when appropriate.
+datamodule
+    ``EXPERIMENTAL`` A :class:`~lightning.pytorch.core.LightningDataModule` instance to use
+    for training in place of the default :class:`~scvi.dataloaders.DataSplitter`.
 **kwargs
     Other keyword args for :class:`~scvi.train.Trainer`.

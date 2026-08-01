@@ -2,7 +2,7 @@
 
 **Class:** `scvi.model._linear_scvi.LinearSCVI`
 
-**Signature:** `LinearSCVI(adata: 'AnnData', n_hidden: 'int' = 128, n_latent: 'int' = 10, n_layers: 'int' = 1, dropout_rate: 'float' = 0.1, dispersion: "Literal['gene', 'gene-batch', 'gene-label', 'gene-cell']" = 'gene', gene_likelihood: "Literal['zinb', 'nb', 'poisson']" = 'nb', use_observed_lib_size: 'bool' = False, latent_distribution: "Literal['normal', 'ln']" = 'normal', **model_kwargs)`
+**Signature:** `LinearSCVI(adata: 'AnnData | None' = None, registry: 'dict | None' = None, n_hidden: 'int' = 128, n_latent: 'int' = 10, n_layers: 'int' = 1, dropout_rate: 'float' = 0.1, dispersion: "Literal['gene', 'gene-batch', 'gene-label', 'gene-cell']" = 'gene', gene_likelihood: "Literal['zinb', 'nb', 'poisson']" = 'nb', use_observed_lib_size: 'bool' = False, latent_distribution: "Literal['normal', 'ln']" = 'normal', **model_kwargs)`
 
 ## Docstring
 
