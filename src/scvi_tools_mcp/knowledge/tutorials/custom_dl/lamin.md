@@ -47,7 +47,7 @@ pbmc_dataset = scvi.data.pbmc_dataset(
 pbmc_seurat_v4_cite_seq = scvi.data.pbmc_seurat_v4_cite_seq(save_path=".")
 ```
 
-### Preprocessing of the data
+## Preprocessing of the data
 
 In this case we read 2 PBMC data so that we will later show the integration power.
 We will select the intersection of those 2 datasets gene names, and consolidate cell types names so that they will be alligned

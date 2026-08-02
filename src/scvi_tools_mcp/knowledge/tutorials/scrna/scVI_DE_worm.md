@@ -76,7 +76,7 @@ adata = sc.read(
 adata
 ```
 
-### Take a look at the gene descriptions
+## Take a look at the gene descriptions
 
 The gene descriptions were taken using the [WormBase API](https://wormbase.org/about/userguide/for_developers#3--10).
 
@@ -84,7 +84,7 @@ The gene descriptions were taken using the [WormBase API](https://wormbase.org/a
 display(adata.var.head().style.set_properties(subset=["gene_description"], **{"width": "600px"}))
 ```
 
-### Selecting genes and loading data
+## Selecting genes and loading data
 
 We use the utility `scvi.data.poisson_gene_selection` to select genes according to their dropout rate, which is a simple and scalable approach to select genes.
 
@@ -129,7 +129,7 @@ scvi.model.SCVI.setup_anndata(adata, layer="counts", batch_key="batch")  # prepa
 For general pre-processing for various datatypes used by scvi-tools models, see the [preprocessing tutorial](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/use_cases/preprocessing.html#scrna-seq).
 ```
 
-### Define and train the model
+## Define and train the model
 
 ```python
 model = scvi.model.SCVI(
@@ -152,7 +152,7 @@ train_test_results.iloc[10:].plot(logy=True)  # exclude first 10 epochs
 plt.show()
 ```
 
-### Get the latent space and compute UMAP
+## Get the latent space and compute UMAP
 
 ```python
 SCVI_LATENT_KEY = "X_scVI"
