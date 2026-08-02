@@ -223,7 +223,7 @@ FeaturePlot(ifnb, features = c("GNLY", "IFI6"), split.by = "stim", max.cutoff = 
     cols = c("grey", "red"))
 ```
 
-#### Session Info Summary
+## Session Info Summary
 
 ```python
 sI <- sessionInfo()

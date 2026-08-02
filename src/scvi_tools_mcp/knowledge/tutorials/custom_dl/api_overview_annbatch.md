@@ -9,7 +9,7 @@ In scvi-tools, model classes expose this path through `setup_annbatch`, which re
 In addition we will show the usage of [rapids-singlecell](https://rapids-singlecell.readthedocs.io/en/latest/) in Umaps calcualtion. rapids-singlecell provides GPU-accelerated single-cell analysis with an AnnData-first API. It is largely compatible with Scanpy. Computations use CuPy and NVIDIA RAPIDS for performance on large datasets.
 In order to use rapids-singlecell with scvi-tools, one should install it with "scvi-tools[rapids]".
 
-Both of those additions improve the runtime of this tutorial comparing to the original [api_tutorial](quick_start/api_overview.ipynb)
+Both of those additions improve the runtime of this tutorial comparing to the original [api_tutorial](../quick_start/api_overview.ipynb)
 
 While we focus on scVI in this tutorial, the API is consistent across all models.
 

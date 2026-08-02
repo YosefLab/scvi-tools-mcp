@@ -228,7 +228,6 @@ results_scib = autotune.run_autotune(
     searcher="hyperopt",
     resources={"cpu": 20, "gpu": 0},
     scib_subsample_rows=10000,
-    local_mode=True,
     ignore_reinit_error=True,
     solver="randomized",
 )

@@ -2,7 +2,7 @@
 
 **Class:** `scib_metrics.benchmark._core.BatchCorrection`
 
-**Signature:** `BatchCorrection(bras: bool | dict[str, typing.Any] = True, ilisi_knn: bool | dict[str, typing.Any] = True, kbet_per_label: bool | dict[str, typing.Any] = True, graph_connectivity: bool | dict[str, typing.Any] = True, pcr_comparison: bool | dict[str, typing.Any] = True) -> None`
+**Signature:** `BatchCorrection(bras: bool | dict[str, typing.Any] = True, ilisi_knn: bool | dict[str, typing.Any] = True, kbet_per_label: bool | dict[str, typing.Any] = True, graph_connectivity: bool | dict[str, typing.Any] = True, pcr_comparison: bool | dict[str, typing.Any] = True, sbee: bool | dict[str, typing.Any] = False) -> None`
 
 ## Docstring
 

@@ -2,7 +2,7 @@
 
 **Class:** `scib_metrics.benchmark._core.Benchmarker`
 
-**Signature:** `Benchmarker(adata: anndata.AnnData, batch_key: str, label_key: str, embedding_obsm_keys: list[str], bio_conservation_metrics: scib_metrics.benchmark._core.BioConservation | None = BioConservation(isolated_labels=True, nmi_ari_cluster_labels_leiden=False, nmi_ari_cluster_labels_kmeans=True, silhouette_label=True, clisi_knn=True), batch_correction_metrics: scib_metrics.benchmark._core.BatchCorrection | None = BatchCorrection(bras=True, ilisi_knn=True, kbet_per_label=True, graph_connectivity=True, pcr_comparison=True), pre_integrated_embedding_obsm_key: str | None = None, n_jobs: int = 1, progress_bar: bool = True, solver: str = 'arpack')`
+**Signature:** `Benchmarker(adata: anndata.AnnData, batch_key: str, label_key: str, embedding_obsm_keys: list[str], bio_conservation_metrics: scib_metrics.benchmark._core.BioConservation | None = BioConservation(isolated_labels=True, nmi_ari_cluster_labels_leiden=False, nmi_ari_cluster_labels_kmeans=True, silhouette_label=True, clisi_knn=True), batch_correction_metrics: scib_metrics.benchmark._core.BatchCorrection | None = BatchCorrection(bras=True, ilisi_knn=True, kbet_per_label=True, graph_connectivity=True, pcr_comparison=True, sbee=False), pre_integrated_embedding_obsm_key: str | None = None, n_jobs: int = 1, progress_bar: bool = True, solver: str = 'arpack')`
 
 ## Docstring
 

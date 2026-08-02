@@ -492,7 +492,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-###  Distribution divergence
+##  Distribution divergence
 Jensen-Shannon (JS) divergence measures how much the predicted cell-type
 proportions differ from the true proportions.
 JS = 0 → predicted distribution is identical to the true distribution.
@@ -623,7 +623,7 @@ muon.pl.embedding(
 )
 ```
 
-### Differential Abundance Analysis: CMV+ vs CMV −
+## Differential Abundance Analysis: CMV+ vs CMV −
 
 ```python
 totalanvi_model = scvi.external.TOTALANVI.load(os.path.join(save_dir.name, "totalanvi"))
