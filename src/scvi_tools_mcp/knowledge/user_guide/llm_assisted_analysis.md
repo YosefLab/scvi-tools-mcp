@@ -4,9 +4,9 @@ Large language models (LLMs) can significantly lower the barrier to using scvi-t
 
 ---
 
-## scVI-Tools MCP Server
+## scvi-tools MCP Server
 
-The **scVI-Tools MCP server** ([`scvi-tools-mcp`](https://github.com/Yoseflab/scvi-tools-mcp)) is a [Model Context Protocol](https://modelcontextprotocol.io/) server that gives any MCP-compatible LLM structured access to scvi-tools knowledge: model documentation, tutorials, API reference, workflow templates, and a curated FAQ—with no runtime model execution.
+The **scvi-tools MCP server** ([`scvi-tools-mcp`](https://github.com/Yoseflab/scvi-tools-mcp)) is a [Model Context Protocol](https://modelcontextprotocol.io/) server that gives any MCP-compatible LLM structured access to scvi-tools knowledge: model documentation, tutorials, API reference, workflow templates, and a curated FAQ—with no runtime model execution.
 
 ### Installation
 
@@ -84,7 +84,7 @@ The server resolves these against baked-in knowledge (no network calls at tool-c
 
 ## Claude (Anthropic)
 
-Claude is a general-purpose AI assistant from Anthropic. For scvi-tools users, Claude offers two complementary integrations: the **scVI-Tools MCP Server** (see above) for real-time knowledge lookup inside Claude Code and Claude Desktop, and a **scvi-tools Skill Bundle** with guided workflows for the full scvi-tools ecosystem.
+Claude is a general-purpose AI assistant from Anthropic. For scvi-tools users, Claude offers two complementary integrations: the **scvi-tools MCP Server** (see above) for real-time knowledge lookup inside Claude Code and Claude Desktop, and a **scvi-tools Skill Bundle** with guided workflows for the full scvi-tools ecosystem.
 
 ### scvi-tools Skill Bundle
 
