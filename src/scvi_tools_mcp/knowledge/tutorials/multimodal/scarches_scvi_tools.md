@@ -4,7 +4,7 @@ This tutorial covers the usage of the [scArches method](https://www.biorxiv.org/
 
 This particular workflow is useful in the case where a model is trained on some data (called reference here) and new samples are received (called query). The goal is to analyze these samples in the context of the reference, by mapping the query cells to the same reference latent space. This workflow may also be used in the [scarches](https://scarches.readthedocs.io/) package, but here we demonstrate using only scvi-tools.
 
-### Imports and scvi-tools installation (colab)
+## Imports and scvi-tools installation (colab)
 
 ```{note}
 Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
