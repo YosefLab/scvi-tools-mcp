@@ -59,9 +59,7 @@ sc.pp.log1p(adata_ref)
 adata_ref.raw = adata_ref  # Store for later
 
 # HVG selection
-sc.pp.highly_variable_genes(
-    adata_ref, n_top_genes=4000, batch_key="batch", flavor="seurat_v3", subset=True
-)
+sc.pp.highly_variable_genes(adata_ref, n_top_genes=4000, batch_key="batch", flavor="seurat_v3", subset=True)
 ```
 
 ---
@@ -144,9 +142,7 @@ scvi.model.TOTALVI.prepare_query_anndata(adata_query, "totalvi_reference")
 # If query lacks protein, create empty protein matrix
 if not has_protein:
     n_proteins = adata_ref.obsm["protein_expression"].shape[1]
-    protein_names = adata_ref.uns.get(
-        "protein_names", [f"Protein_{i}" for i in range(n_proteins)]
-    )
+    protein_names = adata_ref.uns.get("protein_names", [f"Protein_{i}" for i in range(n_proteins)])
     # Set to zeros (TotalVI interprets as missing)
     adata_query.obsm["protein_expression"] = np.zeros((adata_query.n_obs, n_proteins))
     print(f"Created empty protein matrix ({n_proteins} proteins)")
@@ -189,14 +185,10 @@ _, protein_imputed = model_query.get_normalized_expression(
 adata_query.obsm["protein_imputed"] = protein_imputed
 
 # Also get denoised RNA
-rna_denoised, _ = model_query.get_normalized_expression(
-    adata_query, n_samples=25, return_mean=True
-)
+rna_denoised, _ = model_query.get_normalized_expression(adata_query, n_samples=25, return_mean=True)
 adata_query.layers["denoised_rna"] = rna_denoised
 
-print(
-    f"Imputed {protein_imputed.shape[1]} proteins for {protein_imputed.shape[0]} cells"
-)
+print(f"Imputed {protein_imputed.shape[1]} proteins for {protein_imputed.shape[0]} cells")
 ```
 
 **Key Parameter**: `transform_batch` specifies which reference batch(es) to use as the "source" for protein imputation.
@@ -378,7 +370,7 @@ def assess_imputation_quality(protein_imputed, predicted_cell_types):
         print(
             f"  Protein {i}: mean={prot_vals.mean():.2f}, "
             f"std={prot_vals.std():.2f}, "
-            f"zeros={100*(prot_vals < 0.1).mean():.1f}%"
+            f"zeros={100 * (prot_vals < 0.1).mean():.1f}%"
         )
 
     # Check cell-type-specific patterns
@@ -387,10 +379,7 @@ def assess_imputation_quality(protein_imputed, predicted_cell_types):
         mask = predicted_cell_types == ct
         mean_expr = protein_imputed[mask].mean(axis=0)
         top_protein = mean_expr.argmax()
-        print(
-            f"  {ct}: Highest protein = {top_protein} "
-            f"(mean={mean_expr[top_protein]:.2f})"
-        )
+        print(f"  {ct}: Highest protein = {top_protein} (mean={mean_expr[top_protein]:.2f})")
 ```
 
 ---
@@ -457,9 +446,7 @@ _, protein_batch_specific = model_query.get_normalized_expression(
 # Project query onto reference UMAP
 import anndata
 
-adata_combined = anndata.concat(
-    [adata_ref, adata_query], label="source", keys=["reference", "query"]
-)
+adata_combined = anndata.concat([adata_ref, adata_query], label="source", keys=["reference", "query"])
 
 # Get combined latent through query model
 adata_combined.obsm["X_totalVI"] = model_query.get_latent_representation(adata_combined)

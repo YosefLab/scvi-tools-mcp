@@ -42,7 +42,8 @@ import scvi
 import scviva
 from cellmapper import CellMapper
 from scib_metrics.benchmark import BatchCorrection, Benchmarker, BioConservation
-from scviva.external.diagvi import DIAGVI; from scvi.external import cytovi
+from scviva.external.diagvi import DIAGVI
+from scvi.external import cytovi
 from scviva.external.diagvi._utils import compute_foscttm
 
 try:
@@ -148,9 +149,7 @@ adata_protein.layers["scaled"] = sp.csr_matrix(adata_protein.layers["scaled"])
 We can now inspect the transformed and scaled protein expression.
 
 ```python
-cytovi.plot_histogram(
-    adata_protein, layer_key="scaled", marker=["CD8A", "CD3E", "CD68", "CD45RA", "CD45RO", "PTEN"]
-)
+cytovi.plot_histogram(adata_protein, layer_key="scaled", marker=["CD8A", "CD3E", "CD68", "CD45RA", "CD45RO", "PTEN"])
 ```
 
 ## Preparing a guidance graph
@@ -377,14 +376,10 @@ After training scVI, we initialize and train scANVI based on the fitted scVI mod
 adata_combined.obs["annotation_scanvi"] = adata_combined.obs["annotation_l2"].copy()
 
 # add Unknown category
-adata_combined.obs["annotation_scanvi"] = adata_combined.obs[
-    "annotation_scanvi"
-].cat.add_categories(["Unknown"])
+adata_combined.obs["annotation_scanvi"] = adata_combined.obs["annotation_scanvi"].cat.add_categories(["Unknown"])
 
 # assign to protein cells
-adata_combined.obs.loc[adata_combined.obs["modality"] == "protein", "annotation_scanvi"] = (
-    "Unknown"
-)
+adata_combined.obs.loc[adata_combined.obs["modality"] == "protein", "annotation_scanvi"] = "Unknown"
 ```
 
 ```python

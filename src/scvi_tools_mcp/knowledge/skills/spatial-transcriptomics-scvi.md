@@ -257,9 +257,7 @@ adata_ref = ref_model.export_posterior(adata_ref)
 
 # Stage 2: Spatial mapping
 Cell2location.setup_anndata(adata_vis, batch_key="sample")
-spatial_model = Cell2location(
-    adata_vis, cell_state_df=signatures, N_cells_per_location=30
-)
+spatial_model = Cell2location(adata_vis, cell_state_df=signatures, N_cells_per_location=30)
 spatial_model.train(max_epochs=30000)
 
 # Results (with uncertainty)

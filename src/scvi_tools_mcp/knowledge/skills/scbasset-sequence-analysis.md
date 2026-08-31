@@ -124,7 +124,7 @@ min_cells = int(adata.n_obs * min_detection)
 
 print(f"Peaks before filtering: {adata.n_vars}")
 sc.pp.filter_genes(adata, min_cells=min_cells)
-print(f"Peaks after filtering (>{min_detection*100}% detection): {adata.n_vars}")
+print(f"Peaks after filtering (>{min_detection * 100}% detection): {adata.n_vars}")
 
 # Cell-level QC
 adata.obs["n_peaks"] = np.array((adata.X > 0).sum(axis=1)).flatten()
@@ -182,9 +182,7 @@ print(f"Binary layer created with dtype: {bdata.layers['binary'].dtype}")
 
 # Verify dna_code is in correct location after transpose
 # Should now be in bdata.obsm (since peaks are now observations)
-print(
-    f"DNA codes location: bdata.obsm['dna_code'] shape = {bdata.obsm['dna_code'].shape}"
-)
+print(f"DNA codes location: bdata.obsm['dna_code'] shape = {bdata.obsm['dna_code'].shape}")
 ```
 
 **Why Transpose?**
@@ -606,23 +604,17 @@ def check_scbasset_readiness(adata):
     if "chr" in adata.var.columns:
         non_standard = adata.var["chr"].str.contains("random|Un|chrM", na=False).sum()
         if non_standard > 0:
-            recommendations.append(
-                f"{non_standard} non-standard chromosomes. Filter these."
-            )
+            recommendations.append(f"{non_standard} non-standard chromosomes. Filter these.")
 
     # Check size
     if adata.n_vars > 100000:
-        recommendations.append(
-            "Very many peaks. Consider stricter filtering (0.08-0.10)."
-        )
+        recommendations.append("Very many peaks. Consider stricter filtering (0.08-0.10).")
     if adata.n_obs > 50000:
         recommendations.append("Large dataset. Use precision=16 and GPU if available.")
 
     # Memory estimate
     estimated_memory_gb = (adata.n_vars * 1344 * 4) / 1e9  # DNA codes
-    recommendations.append(
-        f"Estimated memory for DNA codes: ~{estimated_memory_gb:.1f} GB"
-    )
+    recommendations.append(f"Estimated memory for DNA codes: ~{estimated_memory_gb:.1f} GB")
 
     print("scBasset Readiness Check:")
     print(f"  Ready: {ready}")

@@ -132,12 +132,16 @@ print(adata.obs["batch"].value_counts())
 ```python
 # Setup AnnData
 scvi.model.PEAKVI.setup_anndata(
-    adata, batch_key="batch"  # Optional, omit for single batch
+    adata,
+    batch_key="batch",  # Optional, omit for single batch
 )
 
 # Create model
 model = scvi.model.PEAKVI(
-    adata, n_latent=20, n_layers_encoder=2, n_layers_decoder=2  # Latent dimensions
+    adata,
+    n_latent=20,
+    n_layers_encoder=2,
+    n_layers_decoder=2,  # Latent dimensions
 )
 
 # Train
@@ -181,9 +185,7 @@ print(da_sig.head())
 # Compare conditions within cell type
 adata_subset = adata[adata.obs["cell_type"] == "CD4 T cells"].copy()
 
-da_condition = model.differential_accessibility(
-    groupby="condition", group1="treated", group2="control"
-)
+da_condition = model.differential_accessibility(groupby="condition", group1="treated", group2="control")
 ```
 
 ## Step 8: Peak Annotation
@@ -204,9 +206,7 @@ def parse_peak_names(peak_names):
     for peak in peak_names:
         chrom, coords = peak.split(":")
         start, end = coords.split("-")
-        records.append(
-            {"chrom": chrom, "start": int(start), "end": int(end), "peak": peak}
-        )
+        records.append({"chrom": chrom, "start": int(start), "end": int(end), "peak": peak})
     return pd.DataFrame(records)
 
 
@@ -258,17 +258,11 @@ def compute_gene_activity(adata, peak_gene_map):
     for i, gene in enumerate(genes):
         gene_peaks = [p for p, g in peak_gene_map.items() if g == gene]
         if gene_peaks:
-            peak_idx = [
-                list(adata.var_names).index(p)
-                for p in gene_peaks
-                if p in adata.var_names
-            ]
+            peak_idx = [list(adata.var_names).index(p) for p in gene_peaks if p in adata.var_names]
             if peak_idx:
                 gene_matrix[:, i] = np.array(adata.X[:, peak_idx].sum(axis=1)).flatten()
 
-    adata_gene = ad.AnnData(
-        X=csr_matrix(gene_matrix), obs=adata.obs.copy(), var=pd.DataFrame(index=genes)
-    )
+    adata_gene = ad.AnnData(X=csr_matrix(gene_matrix), obs=adata.obs.copy(), var=pd.DataFrame(index=genes))
 
     return adata_gene
 ```
@@ -276,9 +270,7 @@ def compute_gene_activity(adata, peak_gene_map):
 ## Complete Pipeline
 
 ```python
-def analyze_scatac(
-    adata, batch_key=None, n_top_peaks=50000, n_latent=20, resolution=0.5
-):
+def analyze_scatac(adata, batch_key=None, n_top_peaks=50000, n_latent=20, resolution=0.5):
     """
     Complete scATAC-seq analysis with PeakVI.
 

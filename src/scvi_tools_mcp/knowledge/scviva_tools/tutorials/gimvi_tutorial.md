@@ -189,9 +189,7 @@ def plot_gene_spatial(model, data_spatial, gene):
         return np.log(1 + 100 * data)
 
     # Plot groundtruth
-    x, y, z = order_by_strenght(
-        x_coord, y_coord, data_fish.X[:, gene_id] / (data_fish.X.sum(axis=1) + 1)
-    )
+    x, y, z = order_by_strenght(x_coord, y_coord, data_fish.X[:, gene_id] / (data_fish.X.sum(axis=1) + 1))
     ax_gt.scatter(x, y, c=transform(z), s=s, edgecolors="none", marker="s", cmap="Reds")
     ax_gt.set_title("Groundtruth")
     ax_gt.axis("off")

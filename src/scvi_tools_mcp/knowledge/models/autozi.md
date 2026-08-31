@@ -53,7 +53,7 @@ AUTOZI.setup_anndata(
     labels_key=None,
     categorical_covariate_keys=None,
     continuous_covariate_keys=None,
-    **kwargs
+    **kwargs,
 )
 ```
 

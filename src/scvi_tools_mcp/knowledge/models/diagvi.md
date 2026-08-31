@@ -119,9 +119,7 @@ imputed_protein = model.get_imputed_values(query_name="rna", query_adata=adata_r
 adata_rna.obsm["imputed_protein"] = imputed_protein
 
 # Counterfactual imputation under specific batch/libsize
-imputed_rna = model.get_imputed_values(
-    query_name="protein", reference_batch="batch_1", reference_libsize=10000
-)
+imputed_rna = model.get_imputed_values(query_name="protein", reference_batch="batch_1", reference_libsize=10000)
 ```
 
 ### Cell label transfer

@@ -60,7 +60,6 @@ import gc
 gc.collect()
 import torch
 from scviva.tools.harreman.datasets import load_visium_mouse_colon_dataset
-
 ```
 
 ```python
@@ -74,7 +73,7 @@ print("Last run with scVIVA-Tools version:", scviva.__version__)
 We load the complete dataset (both conditions) with a single call. Individual samples can be loaded by passing the `sample` argument — for example, to load only the healthy condition:
 
 ```python
-adata = load_visium_mouse_colon_dataset(sample='d0')
+adata = load_visium_mouse_colon_dataset(sample="d0")
 ```
 
 Here we load both conditions together, which is required for the joint neighborhood graph and module discovery steps below.
@@ -116,9 +115,7 @@ The `polynomial_regression` helper fits a degree-3 polynomial to the Z-scored su
 Line width of each curve is scaled by the fraction of spots assigned to that super-module, so dominant zones are visually prominent.
 
 ```python
-def polynomial_regression(
-    adata, cond, super_modules, fraction_df, var, xlabel, y_min, y_max, degree=3, figsize=(8, 6)
-):
+def polynomial_regression(adata, cond, super_modules, fraction_df, var, xlabel, y_min, y_max, degree=3, figsize=(8, 6)):
 
     X = adata.obs[var].dropna().values.reshape(-1, 1)
     X_high_res = np.linspace(X.min(), X.max(), 500).reshape(-1, 1)
@@ -165,13 +162,11 @@ def polynomial_regression(
         upper_bound = np.percentile(bootstrap_preds, 97.5, axis=0)
 
         # Plot mean prediction and confidence interval
-        line_width_factor = fraction_df[
-            (fraction_df["cond"] == cond) & (fraction_df["top_super_module"] == mod)
-        ]["Fraction"].tolist()[0]
+        line_width_factor = fraction_df[(fraction_df["cond"] == cond) & (fraction_df["top_super_module"] == mod)][
+            "Fraction"
+        ].tolist()[0]
         plt.plot(X_high_res, y_pred, label=f"{mod} (Mean)", linewidth=8 * line_width_factor)
-        plt.fill_between(
-            X_high_res.flatten(), lower_bound, upper_bound, alpha=0.2, label=f"{mod} (95% CI)"
-        )
+        plt.fill_between(X_high_res.flatten(), lower_bound, upper_bound, alpha=0.2, label=f"{mod} (95% CI)")
         plt.ylim(y_min, y_max)
 
     # Customize plot
@@ -225,9 +220,7 @@ Only genes with a **statistically significant spatial autocorrelation** (FDR < 0
 gene_autocorrelation_results = adata.uns["gene_autocorrelation_results"]
 # Keep only genes with significant spatial autocorrelation (FDR < 0.01)
 genes = (
-    gene_autocorrelation_results.loc[gene_autocorrelation_results.Z_FDR < 0.01]
-    .sort_values("Z", ascending=False)
-    .index
+    gene_autocorrelation_results.loc[gene_autocorrelation_results.Z_FDR < 0.01].sort_values("Z", ascending=False).index
 )
 ```
 
@@ -512,9 +505,7 @@ for cond in conditions:
         # Scale to [y_min_global, y_max_global/2] within each bin
         return y_min_global + (((y - y_min) / (y_max - y_min)) * (y_max_global / 2))
 
-    cond_adata.obs["dist_norm"] = cond_adata.obs.groupby("ord_bin")["dist"].transform(
-        dist_normalization
-    )
+    cond_adata.obs["dist_norm"] = cond_adata.obs.groupby("ord_bin")["dist"].transform(dist_normalization)
     adata.obs["dist_norm"][adata.obs["cond"] == cond] = cond_adata.obs["dist_norm"]
 ```
 
@@ -821,17 +812,11 @@ gene_pairs = [inter for inter in metabolites if inter in ha2.adata.uns["gene_pai
 metabs = [inter for inter in metabolites if inter in ha2.adata.uns["metabolites"]]
 
 if len(gene_pairs) > 0 and len(metabs) > 0:
-    interacting_cell_scores = pd.concat(
-        [interacting_cell_scores_gp, interacting_cell_scores_m], axis=1
-    )
+    interacting_cell_scores = pd.concat([interacting_cell_scores_gp, interacting_cell_scores_m], axis=1)
 elif len(gene_pairs) == 0 and len(metabs) == 0:
-    raise ValueError(
-        "The provided LR pairs and/or metabolites don't have significant interactions."
-    )
+    raise ValueError("The provided LR pairs and/or metabolites don't have significant interactions.")
 else:
-    interacting_cell_scores = (
-        interacting_cell_scores_gp if len(gene_pairs) > 0 else interacting_cell_scores_m
-    )
+    interacting_cell_scores = interacting_cell_scores_gp if len(gene_pairs) > 0 else interacting_cell_scores_m
 
 # Min-max normalize each metabolite score to [0, 1] for comparable visualization
 scores = interacting_cell_scores[metabolites]
@@ -844,9 +829,7 @@ violin_data = pd.concat([scores, ha2.adata.obs[["cond", "top_super_module"]]], a
 ```
 
 ```python
-violin_data_melt = pd.melt(
-    violin_data, id_vars=["cond", "top_super_module"], value_vars=metabolites
-)
+violin_data_melt = pd.melt(violin_data, id_vars=["cond", "top_super_module"], value_vars=metabolites)
 ```
 
 ```python
@@ -877,18 +860,12 @@ fig = (
     + ylab("Normalized metabolite score")
     + theme_classic()
     + theme(
-        plot_title=element_text(
-            hjust=0.5, margin={"t": 0, "b": 5, "l": 0, "r": 0}, size=14, face="bold"
-        ),
+        plot_title=element_text(hjust=0.5, margin={"t": 0, "b": 5, "l": 0, "r": 0}, size=14, face="bold"),
         legend_position="none",
         axis_title_x=element_blank(),
         axis_title_y=element_text(size=11),
-        axis_text_x=element_text(
-            margin={"t": 0, "b": 0, "l": 0, "r": 10}, size=10, colour="black", rotation=45
-        ),
-        axis_text_y=element_text(
-            margin={"t": 0, "b": 0, "l": 0, "r": 10}, size=10, colour="black"
-        ),
+        axis_text_x=element_text(margin={"t": 0, "b": 0, "l": 0, "r": 10}, size=10, colour="black", rotation=45),
+        axis_text_y=element_text(margin={"t": 0, "b": 0, "l": 0, "r": 10}, size=10, colour="black"),
         panel_border=element_rect(color="black"),
         panel_background=element_rect(colour="black", linewidth=1),
         figure_size=(10, 8),
@@ -915,9 +892,7 @@ def to_tuple(x):
     return x
 
 
-metabolite_gene_pair_df = pd.DataFrame.from_dict(
-    gene_pairs_per_metabolite, orient="index"
-).reset_index()
+metabolite_gene_pair_df = pd.DataFrame.from_dict(gene_pairs_per_metabolite, orient="index").reset_index()
 metabolite_gene_pair_df = metabolite_gene_pair_df.rename(columns={"index": "metabolite"})
 metabolite_gene_pair_df["gene_pair"] = metabolite_gene_pair_df["gene_pair"].apply(
     lambda arr: [(to_tuple(gp[0]), to_tuple(gp[1])) for gp in arr]
@@ -944,9 +919,9 @@ if "LR_database" in ha2.adata.uns:
         how="left",
     )
     LR_df = df_merged.dropna(subset=["pathway_name"])
-    metabolite_gene_pair_df["metabolite"][
-        metabolite_gene_pair_df.metabolite.isin(LR_df.metabolite)
-    ] = LR_df["pathway_name"]
+    metabolite_gene_pair_df["metabolite"][metabolite_gene_pair_df.metabolite.isin(LR_df.metabolite)] = LR_df[
+        "pathway_name"
+    ]
 ```
 
 ```python
@@ -956,10 +931,7 @@ metabolite_gene_pair_df = metabolite_gene_pair_df.set_index("metabolite")
 ```python
 def is_present(row, gene_pairs):
     gene1, gene2 = row["Gene 1"], row["Gene 2"]
-    return any(
-        (gene1 in pair and gene2 in pair) if isinstance(pair, tuple) else False
-        for pair in gene_pairs
-    )
+    return any((gene1 in pair and gene2 in pair) if isinstance(pair, tuple) else False for pair in gene_pairs)
 
 
 gene_pairs = metabolite_gene_pair_df.loc[metabolites]["gene_pair"].tolist()
@@ -969,9 +941,7 @@ cell_communication_df_filt = cell_communication_df[
 ```
 
 ```python
-gene_pairs_filt = list(
-    zip(cell_communication_df_filt["Gene 1"], cell_communication_df_filt["Gene 2"])
-)
+gene_pairs_filt = list(zip(cell_communication_df_filt["Gene 1"], cell_communication_df_filt["Gene 2"]))
 ```
 
 ```python
@@ -999,12 +969,8 @@ def convert_list_to_string(value):
 
 
 # Apply conversion to both columns
-cell_communication_df_filt["Gene 1"] = cell_communication_df_filt["Gene 1"].apply(
-    convert_list_to_string
-)
-cell_communication_df_filt["Gene 2"] = cell_communication_df_filt["Gene 2"].apply(
-    convert_list_to_string
-)
+cell_communication_df_filt["Gene 1"] = cell_communication_df_filt["Gene 1"].apply(convert_list_to_string)
+cell_communication_df_filt["Gene 2"] = cell_communication_df_filt["Gene 2"].apply(convert_list_to_string)
 ```
 
 ```python
@@ -1014,14 +980,10 @@ gene_2 = [gene for gene in gene_2 if gene in cell_communication_df_filt["Gene 2"
 
 ```python
 cell_communication_df_filt["Gene 1"] = cell_communication_df_filt["Gene 1"].astype("category")
-cell_communication_df_filt["Gene 1"] = cell_communication_df_filt["Gene 1"].cat.reorder_categories(
-    gene_1[::-1]
-)
+cell_communication_df_filt["Gene 1"] = cell_communication_df_filt["Gene 1"].cat.reorder_categories(gene_1[::-1])
 
 cell_communication_df_filt["Gene 2"] = cell_communication_df_filt["Gene 2"].astype("category")
-cell_communication_df_filt["Gene 2"] = cell_communication_df_filt["Gene 2"].cat.reorder_categories(
-    gene_2
-)
+cell_communication_df_filt["Gene 2"] = cell_communication_df_filt["Gene 2"].cat.reorder_categories(gene_2)
 ```
 
 ```python
@@ -1034,15 +996,11 @@ fig = (
     + scale_color_gradient(low="#FEE08B", high="#5E4FA2")
     + theme_classic()
     + theme(
-        plot_title=element_text(
-            hjust=0.5, margin={"t": 0, "b": 5, "l": 0, "r": 0}, size=14, face="bold"
-        ),
+        plot_title=element_text(hjust=0.5, margin={"t": 0, "b": 5, "l": 0, "r": 0}, size=14, face="bold"),
         # legend_position = "none",
         axis_title_x=element_text(size=11),
         axis_title_y=element_text(size=11),
-        axis_text_x=element_text(
-            margin={"t": 0, "b": 0, "l": 0, "r": 10}, size=9, colour="black", rotation=90
-        ),
+        axis_text_x=element_text(margin={"t": 0, "b": 0, "l": 0, "r": 10}, size=9, colour="black", rotation=90),
         axis_text_y=element_text(margin={"t": 0, "b": 0, "l": 0, "r": 10}, size=9, colour="black"),
         panel_border=element_rect(color="black"),
         panel_background=element_rect(colour="black", linewidth=1),

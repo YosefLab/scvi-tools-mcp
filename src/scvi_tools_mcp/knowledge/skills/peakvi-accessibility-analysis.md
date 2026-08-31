@@ -77,7 +77,7 @@ min_detection = 0.05
 min_cells = int(adata.n_obs * min_detection)
 sc.pp.filter_genes(adata, min_cells=min_cells)
 
-print(f"Peaks after filtering (>{min_detection*100}% detection): {adata.n_vars}")
+print(f"Peaks after filtering (>{min_detection * 100}% detection): {adata.n_vars}")
 
 # Optional: calculate cell-level QC
 adata.obs["n_peaks"] = np.array((adata.X > 0).sum(axis=1)).flatten()
@@ -262,9 +262,7 @@ adata.write_h5ad("atac_peakvi_analyzed.h5ad")
 # Export marker peaks
 import pandas as pd
 
-all_markers_df = pd.concat(
-    [df.assign(cluster=k) for k, df in markers.items()], ignore_index=False
-)
+all_markers_df = pd.concat([df.assign(cluster=k) for k, df in markers.items()], ignore_index=False)
 all_markers_df.to_csv("marker_peaks.csv")
 
 # Reload model later
@@ -358,9 +356,7 @@ model = scvi.model.PEAKVI(
     dropout_rate=0.2,  # More regularization
 )
 
-model.train(
-    max_epochs=1000, early_stopping=True, early_stopping_patience=20, batch_size=256
-)
+model.train(max_epochs=1000, early_stopping=True, early_stopping_patience=20, batch_size=256)
 ```
 
 ### One-vs-Rest Differential Accessibility

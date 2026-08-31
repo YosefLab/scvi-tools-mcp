@@ -247,9 +247,7 @@ pivot_df = pivot_df.sort_values(by="total", ascending=False)  # Sort by the tota
 pivot_df = pivot_df.head(top_n)  # Select the top 10 features
 
 # Plotting the horizontal stacked bar plot
-ax = pivot_df.drop("total", axis=1).plot(
-    kind="barh", stacked=True, figsize=(10, 6), colormap="tab20"
-)
+ax = pivot_df.drop("total", axis=1).plot(kind="barh", stacked=True, figsize=(10, 6), colormap="tab20")
 
 # Add labels and title
 ax.set_xlabel("IG Contribution Value")
@@ -380,9 +378,7 @@ fig.tight_layout()
 ```python
 top_n = 20
 # Pivot the data so that each group becomes a column for stacking
-pivot_df = attributions_class_pos_agg.pivot_table(
-    index="gene", columns="class", values="mean_shap", aggfunc="sum"
-)
+pivot_df = attributions_class_pos_agg.pivot_table(index="gene", columns="class", values="mean_shap", aggfunc="sum")
 
 # Sort by the total sum of each feature (sum across all groups)
 pivot_df["total"] = pivot_df.sum(axis=1)  # Calculate the total sum for each feature
@@ -390,9 +386,7 @@ pivot_df = pivot_df.sort_values(by="total", ascending=False)  # Sort by the tota
 pivot_df = pivot_df.head(top_n)  # Select the top 10 features
 
 # Plotting the horizontal stacked bar plot
-ax = pivot_df.drop("total", axis=1).plot(
-    kind="barh", stacked=True, figsize=(10, 6), colormap="tab20"
-)
+ax = pivot_df.drop("total", axis=1).plot(kind="barh", stacked=True, figsize=(10, 6), colormap="tab20")
 
 # Add labels and title
 ax.set_xlabel("SHAP Contribution Value")

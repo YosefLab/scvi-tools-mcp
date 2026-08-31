@@ -39,9 +39,7 @@ By default, only the new query-specific parameters $W_{s'}$ are trained; all ref
 
 ```python
 # Load query data into reference model
-model_query = scvi.model.SCVI.load_query_data(
-    adata=adata_query, reference_model=model_reference
-)
+model_query = scvi.model.SCVI.load_query_data(adata=adata_query, reference_model=model_reference)
 model_query.train(max_epochs=100)
 
 # The latent space is now shared between reference and query

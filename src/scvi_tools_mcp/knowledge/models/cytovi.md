@@ -83,13 +83,9 @@ sc.pp.neighbors(adata, use_rep="X_CytoVI")
 ### Transfer learning
 
 ```python
-model_query = scvi.external.CYTOVI.load_query_data(
-    adata=adata_query, reference_model=model
-)
+model_query = scvi.external.CYTOVI.load_query_data(adata=adata_query, reference_model=model)
 model_query.is_trained = True
-adata_query.obs["imputed_label"] = model_query.impute_categories_from_reference(
-    adata_reference, cat_key="cell_type"
-)
+adata_query.obs["imputed_label"] = model_query.impute_categories_from_reference(adata_reference, cat_key="cell_type")
 ```
 
 ### Label-free differential abundance

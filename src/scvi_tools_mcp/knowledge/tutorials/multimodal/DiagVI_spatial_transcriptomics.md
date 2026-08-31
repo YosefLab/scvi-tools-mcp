@@ -61,17 +61,13 @@ save_dir = tempfile.TemporaryDirectory()
 
 ```python
 adata_rna_path = os.path.join(save_dir.name, "ad_diss.h5ad")
-ad_diss = sc.read(
-    adata_rna_path, backup_url="https://exampledata.scverse.org/scvi-tools/dissociated.h5ad"
-)
+ad_diss = sc.read(adata_rna_path, backup_url="https://exampledata.scverse.org/scvi-tools/dissociated.h5ad")
 ad_diss
 ```
 
 ```python
 adata_protein_path = os.path.join(save_dir.name, "ad_sp.h5ad")
-ad_sp = sc.read(
-    adata_protein_path, backup_url="https://exampledata.scverse.org/scvi-tools/spatial.h5ad"
-)
+ad_sp = sc.read(adata_protein_path, backup_url="https://exampledata.scverse.org/scvi-tools/spatial.h5ad")
 ad_sp
 ```
 
@@ -102,9 +98,7 @@ print(f"Computed {ad_diss.var['highly_variable'].sum()} highly variable genes")
 We subset the dissociated data to the union of highly variable genes and spatially measured genes. This ensures the model can learn from the full set of informative genes.
 
 ```python
-genes_diss = ad_sp.var_names.union(ad_diss.var.query("highly_variable").index).intersection(
-    ad_diss.var_names
-)
+genes_diss = ad_sp.var_names.union(ad_diss.var.query("highly_variable").index).intersection(ad_diss.var_names)
 ad_diss = ad_diss[:, genes_diss].copy()
 
 print(f"Spatial data dimensions: {ad_sp.shape}")
@@ -321,10 +315,7 @@ with warnings.catch_warnings():
             adata,
             spot_size=1,
             color=gene_names,
-            title=[
-                f"{name} {key} (r={corr:.2f})"
-                for name, corr in zip(gene_names, gene_corrs, strict=False)
-            ],
+            title=[f"{name} {key} (r={corr:.2f})" for name, corr in zip(gene_names, gene_corrs, strict=False)],
             ncols=len(gene_names),
             size=2,
             cmap="viridis",
@@ -375,9 +366,7 @@ ad_sp.obs["celltype_harmonized_conf"] = classifier_predictions["confidence"]
 
 ```python
 cmap = CellMapper(query=ad_sp, reference=ad_sp)
-cmap.evaluate_label_transfer(
-    label_key="celltype_harmonized", prediction_postfix="_pred", confidence_postfix="_conf"
-)
+cmap.evaluate_label_transfer(label_key="celltype_harmonized", prediction_postfix="_pred", confidence_postfix="_conf")
 ```
 
 The performance is comparable to the label transfer implemented with CellMapper, while offering the advantage of not requiring any additional dependencies.
@@ -506,9 +495,7 @@ To demonstrate DiagVI's strength in the weak-linkage regime, we repeat the integ
 # keep genes present in both modalities + HVGs
 sc.pp.highly_variable_genes(ad_sp, n_top_genes=50, flavor="seurat_v3")
 linked_genes = ad_sp[:, ad_sp.var["highly_variable"]].var_names
-ad_diss_sub = ad_diss[
-    :, ad_diss.var_names.isin(linked_genes) | ad_diss.var["highly_variable"]
-].copy()
+ad_diss_sub = ad_diss[:, ad_diss.var_names.isin(linked_genes) | ad_diss.var["highly_variable"]].copy()
 ad_sp_sub = ad_sp[:, ad_sp.var_names.isin(linked_genes)].copy()
 
 # Setup and train DiagVI with reduced linkage (50 features)

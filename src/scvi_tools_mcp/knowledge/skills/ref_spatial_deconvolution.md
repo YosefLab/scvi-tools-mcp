@@ -200,9 +200,7 @@ sq.pl.spatial_scatter(adata, color="leiden")
 
 ```python
 # DE between cell types using resolVI
-de_results = model.differential_expression(
-    adata, groupby="resolvi_celltype", group1="T_cell", group2="Tumor"
-)
+de_results = model.differential_expression(adata, groupby="resolvi_celltype", group1="T_cell", group2="Tumor")
 
 print(de_results.head(20))
 ```
@@ -254,9 +252,7 @@ cell_types = ["T_cell", "Tumor", "Fibroblast", "Macrophage"]
 fig, axes = plt.subplots(2, 2, figsize=(12, 12))
 
 for ax, ct in zip(axes.flat, cell_types):
-    sq.pl.spatial_scatter(
-        adata_spatial, color=f"prop_{ct}", ax=ax, title=ct, show=False
-    )
+    sq.pl.spatial_scatter(adata_spatial, color=f"prop_{ct}", ax=ax, title=ct, show=False)
 
 plt.tight_layout()
 ```
@@ -293,9 +289,7 @@ sq.gr.spatial_neighbors(adata_spatial)
 # Create "dominant cell type" annotation
 prop_cols = [f"prop_{ct}" for ct in cell_types]
 adata_spatial.obs["dominant_type"] = adata_spatial.obs[prop_cols].idxmax(axis=1)
-adata_spatial.obs["dominant_type"] = adata_spatial.obs["dominant_type"].str.replace(
-    "prop_", ""
-)
+adata_spatial.obs["dominant_type"] = adata_spatial.obs["dominant_type"].str.replace("prop_", "")
 
 # Co-occurrence analysis
 sq.gr.co_occurrence(adata_spatial, cluster_key="dominant_type")
@@ -351,9 +345,7 @@ def deconvolve_spatial(
         adata_spatial.layers["counts"] = adata_spatial.X.copy()
 
     # Train reference model
-    scvi.model.CondSCVI.setup_anndata(
-        adata_ref, layer="counts", labels_key=cell_type_key
-    )
+    scvi.model.CondSCVI.setup_anndata(adata_ref, layer="counts", labels_key=cell_type_key)
 
     ref_model = scvi.model.CondSCVI(adata_ref, n_latent=n_latent)
     ref_model.train(max_epochs=max_epochs_ref)
@@ -374,22 +366,16 @@ def deconvolve_spatial(
     # Add dominant type
     prop_cols = [f"prop_{ct}" for ct in cell_types]
     adata_spatial.obs["dominant_type"] = adata_spatial.obs[prop_cols].idxmax(axis=1)
-    adata_spatial.obs["dominant_type"] = adata_spatial.obs["dominant_type"].str.replace(
-        "prop_", ""
-    )
+    adata_spatial.obs["dominant_type"] = adata_spatial.obs["dominant_type"].str.replace("prop_", "")
 
     return adata_spatial, ref_model, spatial_model
 
 
 # Usage
-adata_spatial, ref_model, spatial_model = deconvolve_spatial(
-    adata_spatial, adata_sc, cell_type_key="cell_type"
-)
+adata_spatial, ref_model, spatial_model = deconvolve_spatial(adata_spatial, adata_sc, cell_type_key="cell_type")
 
 # Visualize
-sq.pl.spatial_scatter(
-    adata_spatial, color=["dominant_type", "prop_T_cell", "prop_Tumor"], ncols=3
-)
+sq.pl.spatial_scatter(adata_spatial, color=["dominant_type", "prop_T_cell", "prop_Tumor"], ncols=3)
 ```
 
 ---

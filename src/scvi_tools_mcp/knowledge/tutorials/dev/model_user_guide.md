@@ -136,9 +136,7 @@ class SCVI(UnsupervisedTrainingMixin, BaseModelClass):
             n_latent=n_latent,
             **model_kwargs,
         )
-        self._model_summary_string = (
-            f"SCVI Model with the following params: \nn_latent: {n_latent}"
-        )
+        self._model_summary_string = f"SCVI Model with the following params: \nn_latent: {n_latent}"
         self.init_params_ = self._get_init_params(locals())
 
     @classmethod
@@ -191,8 +189,7 @@ The `AnnDataManager` class stores state on data registered with scvi-tools. Sinc
 print(f"model instance UUID: {model.id}")
 print(f"adata UUID: {adata.uns['_scvi_uuid']}")
 print(
-    "AnnDataManager for adata: "
-    f"{SCVI._per_instance_manager_store[model.id][adata.uns['_scvi_uuid']]}"
+    f"AnnDataManager for adata: {SCVI._per_instance_manager_store[model.id][adata.uns['_scvi_uuid']]}"
 )  # { model instance UUID: { adata UUID: AnnDataManager } }
 ```
 
@@ -307,16 +304,12 @@ valid_ind=np.array([4,5,6])
 test_ind=np.array(None)
 ```python
 # object to make train/test/val dataloaders with external indices
-data_splitter = DataSplitter(
-    external_indexing=[train_ind, valid_ind, test_ind]
-)
+data_splitter = DataSplitter(external_indexing=[train_ind, valid_ind, test_ind])
 model.train(datamodule=datamodule)
 
-#Or insert indices directly in train with datasplitter_kwargs
+# Or insert indices directly in train with datasplitter_kwargs
 model.train(
-    datasplitter_kwargs={
-        "external_indexing": [train_ind, valid_ind, test_ind]
-    },
+    datasplitter_kwargs={"external_indexing": [train_ind, valid_ind, test_ind]},
 )
 ```
 
@@ -464,9 +457,7 @@ class SCVI(VAEMixin, UnsupervisedTrainingMixin, BaseModelClass):
             n_latent=n_latent,
             **model_kwargs,
         )
-        self._model_summary_string = (
-            f"SCVI Model with the following params: \nn_latent: {n_latent}"
-        )
+        self._model_summary_string = f"SCVI Model with the following params: \nn_latent: {n_latent}"
         self.init_params_ = self._get_init_params(locals())
 
     @classmethod

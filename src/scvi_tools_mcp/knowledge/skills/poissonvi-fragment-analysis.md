@@ -129,7 +129,7 @@ min_cells = int(adata.n_obs * min_detection)
 
 print(f"Regions before filtering: {adata.n_vars}")
 sc.pp.filter_genes(adata, min_cells=min_cells)
-print(f"Regions after filtering (>{min_detection*100}% detection): {adata.n_vars}")
+print(f"Regions after filtering (>{min_detection * 100}% detection): {adata.n_vars}")
 
 # Calculate cell-level QC on fragments
 frag_layer = adata.layers["fragments"]

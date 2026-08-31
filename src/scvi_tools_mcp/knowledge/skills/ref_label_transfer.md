@@ -41,9 +41,7 @@ print(f"Cell types: {adata_ref.obs['cell_type'].nunique()}")
 print(adata_ref.obs["cell_type"].value_counts())
 
 # Ensure raw counts
-adata_ref.layers["counts"] = (
-    adata_ref.raw.X.copy() if adata_ref.raw else adata_ref.X.copy()
-)
+adata_ref.layers["counts"] = adata_ref.raw.X.copy() if adata_ref.raw else adata_ref.X.copy()
 
 # HVG selection
 sc.pp.highly_variable_genes(
@@ -66,9 +64,7 @@ scvi_ref = scvi.model.SCVI(adata_ref, n_latent=30)
 scvi_ref.train(max_epochs=200)
 
 # Initialize scANVI from scVI
-scanvi_ref = scvi.model.SCANVI.from_scvi_model(
-    scvi_ref, labels_key="cell_type", unlabeled_category="Unknown"
-)
+scanvi_ref = scvi.model.SCANVI.from_scvi_model(scvi_ref, labels_key="cell_type", unlabeled_category="Unknown")
 
 # Train scANVI
 scanvi_ref.train(max_epochs=50)
@@ -132,7 +128,7 @@ print(f"Mean prediction confidence: {adata_query.obs['prediction_score'].mean():
 
 # Low confidence predictions
 low_conf = adata_query.obs["prediction_score"] < 0.5
-print(f"Low confidence cells: {low_conf.sum()} ({low_conf.mean()*100:.1f}%)")
+print(f"Low confidence cells: {low_conf.sum()} ({low_conf.mean() * 100:.1f}%)")
 
 # Visualize
 sc.pp.neighbors(adata_query, use_rep="X_scANVI")
@@ -205,9 +201,7 @@ sc.pp.neighbors(adata_combined, use_rep="X_scANVI")
 sc.tl.umap(adata_combined)
 
 # Plot
-sc.pl.umap(
-    adata_combined, color=["dataset", "cell_type", "predicted_cell_type"], ncols=2
-)
+sc.pl.umap(adata_combined, color=["dataset", "cell_type", "predicted_cell_type"], ncols=2)
 ```
 
 ## Quality Control for Predictions
@@ -218,15 +212,11 @@ sc.pl.umap(
 # Filter predictions by confidence
 confidence_threshold = 0.7
 
-high_conf = adata_query[
-    adata_query.obs["prediction_score"] >= confidence_threshold
-].copy()
-low_conf = adata_query[
-    adata_query.obs["prediction_score"] < confidence_threshold
-].copy()
+high_conf = adata_query[adata_query.obs["prediction_score"] >= confidence_threshold].copy()
+low_conf = adata_query[adata_query.obs["prediction_score"] < confidence_threshold].copy()
 
-print(f"High confidence: {len(high_conf)} ({len(high_conf)/len(adata_query)*100:.1f}%)")
-print(f"Low confidence: {len(low_conf)} ({len(low_conf)/len(adata_query)*100:.1f}%)")
+print(f"High confidence: {len(high_conf)} ({len(high_conf) / len(adata_query) * 100:.1f}%)")
+print(f"Low confidence: {len(low_conf)} ({len(low_conf) / len(adata_query) * 100:.1f}%)")
 ```
 
 ### Marker Validation
@@ -302,9 +292,7 @@ def transfer_labels(
     scvi_ref = scvi.model.SCVI(adata_ref, n_latent=30)
     scvi_ref.train(max_epochs=200)
 
-    scanvi_ref = scvi.model.SCANVI.from_scvi_model(
-        scvi_ref, labels_key=cell_type_key, unlabeled_category="Unknown"
-    )
+    scanvi_ref = scvi.model.SCANVI.from_scvi_model(scvi_ref, labels_key=cell_type_key, unlabeled_category="Unknown")
     scanvi_ref.train(max_epochs=50)
 
     # Prepare query
@@ -322,9 +310,7 @@ def transfer_labels(
     adata_query.obs["prediction_score"] = soft.max(axis=1)
 
     # Mark low confidence
-    adata_query.obs["confident_prediction"] = (
-        adata_query.obs["prediction_score"] >= confidence_threshold
-    )
+    adata_query.obs["confident_prediction"] = adata_query.obs["prediction_score"] >= confidence_threshold
 
     # Add latent representation
     adata_query.obsm["X_scANVI"] = scanvi_query.get_latent_representation()
@@ -333,9 +319,7 @@ def transfer_labels(
 
 
 # Usage
-adata_annotated, ref_model, query_model = transfer_labels(
-    adata_ref, adata_query, cell_type_key="cell_type"
-)
+adata_annotated, ref_model, query_model = transfer_labels(adata_ref, adata_query, cell_type_key="cell_type")
 
 # Visualize
 sc.pp.neighbors(adata_annotated, use_rep="X_scANVI")

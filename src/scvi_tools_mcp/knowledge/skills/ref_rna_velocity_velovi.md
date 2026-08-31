@@ -104,9 +104,7 @@ scv.pp.moments(adata, n_pcs=30, n_neighbors=30)
 
 ```python
 # Setup for veloVI
-scvi.model.VELOVI.setup_anndata(
-    adata, spliced_layer="spliced", unspliced_layer="unspliced"
-)
+scvi.model.VELOVI.setup_anndata(adata, spliced_layer="spliced", unspliced_layer="unspliced")
 ```
 
 ### Train Model
@@ -145,9 +143,7 @@ adata.layers["veloVI_expression"] = vae.get_expression_fit(n_samples=25)
 scv.tl.velocity_graph(adata, vkey="veloVI_velocity")
 
 # Plot streamlines on UMAP
-scv.pl.velocity_embedding_stream(
-    adata, basis="umap", vkey="veloVI_velocity", color="cell_type"
-)
+scv.pl.velocity_embedding_stream(adata, basis="umap", vkey="veloVI_velocity", color="cell_type")
 ```
 
 ### Velocity Arrows
@@ -181,13 +177,9 @@ scv.tl.velocity_graph(adata)
 # Compare velocity fields
 fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
-scv.pl.velocity_embedding_stream(
-    adata, basis="umap", ax=axes[0], title="scVelo", show=False
-)
+scv.pl.velocity_embedding_stream(adata, basis="umap", ax=axes[0], title="scVelo", show=False)
 
-scv.pl.velocity_embedding_stream(
-    adata, basis="umap", vkey="veloVI_velocity", ax=axes[1], title="veloVI", show=False
-)
+scv.pl.velocity_embedding_stream(adata, basis="umap", vkey="veloVI_velocity", ax=axes[1], title="veloVI", show=False)
 
 plt.tight_layout()
 ```
@@ -210,9 +202,7 @@ scv.pl.velocity(adata, var_names=genes, vkey="veloVI_velocity", colorbar=True)
 for gene in genes:
     fig, ax = plt.subplots(figsize=(6, 4))
 
-    sc.pl.scatter(
-        adata, x="veloVI_latent_time", y=gene, color="cell_type", ax=ax, show=False
-    )
+    sc.pl.scatter(adata, x="veloVI_latent_time", y=gene, color="cell_type", ax=ax, show=False)
     ax.set_xlabel("Latent Time")
     ax.set_ylabel(f"{gene} Expression")
 ```
@@ -234,9 +224,7 @@ veloVI provides uncertainty estimates:
 
 ```python
 # Get velocity with uncertainty
-velocity_mean, velocity_std = vae.get_velocity(
-    n_samples=100, return_mean=True, return_numpy=True
-)
+velocity_mean, velocity_std = vae.get_velocity(n_samples=100, return_mean=True, return_numpy=True)
 
 # Store uncertainty
 adata.layers["velocity_uncertainty"] = velocity_std
@@ -289,9 +277,7 @@ def run_velocity_analysis(
     scv.pp.moments(adata, n_pcs=30, n_neighbors=30)
 
     # Setup veloVI
-    scvi.model.VELOVI.setup_anndata(
-        adata, spliced_layer=spliced_layer, unspliced_layer=unspliced_layer
-    )
+    scvi.model.VELOVI.setup_anndata(adata, spliced_layer=spliced_layer, unspliced_layer=unspliced_layer)
 
     # Train
     model = scvi.model.VELOVI(adata)
@@ -316,9 +302,7 @@ def run_velocity_analysis(
 adata_velocity, model = run_velocity_analysis(adata)
 
 # Visualize
-scv.pl.velocity_embedding_stream(
-    adata_velocity, basis="umap", vkey="velocity", color="cell_type"
-)
+scv.pl.velocity_embedding_stream(adata_velocity, basis="umap", vkey="velocity", color="cell_type")
 
 sc.pl.umap(adata_velocity, color="latent_time")
 ```
@@ -327,9 +311,7 @@ sc.pl.umap(adata_velocity, color="latent_time")
 
 ```python
 # For multi-batch data, include batch in model
-scvi.model.VELOVI.setup_anndata(
-    adata, spliced_layer="spliced", unspliced_layer="unspliced", batch_key="batch"
-)
+scvi.model.VELOVI.setup_anndata(adata, spliced_layer="spliced", unspliced_layer="unspliced", batch_key="batch")
 
 model = scvi.model.VELOVI(adata)
 model.train()

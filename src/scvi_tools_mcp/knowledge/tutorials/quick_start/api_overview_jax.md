@@ -97,8 +97,9 @@ In this dataset, there is a "cell_source" categorical covariate, and within each
 
 ```python
 import pandas as pd
-pd.crosstab(adata.obs["cell_source"],adata.obs["donor"])
-adata.obs["new_batch"] = adata.obs["cell_source"].astype(str)+"_"+adata.obs["donor"].astype(str)
+
+pd.crosstab(adata.obs["cell_source"], adata.obs["donor"])
+adata.obs["new_batch"] = adata.obs["cell_source"].astype(str) + "_" + adata.obs["donor"].astype(str)
 ```
 
 ```python
@@ -173,16 +174,16 @@ latent_subset.shape
 ```
 
 ```python
-#denoised = model.get_normalized_expression(adata_subset, library_size=1e4)
-#denoised.iloc[:5, :5]
+# denoised = model.get_normalized_expression(adata_subset, library_size=1e4)
+# denoised.iloc[:5, :5]
 ```
 
 Let's store the normalized values back in the anndata.
 
 ```python
-#SCVI_NORMALIZED_KEY = "scvi_jax_normalized"
+# SCVI_NORMALIZED_KEY = "scvi_jax_normalized"
 
-#adata.layers[SCVI_NORMALIZED_KEY] = model.get_normalized_expression(library_size=10e4)
+# adata.layers[SCVI_NORMALIZED_KEY] = model.get_normalized_expression(library_size=10e4)
 ```
 
 ## Interoperability with Scanpy
@@ -275,17 +276,17 @@ adata.obs.cell_type.head()
 For example, a 1-vs-1 DE test is as simple as:
 
 ```python
-#de_df = model.differential_expression(
+# de_df = model.differential_expression(
 #    groupby="cell_type", group1="Endothelial", group2="Fibroblast"
-#)
-#de_df.head()
+# )
+# de_df.head()
 ```
 
 We can also do a 1-vs-all DE test, which compares each cell type with the rest of the dataset:
 
 ```python
-#de_df = model.differential_expression(groupby="cell_type", mode="change")
-#de_df.head()
+# de_df = model.differential_expression(groupby="cell_type", mode="change")
+# de_df.head()
 ```
 
 We now extract top markers for each cluster using the DE results.

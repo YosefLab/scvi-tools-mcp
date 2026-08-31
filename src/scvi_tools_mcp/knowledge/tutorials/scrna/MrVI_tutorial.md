@@ -49,9 +49,7 @@ adata = sc.read(
     adata_path,
     backup_url="https://exampledata.scverse.org/scvi-tools/haniffa_tutorial_subset.h5ad",
 )
-sc.pp.highly_variable_genes(
-    adata, n_top_genes=10000, inplace=True, subset=True, flavor="seurat_v3"
-)
+sc.pp.highly_variable_genes(adata, n_top_genes=10000, inplace=True, subset=True, flavor="seurat_v3")
 adata
 ```
 
@@ -219,9 +217,7 @@ sample_cov_keys = ["Status"]  # Replace with your sample covariate of interest
 model.sample_info["Status"] = model.sample_info["Status"].cat.reorder_categories(
     ["Healthy", "Covid"]
 )  # Reorder categories such that the coefficient corresponds to Covid
-de_res = model.differential_expression(
-    sample_cov_keys=sample_cov_keys, store_lfc=True, use_vmap=False
-)
+de_res = model.differential_expression(sample_cov_keys=sample_cov_keys, store_lfc=True, use_vmap=False)
 ```
 
 ```python
@@ -262,13 +258,9 @@ cell_types.append("B_cell")
 avg_lfcs = []
 for cell_type in cell_types:
     cell_idxs = adata[(adata.obs["initial_clustering"] == cell_type)].obs.index
-    avg_lfcs.append(
-        de_res.sel(cell_name=cell_idxs, gene=all_top_genes).mean(dim="cell_name").lfc.values
-    )
+    avg_lfcs.append(de_res.sel(cell_name=cell_idxs, gene=all_top_genes).mean(dim="cell_name").lfc.values)
 
-heatmap_data = pd.DataFrame(
-    np.concatenate(avg_lfcs, axis=0), index=cell_types, columns=all_top_genes
-)
+heatmap_data = pd.DataFrame(np.concatenate(avg_lfcs, axis=0), index=cell_types, columns=all_top_genes)
 
 plt.figure(figsize=(10, 8))
 sns.clustermap(heatmap_data, annot=True, cmap="viridis", fmt=".2f")

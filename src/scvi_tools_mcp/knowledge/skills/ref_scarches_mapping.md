@@ -178,15 +178,11 @@ print(adata_query.obs["predicted_cell_type"].value_counts())
 
 # Confidence statistics
 print(f"Mean confidence: {adata_query.obs['prediction_confidence'].mean():.3f}")
-print(
-    f"Low confidence (<0.5): {(adata_query.obs['prediction_confidence'] < 0.5).sum()}"
-)
+print(f"Low confidence (<0.5): {(adata_query.obs['prediction_confidence'] < 0.5).sum()}")
 
 # Filter low-confidence predictions
 high_conf = adata_query[adata_query.obs["prediction_confidence"] >= 0.7].copy()
-print(
-    f"High confidence cells: {len(high_conf)} ({len(high_conf)/len(adata_query)*100:.1f}%)"
-)
+print(f"High confidence cells: {len(high_conf)} ({len(high_conf) / len(adata_query) * 100:.1f}%)")
 ```
 
 ## Workflow 3: Model Surgery (Extending Reference)
@@ -352,9 +348,7 @@ def map_query_to_reference(
         adata_query.obs["predicted_cell_type"] = query_model.predict()
         soft = query_model.predict(soft=True)
         adata_query.obs["prediction_confidence"] = soft.max(axis=1)
-        adata_query.obs["confident"] = (
-            adata_query.obs["prediction_confidence"] >= confidence_threshold
-        )
+        adata_query.obs["confident"] = adata_query.obs["prediction_confidence"] >= confidence_threshold
 
     # Compute UMAP
     sc.pp.neighbors(adata_query, use_rep=rep_key)
@@ -364,9 +358,7 @@ def map_query_to_reference(
 
 
 # Usage
-adata_mapped, model = map_query_to_reference(
-    adata_query, "reference_scanvi_model/", model_type="scanvi"
-)
+adata_mapped, model = map_query_to_reference(adata_query, "reference_scanvi_model/", model_type="scanvi")
 
 # Visualize
 sc.pl.umap(adata_mapped, color=["predicted_cell_type", "prediction_confidence"])

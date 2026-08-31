@@ -51,9 +51,7 @@ adata.layers["counts"] = adata.X.copy()
 
 ```python
 # Select HVGs considering batch
-sc.pp.highly_variable_genes(
-    adata, n_top_genes=2000, flavor="seurat_v3", batch_key="batch", layer="counts"
-)
+sc.pp.highly_variable_genes(adata, n_top_genes=2000, flavor="seurat_v3", batch_key="batch", layer="counts")
 
 # Subset to HVGs
 adata = adata[:, adata.var["highly_variable"]].copy()
@@ -74,9 +72,7 @@ model = scvi.model.SCVI(
 )
 
 # Train
-model.train(
-    max_epochs=200, early_stopping=True, early_stopping_patience=10, batch_size=128
-)
+model.train(max_epochs=200, early_stopping=True, early_stopping_patience=10, batch_size=128)
 
 # Plot training history
 model.history["elbo_train"].plot()
@@ -128,9 +124,7 @@ adata.obs["cell_type_scanvi"] = adata.obs["cell_type"].copy()
 
 ```python
 # Setup for scANVI
-scvi.model.SCANVI.setup_anndata(
-    adata, layer="counts", batch_key="batch", labels_key="cell_type"
-)
+scvi.model.SCANVI.setup_anndata(adata, layer="counts", batch_key="batch", labels_key="cell_type")
 
 # Create model
 scanvi_model = scvi.model.SCANVI(adata, n_latent=30, n_layers=2)
@@ -227,14 +221,10 @@ scVI provides differential expression that accounts for batch effects:
 
 ```python
 # DE between groups
-de_results = model.differential_expression(
-    groupby="cell_type", group1="T cells", group2="B cells"
-)
+de_results = model.differential_expression(groupby="cell_type", group1="T cells", group2="B cells")
 
 # Filter significant
-de_sig = de_results[
-    (de_results["is_de_fdr_0.05"] == True) & (abs(de_results["lfc_mean"]) > 1)
-]
+de_sig = de_results[(de_results["is_de_fdr_0.05"] == True) & (abs(de_results["lfc_mean"]) > 1)]
 
 print(de_sig.head(20))
 ```
@@ -299,9 +289,7 @@ ax.legend()
 ## Complete Pipeline
 
 ```python
-def integrate_datasets(
-    adatas, batch_key="batch", labels_key=None, n_top_genes=2000, n_latent=30
-):
+def integrate_datasets(adatas, batch_key="batch", labels_key=None, n_top_genes=2000, n_latent=30):
     """
     Integrate multiple scRNA-seq datasets.
 
@@ -351,9 +339,7 @@ def integrate_datasets(
         scvi_model = scvi.model.SCVI(adata, n_latent=n_latent)
         scvi_model.train(max_epochs=200)
 
-        model = scvi.model.SCANVI.from_scvi_model(
-            scvi_model, labels_key=labels_key, unlabeled_category="Unknown"
-        )
+        model = scvi.model.SCANVI.from_scvi_model(scvi_model, labels_key=labels_key, unlabeled_category="Unknown")
         model.train(max_epochs=50)
         rep_key = "X_scANVI"
     else:

@@ -67,9 +67,7 @@ We use the immune dataset (Luecken et al.) hosted on SCVERSE S3. The `Villani` b
 
 ```python
 adata_path = os.path.join(save_dir.name, "immune_hvg.h5ad")
-adata = sc.read(
-    adata_path, backup_url="https://exampledata.scverse.org/scvi-tools/Immune_HVG_human.h5ad"
-)
+adata = sc.read(adata_path, backup_url="https://exampledata.scverse.org/scvi-tools/Immune_HVG_human.h5ad")
 adata
 ```
 
@@ -224,9 +222,7 @@ for dim_title in gene_scores_df.columns[:4]:
 The IND scores average each dimension's effect on each gene over all cells. Because genes are not filtered for uniqueness, broadly affected genes also keep high scores, giving a complete view of how each factor influences the transcriptome.
 
 ```python
-gene_scores_df_ind = model.get_interpretability_scores(
-    embed, adata, key="IND_linear_weighted_mean"
-)
+gene_scores_df_ind = model.get_interpretability_scores(embed, adata, key="IND_linear_weighted_mean")
 gene_scores_df_ind.iloc[:10, :10]
 ```
 

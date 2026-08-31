@@ -121,9 +121,7 @@ def compute_extrinisic_uncertainty(adata, vae, n_samples=25) -> pd.DataFrame:
             v = vae.get_velocity(n_samples=1, velo_statistic="mean")
             adata.layers[vkey] = v
             scv.tl.velocity_graph(adata, vkey=vkey, sqrt_transform=False, approx=True)
-            t_mat = scv.utils.get_transition_matrix(
-                adata, vkey=vkey, self_transitions=True, use_negative_cosines=True
-            )
+            t_mat = scv.utils.get_transition_matrix(adata, vkey=vkey, self_transitions=True, use_negative_cosines=True)
             extrapolated_cells = np.asarray(t_mat @ adata.layers["Ms"])
             extrapolated_cells_list.append(extrapolated_cells)
     extrapolated_cells = np.stack(extrapolated_cells_list)

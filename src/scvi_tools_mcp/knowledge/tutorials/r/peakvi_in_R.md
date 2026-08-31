@@ -11,7 +11,9 @@ This tutorial requires Reticulate. Please check out our installation [guide](htt
 ## Loading and processing data with Signac
 
 ```python
-system("wget https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5")
+system(
+    "wget https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5"
+)
 system("wget https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_singlecell.csv")
 system("wget https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz")
 system("wget https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz.tbi")
@@ -32,7 +34,7 @@ set.seed(1234)
 ```
 
 ```python
-use_condaenv("base", required = TRUE)
+use_condaenv("base", required=TRUE)
 ```
 
 ## Pre-processing
@@ -72,26 +74,26 @@ pbmc <- CreateSeuratObject(
 ```
 
 ```python
-pbmc = UpdateSeuratObject(object = pbmc)
+pbmc = UpdateSeuratObject(object=pbmc)
 pbmc
 ```
 
 ```python
-pbmc[['peaks']]
+pbmc[["peaks"]]
 ```
 
 We add gene annotation information to facilitate downstream functionality.
 
 ```python
 # extract gene annotations from EnsDb
-annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75)
+annotations < -GetGRangesFromEnsDb(ensdb=EnsDb.Hsapiens.v75)
 
 # change to UCSC style since the data was mapped to hg19
-seqlevelsStyle(annotations) <- 'UCSC'
-genome(annotations) <- "hg19"
+seqlevelsStyle(annotations) < -"UCSC"
+genome(annotations) < -"hg19"
 
 # add the gene information to the object
-Annotation(pbmc) <- annotations
+Annotation(pbmc) < -annotations
 ```
 
 ## Computing QC metrics
@@ -116,22 +118,22 @@ pbmc
 
 ```python
 VlnPlot(
-  object = pbmc,
-  features = c('pct_reads_in_peaks', 'peak_region_fragments',
-               'TSS.enrichment', 'blacklist_ratio', 'nucleosome_signal'),
-  ncol = 5
+    object=pbmc,
+    features=c("pct_reads_in_peaks", "peak_region_fragments", "TSS.enrichment", "blacklist_ratio", "nucleosome_signal"),
+    ncol=5,
 )
 ```
 
 ```python
-pbmc <- subset(
-  x = pbmc,
-  subset = peak_region_fragments > 3000 &
-    peak_region_fragments < 20000 &
-    pct_reads_in_peaks > 15 &
-    blacklist_ratio < 0.05 &
-    nucleosome_signal < 4 &
-    TSS.enrichment > 2
+pbmc < -subset(
+    x=pbmc,
+    subset=peak_region_fragments
+    > 3000 & peak_region_fragments
+    < 20000 & pct_reads_in_peaks
+    > 15 & blacklist_ratio
+    < 0.05 & nucleosome_signal
+    < 4 & TSS.enrichment
+    > 2,
 )
 pbmc
 ```
@@ -184,7 +186,7 @@ pbmc <- RunUMAP(pbmc, reduction = "peakvi", dims=1:ndims)
 ```
 
 ```python
-DimPlot(object = pbmc, label = TRUE) + NoLegend()
+DimPlot(object=pbmc, label=TRUE) + NoLegend()
 ```
 
 ## Create a gene activity matrix
@@ -224,11 +226,11 @@ We can integrate the gene activity matrix with annotated scRNA-seq data using sc
 First we download the Seurat-processed PBMC 10k dataset (as in their tutorial).
 
 ```python
-pbmc_rna <- readRDS(url("https://www.dropbox.com/s/3f3p5nxrn5b3y4y/pbmc_10k_v3.rds?dl=1"))
+pbmc_rna < -readRDS(url("https://www.dropbox.com/s/3f3p5nxrn5b3y4y/pbmc_10k_v3.rds?dl=1"))
 ```
 
 ```python
-pbmc_rna<-UpdateSeuratObject(pbmc_rna)
+pbmc_rna < -UpdateSeuratObject(pbmc_rna)
 ```
 
 And we convert it to AnnData using sceasy again. Subsequently, we follow the standard scANVI workflow: pretraining with scVI then running scANVI.
@@ -333,7 +335,7 @@ head(DA)
 ```
 
 ```python
-DefaultAssay(pbmc) <- 'peaks'
+DefaultAssay(pbmc) < -"peaks"
 ```
 
 ```python
@@ -345,17 +347,13 @@ head(Idents(pbmc))
 ```
 
 ```python
-plot1 <- VlnPlot(
-  object = pbmc,
-  features = rownames(DA)[1],
-  idents = c("CD4 Naive","CD14+ Monocytes")
-)
+plot1 < -VlnPlot(object=pbmc, features=rownames(DA)[1], idents=c("CD4 Naive", "CD14+ Monocytes"))
 ```
 
 ```python
-plot2 <- FeaturePlot(
-  object = pbmc,
-  features = rownames(DA)[1],
+plot2 < -FeaturePlot(
+    object=pbmc,
+    features=rownames(DA)[1],
 )
 ```
 

@@ -63,9 +63,7 @@ Note that the model is very large therefore it will take time to being download.
 
 ```python
 # get the hub data
-tahoe_hubmodel = scvi.hub.HubModel.pull_from_huggingface_hub(
-    repo_name="vevotx/Tahoe-100M-SCVI-v1", cache_dir="."
-)
+tahoe_hubmodel = scvi.hub.HubModel.pull_from_huggingface_hub(repo_name="vevotx/Tahoe-100M-SCVI-v1", cache_dir=".")
 ```
 
 ```python
@@ -92,9 +90,7 @@ adata.obs.plate.value_counts()
 
 ```python
 # HVG filtering
-sc.pp.highly_variable_genes(
-    adata, n_top_genes=15000, inplace=True, subset=True, flavor="seurat_v3", batch_key="plate"
-)
+sc.pp.highly_variable_genes(adata, n_top_genes=15000, inplace=True, subset=True, flavor="seurat_v3", batch_key="plate")
 adata
 ```
 
@@ -128,9 +124,7 @@ adata.raw = adata  # freeze the state in `.raw`
 ```python
 from sklearn.model_selection import train_test_split
 
-train_ind, valid_ind = train_test_split(
-    adata.obs.plate.index.astype(int), test_size=0.9, stratify=adata.obs.plate
-)
+train_ind, valid_ind = train_test_split(adata.obs.plate.index.astype(int), test_size=0.9, stratify=adata.obs.plate)
 ```
 
 ### Init the model

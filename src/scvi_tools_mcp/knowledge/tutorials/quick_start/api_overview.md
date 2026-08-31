@@ -192,9 +192,7 @@ The reconstruction loss is equal to the maximum likelihood term of the ELBO loss
 
 ```python
 # Local KL divergence
-plot_metric(
-    "kl_local_train", "kl_local_validation", "KL divergence (latent z)", "KL(q(z|x)||p(z))"
-)
+plot_metric("kl_local_train", "kl_local_validation", "KL divergence (latent z)", "KL(q(z|x)||p(z))")
 ```
 
 The KL divergence controls the latent space regularization and minizmizing it means to better approximate posterior and the prior
@@ -331,9 +329,7 @@ adata.obs.cell_type.head()
 For example, a 1-vs-1 DE test is as simple as:
 
 ```python
-de_df = model.differential_expression(
-    groupby="cell_type", group1="Endothelial", group2="Fibroblast"
-)
+de_df = model.differential_expression(groupby="cell_type", group1="Endothelial", group2="Fibroblast")
 de_df.head()
 ```
 

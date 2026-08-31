@@ -84,7 +84,9 @@ setup_kwargs = {
 
 # Compute spatial neighborhood graph
 scvi.external.SCVIVA.preprocessing_anndata(
-    adata, k_nn=20, **setup_kwargs  # Number of spatial neighbors
+    adata,
+    k_nn=20,
+    **setup_kwargs,  # Number of spatial neighbors
 )
 ```
 
@@ -96,9 +98,7 @@ scvi.external.SCVIVA.preprocessing_anndata(
 
 ```python
 # Register AnnData
-scvi.external.SCVIVA.setup_anndata(
-    adata, layer="counts", batch_key="sample", **setup_kwargs
-)
+scvi.external.SCVIVA.setup_anndata(adata, layer="counts", batch_key="sample", **setup_kwargs)
 
 # Initialize model
 model = scvi.external.SCVIVA(adata)
@@ -172,9 +172,7 @@ adata_subset = adata[adata.obs["cell_type"] == cell_type_of_interest].copy()
 sc.pp.neighbors(adata_subset, use_rep="X_scVIVA", n_neighbors=15)
 sc.tl.leiden(adata_subset, resolution=0.3, key_added="subtype_clusters")
 
-sc.pl.umap(
-    adata_subset, color="subtype_clusters", title=f"{cell_type_of_interest} Subtypes"
-)
+sc.pl.umap(adata_subset, color="subtype_clusters", title=f"{cell_type_of_interest} Subtypes")
 ```
 
 ---
@@ -220,9 +218,7 @@ sc.pp.log1p(adata_subset)
 # Plot top DE genes spatially
 top_genes = DE_results.head(4).index.tolist()
 
-sc.pl.spatial(
-    adata_subset, color=top_genes, spot_size=30, ncols=2, cmap="plasma", vmax="p99"
-)
+sc.pl.spatial(adata_subset, color=top_genes, spot_size=30, ncols=2, cmap="plasma", vmax="p99")
 ```
 
 ---

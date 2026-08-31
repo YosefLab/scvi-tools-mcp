@@ -77,9 +77,7 @@ normalized = model.get_normalized_methylation()
 ### Differential methylation
 
 ```python
-diff = model.differential_methylation(
-    groupby="cell_type", group1="TypeA", group2="TypeB"
-)
+diff = model.differential_methylation(groupby="cell_type", group1="TypeA", group2="TypeB")
 ```
 
 ## References
