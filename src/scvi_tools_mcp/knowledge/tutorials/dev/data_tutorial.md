@@ -274,9 +274,7 @@ print(data_and_attributes)
 ```
 
 ```python
-adl = AnnDataLoader(
-    adata_manager, shuffle=False, batch_size=10, data_and_attributes=data_and_attributes
-)
+adl = AnnDataLoader(adata_manager, shuffle=False, batch_size=10, data_and_attributes=data_and_attributes)
 data_batch = next(tensors for tensors in adl)
 
 # by default data has the dtype np.float32
@@ -288,9 +286,7 @@ Finally, if the `data_and_attributes` parameter is used, it will only load the k
 
 ```python
 data_and_attributes = {"x": float}
-adl = AnnDataLoader(
-    adata_manager, shuffle=False, batch_size=10, data_and_attributes=data_and_attributes
-)
+adl = AnnDataLoader(adata_manager, shuffle=False, batch_size=10, data_and_attributes=data_and_attributes)
 data_batch = next(iter(adl))
 
 print(data_batch.keys())
@@ -419,20 +415,14 @@ def setup_anndata(
     batch_key: Optional[str] = None,
     **kwargs,  # Used when loading a model with a new AnnData object.
 ):
-    setup_method_args = cls._get_setup_method_args(
-        **locals()
-    )  # Used for saving/loading purposes.
+    setup_method_args = cls._get_setup_method_args(**locals())  # Used for saving/loading purposes.
     anndata_fields = [
         LayerField(REGISTRY_KEYS.X_KEY, layer, is_count_data=True),
         CategoricalObsField(REGISTRY_KEYS.BATCH_KEY, batch_key),
     ]
-    adata_manager = AnnDataManager(
-        fields=anndata_fields, setup_method_args=setup_method_args
-    )
+    adata_manager = AnnDataManager(fields=anndata_fields, setup_method_args=setup_method_args)
     adata_manager.register_fields(adata, **kwargs)
-    cls.register_manager(
-        adata_manager
-    )  # Stores the AnnDataManager in a class-specific manager store.
+    cls.register_manager(adata_manager)  # Stores the AnnDataManager in a class-specific manager store.
 ```
 
 The `setup_anndata()` function itself is quite simple since any complexity in preprocessing is contained within the `AnnDataField` functions. By factorizing the preprocessing steps into each subclass, model developers can easily extend and reuse logic across models and fields.

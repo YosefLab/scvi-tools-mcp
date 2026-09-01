@@ -68,9 +68,7 @@ Note that the model is very large therefore it will take time to being download.
 
 ```python
 # get the hub data
-tahoe_hubmodel = scvi.hub.HubModel.pull_from_huggingface_hub(
-    repo_name="vevotx/Tahoe-100M-SCVI-v1", cache_dir="."
-)
+tahoe_hubmodel = scvi.hub.HubModel.pull_from_huggingface_hub(repo_name="vevotx/Tahoe-100M-SCVI-v1", cache_dir=".")
 ```
 
 ```python
@@ -79,9 +77,7 @@ tahoe_hubmodel.model.adata.obs.head()
 
 ```python
 # Load Cell Line Metadata
-cell_lines = pd.read_csv(
-    "/home/access/PycharmProjects/scvi-tools/Tahoe100M/cell_line_metadata.h5ad"
-)
+cell_lines = pd.read_csv("/home/access/PycharmProjects/scvi-tools/Tahoe100M/cell_line_metadata.h5ad")
 cell_lines.head()
 ```
 
@@ -220,9 +216,7 @@ plt.show()
 
 ```python
 # Save the model
-model.save(
-    "mrvi_torch_tahoe100_lamin_model", save_anndata=False, overwrite=True, datamodule=datamodule
-)
+model.save("mrvi_torch_tahoe100_lamin_model", save_anndata=False, overwrite=True, datamodule=datamodule)
 ```
 
 ```python
@@ -264,9 +258,7 @@ adata.X = csr_matrix(adata.X.shape)
 ```python
 # The way to extract the internal model analysis is by the inference_dataloader
 # Datamodule will always require to pass it into all downstream functions.
-inference_dataloader = datamodule.inference_dataloader(
-    batch_size=1024, parallel_cpu_count=5, shuffle=False
-)
+inference_dataloader = datamodule.inference_dataloader(batch_size=1024, parallel_cpu_count=5, shuffle=False)
 ```
 
 ```python
@@ -274,9 +266,7 @@ gc.collect()
 ```
 
 ```python
-latent_representation = model.get_latent_representation(
-    give_z=False, dataloader=inference_dataloader
-)
+latent_representation = model.get_latent_representation(give_z=False, dataloader=inference_dataloader)
 ```
 
 ```python
@@ -314,9 +304,7 @@ adata.obsm["X_mrVI_Torch_Lamin"] = latent_representation
 
 ```python
 # Subsample the adata to save time and memory
-adata_subsampled = adata[
-    list(np.random.choice(np.arange(adata.n_obs), size=100000, replace=False)), :
-].copy()
+adata_subsampled = adata[list(np.random.choice(np.arange(adata.n_obs), size=100000, replace=False)), :].copy()
 ```
 
 ```python

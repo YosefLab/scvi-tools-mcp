@@ -221,9 +221,7 @@ def latent_tsne(model, data):
     ann.obsm["X_latent"] = z
     pca_init = PCA(n_components=2, svd_solver="full").fit_transform(z)
     pca_init = pca_init / pca_init[:, 0].std() * 1e-4  # sklearn's internal PCA-init scaling
-    ann.obsm["X_tsne"] = TSNE(
-        n_components=2, init=pca_init, perplexity=30, random_state=0
-    ).fit_transform(z)
+    ann.obsm["X_tsne"] = TSNE(n_components=2, init=pca_init, perplexity=30, random_state=0).fit_transform(z)
     return ann
 
 
@@ -298,9 +296,7 @@ for ax, (name, ann) in zip(axes, MODELS, strict=True):
             label=c,
         )
     ax.set_title(name)
-axes[1].legend(
-    markerscale=3, fontsize=7, loc="center left", bbox_to_anchor=(1.0, 0.5), frameon=False
-)
+axes[1].legend(markerscale=3, fontsize=7, loc="center left", bbox_to_anchor=(1.0, 0.5), frameon=False)
 fig.suptitle("t-SNE colored by cell type")
 plt.show()
 ```
@@ -326,13 +322,9 @@ for ax, (name, ann) in zip(axes, MODELS, strict=True):
     for c in cell_types:
         m = low & (ct == c)
         if m.any():
-            ax.scatter(
-                xy[m, 0], xy[m, 1], color=palette[c], s=8, alpha=0.85, linewidths=0, label=c
-            )
+            ax.scatter(xy[m, 0], xy[m, 1], color=palette[c], s=8, alpha=0.85, linewidths=0, label=c)
     ax.set_title(name)
-axes[1].legend(
-    markerscale=2.5, fontsize=7, loc="center left", bbox_to_anchor=(1.0, 0.5), frameon=False
-)
+axes[1].legend(markerscale=2.5, fontsize=7, loc="center left", bbox_to_anchor=(1.0, 0.5), frameon=False)
 fig.suptitle(f"Low-UMI cells (< {typical_cutoff:,} UMIs), colored by cell type")
 plt.show()
 ```

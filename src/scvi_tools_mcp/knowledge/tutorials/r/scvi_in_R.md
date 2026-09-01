@@ -28,13 +28,13 @@ SeuratData::InstallData("ifnb")
 ```
 
 ```python
-use_condaenv("base", required = TRUE)
+use_condaenv("base", required=TRUE)
 ```
 
 ```python
 # We will work within the Seurat framework
 data("pbmc3k")
-pbmc <- pbmc3k
+pbmc < -pbmc3k
 ```
 
 ```python
@@ -43,7 +43,7 @@ pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor 
 ```
 
 ```python
-pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+pbmc[["percent.mt"]] < -PercentageFeatureSet(pbmc, pattern="^MT-")
 ```
 
 ```python
@@ -54,7 +54,7 @@ pbmc <- pbmc[top2000]
 ```
 
 ```python
-print(pbmc) # Seurat object
+print(pbmc)  # Seurat object
 ```
 
 ## Converting Seurat object to AnnData

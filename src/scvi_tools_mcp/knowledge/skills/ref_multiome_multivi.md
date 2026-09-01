@@ -134,9 +134,7 @@ scvi.model.MULTIVI.setup_mudata(
 model = scvi.model.MULTIVI(mdata, n_latent=20, n_layers_encoder=2, n_layers_decoder=2)
 
 # Train
-model.train(
-    max_epochs=300, early_stopping=True, early_stopping_patience=10, batch_size=128
-)
+model.train(max_epochs=300, early_stopping=True, early_stopping_patience=10, batch_size=128)
 
 # Check training
 model.history["elbo_train"].plot()

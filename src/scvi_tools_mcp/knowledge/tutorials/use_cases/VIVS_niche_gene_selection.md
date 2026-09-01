@@ -112,9 +112,7 @@ vivs_model.train(max_epochs=200)
 `get_hier_importance` clusters genes by decoder-scale correlation at several resolutions, then re-runs the conditional randomization test with group-level knockoff substitution at each resolution, giving FDR-controlled p-values both for individual genes and for coarser gene clusters. Passing `n_clusters_list=[50, 100, 200]` tests three resolutions in addition to the finest (per-gene) one.
 
 ```python
-res = vivs_model.get_hier_importance(
-    n_clusters_list=[50, 100, 200], batch_size=8192, n_mc_samples=100
-)
+res = vivs_model.get_hier_importance(n_clusters_list=[50, 100, 200], batch_size=8192, n_mc_samples=100)
 res
 ```
 

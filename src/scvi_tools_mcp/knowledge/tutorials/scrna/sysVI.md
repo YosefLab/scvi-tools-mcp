@@ -85,7 +85,7 @@ We suggest that the model with the VampPrior and latent cycle-consistency is use
 model.train(
     plan_kwargs={
         "kl_weight": 1,
-        "z_distance_cycle_weight": 0
+        "z_distance_cycle_weight": 0,
         # Add additional parameters, such as number of epochs
     }
 )
@@ -111,9 +111,7 @@ model.train()
 model = SysVI(adata=adata)
 # Train
 max_epochs = 200
-model.train(
-    max_epochs=max_epochs, check_val_every_n_epoch=1, plan_kwargs={"z_distance_cycle_weight": 5}
-)
+model.train(max_epochs=max_epochs, check_val_every_n_epoch=1, plan_kwargs={"z_distance_cycle_weight": 5})
 ```
 
 ### Inspect the losses to assess if the training was succesful
@@ -291,9 +289,7 @@ SysVI.prepare_query_anndata(adata_q, model_r)
 # Initialise the model for reference mapping of the query data
 model_q = SysVI.load_query_data(adata_q, model_r)
 # Train the model
-model_q.train(
-    max_epochs=max_epochs, check_val_every_n_epoch=1, plan_kwargs={"z_distance_cycle_weight": 2}
-)
+model_q.train(max_epochs=max_epochs, check_val_every_n_epoch=1, plan_kwargs={"z_distance_cycle_weight": 2})
 ```
 
 Inspect the training of the reference mapping model to confirm that the model was successfully trained.
@@ -391,9 +387,7 @@ for i, system in enumerate(systems):
         # on top cells from one system and query/reference colored by cell type
         sc.pl.umap(embed, ax=ax, show=False, s=5, frameon=False)
         sc.pl.umap(
-            embed[
-                (embed.obs["system"] == system).values & (embed.obs["query"] == query).values, :
-            ],
+            embed[(embed.obs["system"] == system).values & (embed.obs["query"] == query).values, :],
             color="cell_type_eval",
             ax=ax,
             show=False,

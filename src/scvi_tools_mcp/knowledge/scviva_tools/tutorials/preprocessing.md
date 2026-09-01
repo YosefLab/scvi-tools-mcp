@@ -82,17 +82,13 @@ To demonstrate preprocessing for spatial transcriptomics, we use data from a com
 
 ```python
 url1 = os.path.join(save_dir.name, "ST-LN-compressed.h5ad")
-st_adata = sc.read(
-    url1, backup_url="https://exampledata.scverse.org/scvi-tools/ST-LN-compressed.h5ad"
-)
+st_adata = sc.read(url1, backup_url="https://exampledata.scverse.org/scvi-tools/ST-LN-compressed.h5ad")
 st_adata
 ```
 
 ```python
 url2 = os.path.join(save_dir.name, "scRNA-LN-compressed.h5ad")
-sc_adata = sc.read(
-    url2, backup_url="https://exampledata.scverse.org/scvi-tools/scRNA-LN-compressed.h5ad"
-)
+sc_adata = sc.read(url2, backup_url="https://exampledata.scverse.org/scvi-tools/scRNA-LN-compressed.h5ad")
 sc_adata
 ```
 
@@ -105,9 +101,7 @@ sc.pp.filter_genes(sc_adata, min_counts=10)
 
 sc_adata.layers["counts"] = sc_adata.X.copy()
 
-sc.pp.highly_variable_genes(
-    sc_adata, n_top_genes=G, subset=True, layer="counts", flavor="seurat_v3"
-)
+sc.pp.highly_variable_genes(sc_adata, n_top_genes=G, subset=True, layer="counts", flavor="seurat_v3")
 
 sc.pp.normalize_total(sc_adata, target_sum=10e4)
 sc.pp.log1p(sc_adata)

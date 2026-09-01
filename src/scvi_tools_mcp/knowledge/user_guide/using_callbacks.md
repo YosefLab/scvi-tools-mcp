@@ -69,11 +69,7 @@ It can be used by adding the following parameter to the train function:
 ```python
 model.train(
     ...,
-    callbacks=[
-        SaveCheckpoint(
-            monitor="elbo_validation", load_best_on_end=True, check_nan_gradients=True
-        )
-    ],
+    callbacks=[SaveCheckpoint(monitor="elbo_validation", load_best_on_end=True, check_nan_gradients=True)],
 )
 ```
 

@@ -64,13 +64,9 @@ pbmc_dataset.obs["batch"] = pbmc_dataset.obs["batch"].astype("str")
 ```python
 import numpy as np
 
-gene_intersection = np.intersect1d(
-    pbmc_dataset.var.gene_symbols.values, pbmc_seurat_v4_cite_seq.var.index.values
-)
+gene_intersection = np.intersect1d(pbmc_dataset.var.gene_symbols.values, pbmc_seurat_v4_cite_seq.var.index.values)
 pbmc_dataset_filtered = pbmc_dataset[:, pbmc_dataset.var["gene_symbols"].isin(gene_intersection)]
-pbmc_seurat_v4_cite_seq_filtered = pbmc_seurat_v4_cite_seq[
-    :, pbmc_seurat_v4_cite_seq.var_names.isin(gene_intersection)
-]
+pbmc_seurat_v4_cite_seq_filtered = pbmc_seurat_v4_cite_seq[:, pbmc_seurat_v4_cite_seq.var_names.isin(gene_intersection)]
 ```
 
 ```python
@@ -79,15 +75,9 @@ pbmc_dataset_filtered.var_names = pbmc_dataset_filtered.var["gene_symbols"].valu
 
 ```python
 pbmc_dataset_filtered.obs["cell_type"] = pbmc_dataset_filtered.obs["str_labels"].astype("str")
-pbmc_dataset_filtered.obs.loc[
-    pbmc_dataset_filtered.obs["cell_type"] == "FCGR3A+ Monocytes", "cell_type"
-] = "Monocytes"
-pbmc_dataset_filtered.obs.loc[
-    pbmc_dataset_filtered.obs["cell_type"] == "CD14+ Monocytes", "cell_type"
-] = "Monocytes"
-pbmc_dataset_filtered.obs.loc[
-    pbmc_dataset_filtered.obs["cell_type"] == "Megakaryocytes", "cell_type"
-] = "Other"
+pbmc_dataset_filtered.obs.loc[pbmc_dataset_filtered.obs["cell_type"] == "FCGR3A+ Monocytes", "cell_type"] = "Monocytes"
+pbmc_dataset_filtered.obs.loc[pbmc_dataset_filtered.obs["cell_type"] == "CD14+ Monocytes", "cell_type"] = "Monocytes"
+pbmc_dataset_filtered.obs.loc[pbmc_dataset_filtered.obs["cell_type"] == "Megakaryocytes", "cell_type"] = "Other"
 ```
 
 ```python
@@ -103,30 +93,28 @@ pbmc_dataset_filtered.obs["cell_type"].value_counts()
 We will repeat for the other dataset
 
 ```python
-pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] = pbmc_seurat_v4_cite_seq_filtered.obs[
-    "celltype.l1"
-].astype("str")
-pbmc_seurat_v4_cite_seq_filtered.obs.loc[
-    pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "other", "cell_type"
-] = "Other"
-pbmc_seurat_v4_cite_seq_filtered.obs.loc[
-    pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "B", "cell_type"
-] = "B cells"
-pbmc_seurat_v4_cite_seq_filtered.obs.loc[
-    pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "DC", "cell_type"
-] = "Dendritic Cells"
-pbmc_seurat_v4_cite_seq_filtered.obs.loc[
-    pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "NK", "cell_type"
-] = "NK cells"
-pbmc_seurat_v4_cite_seq_filtered.obs.loc[
-    pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "CD4 T", "cell_type"
-] = "CD4 T cells"
-pbmc_seurat_v4_cite_seq_filtered.obs.loc[
-    pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "CD8 T", "cell_type"
-] = "CD8 T cells"
-pbmc_seurat_v4_cite_seq_filtered.obs.loc[
-    pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "Mono", "cell_type"
-] = "Monocytes"
+pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] = pbmc_seurat_v4_cite_seq_filtered.obs["celltype.l1"].astype("str")
+pbmc_seurat_v4_cite_seq_filtered.obs.loc[pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "other", "cell_type"] = (
+    "Other"
+)
+pbmc_seurat_v4_cite_seq_filtered.obs.loc[pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "B", "cell_type"] = (
+    "B cells"
+)
+pbmc_seurat_v4_cite_seq_filtered.obs.loc[pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "DC", "cell_type"] = (
+    "Dendritic Cells"
+)
+pbmc_seurat_v4_cite_seq_filtered.obs.loc[pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "NK", "cell_type"] = (
+    "NK cells"
+)
+pbmc_seurat_v4_cite_seq_filtered.obs.loc[pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "CD4 T", "cell_type"] = (
+    "CD4 T cells"
+)
+pbmc_seurat_v4_cite_seq_filtered.obs.loc[pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "CD8 T", "cell_type"] = (
+    "CD8 T cells"
+)
+pbmc_seurat_v4_cite_seq_filtered.obs.loc[pbmc_seurat_v4_cite_seq_filtered.obs["cell_type"] == "Mono", "cell_type"] = (
+    "Monocytes"
+)
 ```
 
 ```python
@@ -304,9 +292,7 @@ print(f"Elapsed time: {end3 - start3:.2f} seconds")
 
 ```python
 # Save the model
-model_scanvi.save(
-    "lamin_scanvi_model", save_anndata=False, overwrite=True, datamodule=datamodule_scanvi
-)
+model_scanvi.save("lamin_scanvi_model", save_anndata=False, overwrite=True, datamodule=datamodule_scanvi)
 ```
 
 ```python
@@ -345,9 +331,7 @@ sc.pl.umap(adata, color="cell_type", title="cell_type_SCANVI")
 Beucase its a scanvi model we can also produce the cell type predictions now
 
 ```python
-adata.obs["predictions_scanvi"] = model_scanvi.predict(
-    dataloader=inference_scanvi_dataloader, batch_size=1024
-)
+adata.obs["predictions_scanvi"] = model_scanvi.predict(dataloader=inference_scanvi_dataloader, batch_size=1024)
 ```
 
 ```python
@@ -476,11 +460,7 @@ adata.obs["predictions_scanvi_non_dataloder"] = model_census4.predict()
 ```
 
 ```python
-df = (
-    adata.obs.groupby(["cell_type", "predictions_scanvi_non_dataloder"])
-    .size()
-    .unstack(fill_value=0)
-)
+df = adata.obs.groupby(["cell_type", "predictions_scanvi_non_dataloder"]).size().unstack(fill_value=0)
 norm_df = df / df.sum(axis=0)
 import matplotlib.pyplot as plt
 

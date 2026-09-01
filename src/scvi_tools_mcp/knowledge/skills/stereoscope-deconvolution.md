@@ -130,7 +130,9 @@ st_adata = st_adata[:, shared_genes].copy()
 ```python
 # Setup reference data for Stereoscope
 RNAStereoscope.setup_anndata(
-    sc_adata, layer="counts", labels_key="cell_type"  # Cell type annotation column
+    sc_adata,
+    layer="counts",
+    labels_key="cell_type",  # Cell type annotation column
 )
 
 # Initialize reference model
@@ -201,9 +203,7 @@ print(st_adata.obsm["deconvolution"].describe())
 
 ```python
 # Configure visualization
-sc.settings.set_figure_params(
-    dpi=100, color_map="inferno", dpi_save=200, vector_friendly=True
-)
+sc.settings.set_figure_params(dpi=100, color_map="inferno", dpi_save=200, vector_friendly=True)
 
 # Get cell types for plotting
 cell_types = st_adata.obsm["deconvolution"].columns.tolist()

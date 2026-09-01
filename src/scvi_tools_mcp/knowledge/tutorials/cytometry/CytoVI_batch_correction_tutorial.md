@@ -191,14 +191,10 @@ adata.layers["imputed"] = model.get_normalized_expression()
 Next, we can visualize the uncorrected and corrected protein expression for two markers that showed a strong batch effect.
 
 ```python
-g = cytovi.plot_histogram(
-    adata, marker=["CD127", "TBET"], layer_key="scaled", groupby="batch", return_plot=True
-)
+g = cytovi.plot_histogram(adata, marker=["CD127", "TBET"], layer_key="scaled", groupby="batch", return_plot=True)
 g.fig.suptitle("Uncorrected expression", fontsize=16)
 
-h = cytovi.plot_histogram(
-    adata, marker=["CD127", "TBET"], layer_key="imputed", groupby="batch", return_plot=True
-)
+h = cytovi.plot_histogram(adata, marker=["CD127", "TBET"], layer_key="imputed", groupby="batch", return_plot=True)
 h.fig.suptitle("Corrected expression", fontsize=16)
 ```
 
@@ -286,9 +282,7 @@ cluster_counts
 ```
 
 ```python
-celltype_colors = dict(
-    zip(adata.obs["cell_type"].cat.categories, adata.uns["cell_type_colors"], strict=False)
-)
+celltype_colors = dict(zip(adata.obs["cell_type"].cat.categories, adata.uns["cell_type_colors"], strict=False))
 
 colors = [celltype_colors[ct] for ct in cluster_counts.index]
 

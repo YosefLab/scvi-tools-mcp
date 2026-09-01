@@ -85,9 +85,7 @@ sc_adata = sc_adata[:, shared_genes].copy()
 st_adata = st_adata[:, shared_genes].copy()
 
 # Optional: Select highly variable genes for efficiency
-sc.pp.highly_variable_genes(
-    sc_adata, n_top_genes=3000, subset=False, layer="counts", flavor="seurat_v3"
-)
+sc.pp.highly_variable_genes(sc_adata, n_top_genes=3000, subset=False, layer="counts", flavor="seurat_v3")
 
 # Use HVGs for both datasets
 hvg = sc_adata.var_names[sc_adata.var.highly_variable]
@@ -104,7 +102,9 @@ print(f"After HVG selection: {len(hvg)} genes")
 ```python
 # Setup reference data
 CondSCVI.setup_anndata(
-    sc_adata, layer="counts", labels_key="cell_type"  # Cell type annotation column
+    sc_adata,
+    layer="counts",
+    labels_key="cell_type",  # Cell type annotation column
 )
 
 # Initialize and train scLVM (reference model)

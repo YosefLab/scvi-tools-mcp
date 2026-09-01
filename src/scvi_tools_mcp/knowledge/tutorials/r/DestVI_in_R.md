@@ -34,7 +34,7 @@ library(ggplot2)
 First, we load the reference SMART-seq2 dataset of mouse brain. This dataset contains about 14,000 cells.
 
 ```python
-cortex_sc_data <- readRDS(url("https://www.dropbox.com/s/cuowvm4vrf65pvq/allen_cortex.rds?dl=1"))
+cortex_sc_data < -readRDS(url("https://www.dropbox.com/s/cuowvm4vrf65pvq/allen_cortex.rds?dl=1"))
 ```
 
 ```python
@@ -42,7 +42,7 @@ InstallData("stxBrain")
 ```
 
 ```python
-brain_st_data <- LoadData("stxBrain", type = "anterior1")
+brain_st_data < -LoadData("stxBrain", type="anterior1")
 ```
 
 Now, we subset the data in the same way that was done in the [Seurat vignette](https://satijalab.org/seurat/articles/spatial_vignette.html#subset-out-anatomical-regions-1), to match the cortex single-cell reference we are using.
@@ -76,9 +76,9 @@ top2000intersect <- intersect(rownames(cortex_st_data), top2000)
 ```
 
 ```python
-cortex_sc_data <- cortex_sc_data[top2000intersect]
-cortex_st_data <- cortex_st_data[top2000intersect]
-G <- length(top2000intersect)
+cortex_sc_data < -cortex_sc_data[top2000intersect]
+cortex_st_data < -cortex_st_data[top2000intersect]
+G < -length(top2000intersect)
 G
 ```
 
@@ -209,8 +209,8 @@ filtered_st_data[["imputation"]] <- CreateAssayObject(data = t(specific_expressi
 ```
 
 ```python
-DefaultAssay(filtered_st_data) <- "imputation"
-SpatialFeaturePlot(filtered_st_data, features = gene_name)
+DefaultAssay(filtered_st_data) < -"imputation"
+SpatialFeaturePlot(filtered_st_data, features=gene_name)
 ```
 
 ## Session Info

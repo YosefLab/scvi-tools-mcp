@@ -14,7 +14,7 @@ library(IRdisplay)
 Before we use reticulate, we will need to point it to the correct conda env we use for the analysis
 
 ```python
-use_condaenv("base", required = TRUE)
+use_condaenv("base", required=TRUE)
 ```
 
 ## Import Python libraries with reticulate
@@ -265,7 +265,7 @@ sc$tl$dendrogram(adata, groupby="cell_type", use_rep="X_scVI")
 ## Session Info Summary
 
 ```python
-#reticulate::py_last_error()
+# reticulate::py_last_error()
 ```
 
 ```python

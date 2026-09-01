@@ -329,9 +329,7 @@ pancreas_full
 This just makes a column in the anndata corresponding to if the data come from the reference or query sets.
 
 ```python
-pancreas_full.obs["batch"] = pancreas_full.obs["batch"].cat.rename_categories(
-    ["Query", "Reference"]
-)
+pancreas_full.obs["batch"] = pancreas_full.obs["batch"].cat.rename_categories(["Query", "Reference"])
 ```
 
 ```python
@@ -408,9 +406,7 @@ pbmc_query.obs["batch"] = "PBMC 10k (RNA only)"
 # put matrix of zeros for protein expression (considered missing)
 pro_exp = pbmc_ref.obsm["protein_expression"]
 data = np.zeros((pbmc_query.n_obs, pro_exp.shape[1]))
-pbmc_query.obsm["protein_expression"] = pd.DataFrame(
-    columns=pro_exp.columns, index=pbmc_query.obs_names, data=data
-)
+pbmc_query.obsm["protein_expression"] = pd.DataFrame(columns=pro_exp.columns, index=pbmc_query.obs_names, data=data)
 ```
 
 We do some light QC filtering on the query dataset (doublets, mitochondrial, etc.)
@@ -420,9 +416,7 @@ scrub = scr.Scrublet(pbmc_query.X)
 doublet_scores, predicted_doublets = scrub.scrub_doublets()
 pbmc_query = pbmc_query[~predicted_doublets].copy()
 
-pbmc_query.var["mt"] = pbmc_query.var_names.str.startswith(
-    "MT-"
-)  # annotate the group of mitochondrial genes as 'mt'
+pbmc_query.var["mt"] = pbmc_query.var_names.str.startswith("MT-")  # annotate the group of mitochondrial genes as 'mt'
 sc.pp.calculate_qc_metrics(pbmc_query, qc_vars=["mt"], percent_top=None, log1p=False, inplace=True)
 pbmc_query = pbmc_query[pbmc_query.obs.pct_counts_mt < 15, :].copy()
 ```
@@ -436,9 +430,7 @@ pbmc_full = anndata.concat([pbmc_ref, pbmc_query])
 And split them back up into reference and query (but now genes are properly aligned between objects).
 
 ```python
-pbmc_ref = pbmc_full[
-    np.logical_or(pbmc_full.obs.batch == "PBMC5k", pbmc_full.obs.batch == "PBMC10k")
-].copy()
+pbmc_ref = pbmc_full[np.logical_or(pbmc_full.obs.batch == "PBMC5k", pbmc_full.obs.batch == "PBMC10k")].copy()
 pbmc_query = pbmc_full[pbmc_full.obs.batch == "PBMC 10k (RNA only)"].copy()
 ```
 
@@ -463,9 +455,7 @@ pbmc_query = pbmc_query[:, pbmc_ref.var_names].copy()
 #### Train reference
 
 ```python
-scvi.model.TOTALVI.setup_anndata(
-    pbmc_ref, batch_key="batch", protein_expression_obsm_key="protein_expression"
-)
+scvi.model.TOTALVI.setup_anndata(pbmc_ref, batch_key="batch", protein_expression_obsm_key="protein_expression")
 ```
 
 ```python

@@ -108,9 +108,7 @@ if "counts" not in atac.layers:
     atac.layers["counts"] = atac.X.copy()
 
 # HVG selection for RNA
-sc.pp.highly_variable_genes(
-    rna, n_top_genes=2000, flavor="seurat_v3", layer="counts", subset=True
-)
+sc.pp.highly_variable_genes(rna, n_top_genes=2000, flavor="seurat_v3", layer="counts", subset=True)
 
 # Peak filtering for ATAC (keep peaks in >5% of cells)
 peak_counts = np.array((atac.X > 0).sum(axis=0)).flatten()
@@ -232,9 +230,7 @@ for gene in marker_genes:
 fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 
 # Row 1: Integration quality
-sc.pl.umap(
-    mdata, color="modality_profile", ax=axes[0, 0], show=False, title="Modality Profile"
-)
+sc.pl.umap(mdata, color="modality_profile", ax=axes[0, 0], show=False, title="Modality Profile")
 sc.pl.umap(mdata, color="leiden_multivi", ax=axes[0, 1], show=False, title="Clusters")
 
 # Sample batch if present
@@ -406,26 +402,18 @@ def validate_multivi_data(mdata):
     paired_ratio = len(paired) / len(mdata.obs_names)
 
     if paired_ratio < 0.1:
-        recommendations.append(
-            f"Low paired ratio ({paired_ratio:.1%}). " "Results may be less reliable."
-        )
+        recommendations.append(f"Low paired ratio ({paired_ratio:.1%}). Results may be less reliable.")
     elif paired_ratio < 0.25:
-        recommendations.append(
-            f"Moderate paired ratio ({paired_ratio:.1%}). " "Consider longer training."
-        )
+        recommendations.append(f"Moderate paired ratio ({paired_ratio:.1%}). Consider longer training.")
     else:
         print(f"Good paired ratio: {paired_ratio:.1%}")
 
     # Check feature counts
     if atac.n_vars > 100000:
-        recommendations.append(
-            f"Many peaks ({atac.n_vars}). " "Consider stricter filtering."
-        )
+        recommendations.append(f"Many peaks ({atac.n_vars}). Consider stricter filtering.")
 
     if rna.n_vars > 5000:
-        recommendations.append(
-            f"Many genes ({rna.n_vars}). " "Consider using 2000-3000 HVGs."
-        )
+        recommendations.append(f"Many genes ({rna.n_vars}). Consider using 2000-3000 HVGs.")
 
     print("\nRecommendations:")
     for rec in recommendations:
@@ -470,10 +458,7 @@ def check_modality_balance(mdata):
     """Check cell type distribution across modality profiles."""
     import pandas as pd
 
-    if (
-        "leiden_multivi" in mdata.obs.columns
-        and "modality_profile" in mdata.obs.columns
-    ):
+    if "leiden_multivi" in mdata.obs.columns and "modality_profile" in mdata.obs.columns:
         ct = pd.crosstab(mdata.obs["leiden_multivi"], mdata.obs["modality_profile"])
         print("Cells per cluster by modality profile:")
         print(ct)
@@ -481,9 +466,7 @@ def check_modality_balance(mdata):
         # Check for modality-specific clusters
         ct_norm = ct.div(ct.sum(axis=1), axis=0)
         for profile in ["paired", "rna_only", "atac_only"]:
-            dominated = (
-                (ct_norm[profile] > 0.9).sum() if profile in ct_norm.columns else 0
-            )
+            dominated = (ct_norm[profile] > 0.9).sum() if profile in ct_norm.columns else 0
             print(f"\nClusters dominated by {profile}: {dominated}")
 ```
 

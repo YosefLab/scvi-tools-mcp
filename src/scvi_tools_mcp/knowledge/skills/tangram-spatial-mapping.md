@@ -176,9 +176,7 @@ for ct in ct_predictions.columns:
 
 # Visualize cell type predictions spatially
 cell_types = ct_predictions.columns.tolist()
-sc.pl.spatial(
-    adata_sp, color=[f"tangram_{ct}" for ct in cell_types[:6]], ncols=3, cmap="viridis"
-)
+sc.pl.spatial(adata_sp, color=[f"tangram_{ct}" for ct in cell_types[:6]], ncols=3, cmap="viridis")
 ```
 
 ---

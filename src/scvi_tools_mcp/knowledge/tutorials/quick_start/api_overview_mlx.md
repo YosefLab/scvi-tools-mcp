@@ -10,9 +10,9 @@ Running the following cell will install tutorial dependencies on Google Colab on
 
 ```python
 #!pip install --quiet scvi-colab
-#from scvi_colab import install
+# from scvi_colab import install
 
-#install()
+# install()
 ```
 
 ```python
@@ -96,7 +96,7 @@ Now it's time to run `setup_anndata()`, which alerts scvi-tools to the locations
 In this dataset, there is a "cell_source" categorical covariate, and within each "cell_source", multiple "donors", "gender" and "age_group". There are also two continuous covariates we'd like to correct for: "percent_mito" and "percent_ribo". These covariates can be registered using the `categorical_covariate_keys` argument. If you only have one categorical covariate, you can also use the `batch_key` argument instead.
 
 ```python
-adata.obs["new_batch"] = adata.obs["cell_source"].astype(str)+"_"+adata.obs["donor"].astype(str)
+adata.obs["new_batch"] = adata.obs["cell_source"].astype(str) + "_" + adata.obs["donor"].astype(str)
 scvi.model.mlxSCVI.setup_anndata(
     adata,
     layer="counts",
@@ -140,11 +140,11 @@ Saving consists of saving the model neural network weights, as well as parameter
 
 ```python
 model_dir = os.path.join(save_dir.name, "scvi_mlx_model")
-#model.save(model_dir, overwrite=True)
+# model.save(model_dir, overwrite=True)
 ```
 
 ```python
-#model = scvi.model.mlxSCVI.load(model_dir, adata=adata)
+# model = scvi.model.mlxSCVI.load(model_dir, adata=adata)
 ```
 
 ## Obtaining model outputs
@@ -168,8 +168,8 @@ latent_subset.shape
 ```
 
 ```python
-#denoised = model.get_normalized_expression(adata_subset, library_size=1e4)
-#denoised.iloc[:5, :5]
+# denoised = model.get_normalized_expression(adata_subset, library_size=1e4)
+# denoised.iloc[:5, :5]
 ```
 
 Let's store the normalized values back in the anndata.
@@ -177,7 +177,7 @@ Let's store the normalized values back in the anndata.
 ```python
 SCVI_NORMALIZED_KEY = "scvi_mlx_normalized"
 
-#adata.layers[SCVI_NORMALIZED_KEY] = model.get_normalized_expression(library_size=10e4)
+# adata.layers[SCVI_NORMALIZED_KEY] = model.get_normalized_expression(library_size=10e4)
 ```
 
 ## Interoperability with Scanpy
@@ -270,17 +270,17 @@ adata.obs.cell_type.head()
 For example, a 1-vs-1 DE test is as simple as:
 
 ```python
-#de_df = model.differential_expression(
+# de_df = model.differential_expression(
 #    groupby="cell_type", group1="Endothelial", group2="Fibroblast"
-#)
-#de_df.head()
+# )
+# de_df.head()
 ```
 
 We can also do a 1-vs-all DE test, which compares each cell type with the rest of the dataset:
 
 ```python
-#de_df = model.differential_expression(groupby="cell_type", mode="change")
-#de_df.head()
+# de_df = model.differential_expression(groupby="cell_type", mode="change")
+# de_df.head()
 ```
 
 We now extract top markers for each cluster using the DE results.

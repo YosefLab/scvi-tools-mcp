@@ -68,7 +68,9 @@ print(f"Using spatial key: {spatial_key}")
 ```python
 # Setup for semi-supervised mode (with cell type labels)
 scvi.external.RESOLVI.setup_anndata(
-    adata, layer="counts", labels_key="cell_type"  # Column with cell type annotations
+    adata,
+    layer="counts",
+    labels_key="cell_type",  # Column with cell type annotations
 )
 
 # Alternative: Unsupervised mode (no labels required)
@@ -87,7 +89,8 @@ model = scvi.external.RESOLVI(adata, semisupervised=True)  # Set False for unsup
 
 # Train the model
 model.train(
-    max_epochs=100, early_stopping=True  # Use 50 for quick testing, 100+ for production
+    max_epochs=100,
+    early_stopping=True,  # Use 50 for quick testing, 100+ for production
 )
 
 # Plot training history
@@ -126,16 +129,16 @@ print("Corrected expression stored in adata.layers['corrected_expression']")
 ```python
 # Get cell type predictions (soft probabilities)
 adata.obsm["resolvi_celltypes"] = model.predict(
-    adata, num_samples=3, soft=True  # Returns probability matrix
+    adata,
+    num_samples=3,
+    soft=True,  # Returns probability matrix
 )
 
 # Get hard predictions
 adata.obs["resolvi_predicted"] = adata.obsm["resolvi_celltypes"].idxmax(axis=1)
 
 # Compare with original labels
-print(
-    f"Original vs Predicted agreement: {(adata.obs['cell_type'] == adata.obs['resolvi_predicted']).mean():.2%}"
-)
+print(f"Original vs Predicted agreement: {(adata.obs['cell_type'] == adata.obs['resolvi_predicted']).mean():.2%}")
 ```
 
 ---

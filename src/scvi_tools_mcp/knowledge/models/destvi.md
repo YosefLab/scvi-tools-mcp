@@ -75,9 +75,7 @@ st_adata.obsm["B_cells_gamma"] = gamma
 
 ```python
 indices = np.where(st_adata.obsm["proportions"][ct_name].values > 0.03)[0]
-imputed_counts = st_model.get_scale_for_ct("Monocyte", indices=indices)[
-    ["Cxcl9", "Cxcl10", "Fcgr1"]
-]
+imputed_counts = st_model.get_scale_for_ct("Monocyte", indices=indices)[["Cxcl9", "Cxcl10", "Fcgr1"]]
 ```
 
 ## References

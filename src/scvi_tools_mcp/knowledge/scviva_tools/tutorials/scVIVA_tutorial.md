@@ -226,9 +226,7 @@ sc.pl.spatial(
 
 ```python
 adata.obs["leiden_scVIVA"] = "Unknown"
-adata.obs.loc[adata.obs["cell_type"] == "Endothelial", "leiden_scVIVA"] = adata_endothelial.obs[
-    "leiden_scVIVA"
-]
+adata.obs.loc[adata.obs["cell_type"] == "Endothelial", "leiden_scVIVA"] = adata_endothelial.obs["leiden_scVIVA"]
 ```
 
 ```python
@@ -304,9 +302,7 @@ We can then filter genes to upregulated genes, i.e. such that the median Log-Fol
 ```python
 PROBA_TRES = 0.8
 
-g1_g3_genes = DE_1_0.g1_g2[
-    (DE_1_0.g1_g2["lfc_median"] > 0) & (DE_1_0.g1_g2["proba_de"] > PROBA_TRES)
-].index
+g1_g3_genes = DE_1_0.g1_g2[(DE_1_0.g1_g2["lfc_median"] > 0) & (DE_1_0.g1_g2["proba_de"] > PROBA_TRES)].index
 ```
 
 We then display the results: median Log-Fold Change (LFC) of upregulated genes in $\textit{G1}$ vs $\textit{G2}$ displayed on the x-axis, while we compare differential expression computed between $\textit{N1}$  and $\textit{G2}$ on the y-axis.
@@ -387,9 +383,7 @@ We display _ESM1_, _KDR_, _SNAI1_, critical genes for angiogenesis in invasive c
 
 ```python
 gene_list_invasive = ["ESM1", "KDR", "SNAI1", "FOXA1"]
-percentiles_invasive = get_gene_percentiles_list(
-    adata, gene_list_invasive, 99.9, layer="min_max_scaled"
-)
+percentiles_invasive = get_gene_percentiles_list(adata, gene_list_invasive, 99.9, layer="min_max_scaled")
 ```
 
 We first plot these genes in endothelial cells:

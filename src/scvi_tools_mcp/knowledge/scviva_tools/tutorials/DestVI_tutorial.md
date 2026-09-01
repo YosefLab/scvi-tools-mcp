@@ -74,17 +74,13 @@ Both files are hosted in the [DestVI reproducibility repository](https://github.
 
 ```python
 out1_path = os.path.join(save_dir.name, "ST-LN-compressed.h5ad")
-st_adata = sc.read(
-    out1_path, backup_url="https://exampledata.scverse.org/scvi-tools/ST-LN-compressed.h5ad"
-)
+st_adata = sc.read(out1_path, backup_url="https://exampledata.scverse.org/scvi-tools/ST-LN-compressed.h5ad")
 st_adata
 ```
 
 ```python
 out2_path = os.path.join(save_dir.name, "scRNA-LN-compressed.h5ad")
-sc_adata = sc.read(
-    out2_path, backup_url="https://exampledata.scverse.org/scvi-tools/scRNA-LN-compressed.h5ad"
-)
+sc_adata = sc.read(out2_path, backup_url="https://exampledata.scverse.org/scvi-tools/scRNA-LN-compressed.h5ad")
 sc_adata
 ```
 
@@ -110,9 +106,7 @@ sc.pp.filter_genes(sc_adata, min_counts=10)
 sc_adata.layers["counts"] = sc_adata.X.copy()  # preserve raw counts before normalization
 
 # Select highly variable genes for model training (seurat_v3 uses raw counts)
-sc.pp.highly_variable_genes(
-    sc_adata, n_top_genes=G, subset=True, layer="counts", flavor="seurat_v3"
-)
+sc.pp.highly_variable_genes(sc_adata, n_top_genes=G, subset=True, layer="counts", flavor="seurat_v3")
 
 sc.pp.normalize_total(sc_adata, target_sum=10e4)
 sc.pp.log1p(sc_adata)
@@ -286,9 +280,7 @@ Because stLVM proportion estimates are never exactly zero, follow-up analyses th
 `destvi_utils.automatic_proportion_threshold` determines a data-driven cutoff for each cell type. This utility is part of the `destvi_utils` companion package (installable from GitHub; see the top of this notebook).
 
 ```python
-ct_thresholds = destvi_utils.automatic_proportion_threshold(
-    st_adata, ct_list=ct_list, kind_threshold="secondary"
-)
+ct_thresholds = destvi_utils.automatic_proportion_threshold(st_adata, ct_list=ct_list, kind_threshold="secondary")
 ```
 
 The results confirm the expected spatial compartmentalization: B cells in the follicle zone, CD8 T cells in T-cell zones, and condition-dependent monocyte distribution (refer to the DestVI paper for full details).
@@ -383,9 +375,7 @@ mask2 = np.logical_and(
 ).values
 
 # Run KS test on imputed B-cell expression; results stored in st_adata.uns["IFN_rich"]
-_ = destvi_utils.de_genes(
-    st_model, mask=mask, mask2=mask2, threshold=ct_thresholds[ct], ct=ct, key="IFN_rich"
-)
+_ = destvi_utils.de_genes(st_model, mask=mask, mask2=mask2, threshold=ct_thresholds[ct], ct=ct, key="IFN_rich")
 
 display(st_adata.uns["IFN_rich"]["de_results"].head(10))
 
@@ -448,7 +438,7 @@ ha.compute_gene_pairs(ct_specific=True)
 # Infer cell-type-aware metabolic CCC:
 # mode="cell_type" uses proportion-weighted expression layers
 # Both parametric (DANB) and non-parametric (1000-permutation) tests are run
-ha.compute_cell_communication(mode="cell_type",  n_permutations=1000, test="both")
+ha.compute_cell_communication(mode="cell_type", n_permutations=1000, test="both")
 ```
 
 ```python
@@ -466,9 +456,7 @@ We run the Hotspot pipeline to identify **spatially co-varying metabolic gene mo
 
 ```python
 # Compute spatial autocorrelation restricted to mouse metabolic enzymes (DANB model)
-ha.hs.compute_local_autocorrelation(
-    layer_key="counts", model="danb", species="mouse", use_metabolic_genes=True
-)
+ha.hs.compute_local_autocorrelation(layer_key="counts", model="danb", species="mouse", use_metabolic_genes=True)
 ```
 
 ```python
@@ -497,9 +485,7 @@ We compute per-spot interaction scores in cell-type-aware mode (`mode='cell_type
 ```python
 # Compute per-spot interaction scores in cell-type-aware mode
 # Both parametric and non-parametric scores are computed
-ha.compute_interacting_cell_scores(
-    mode="cell_type", test="both", device="cpu", n_permutations=1000
-)
+ha.compute_interacting_cell_scores(mode="cell_type", test="both", device="cpu", n_permutations=1000)
 ```
 
 ```python

@@ -76,9 +76,7 @@ pbmc3k.var.head()
 As another example, let's download a dataset from 10x Genomics. This data was obtained from a CITE-seq experiment, so it also contains protein count data.
 
 ```python
-def download_data(
-    save_path: str, fname: str = "pbmc5k_protein_filtered_feature_bc_matrix.h5"
-) -> str:
+def download_data(save_path: str, fname: str = "pbmc5k_protein_filtered_feature_bc_matrix.h5") -> str:
     """Download the data files."""
     return pooch.retrieve(
         url="https://cf.10xgenomics.com/samples/cell-exp/3.0.2/5k_pbmc_protein_v3/5k_pbmc_protein_v3_filtered_feature_bc_matrix.h5",

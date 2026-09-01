@@ -55,9 +55,7 @@ We can see the advantage with larger data, while for the small data, there's no 
 2. How to use it: during the model train command, we need to use the strategy parameter, and its value depends on whether we are running from command line/script or from an interactive session like jupyter notebook/colab:
 - From non-interactive session:
 ```python
-model.train(
-    ..., accelerator="gpu", devices=-1, strategy="ddp_find_unused_parameters_true"
-)
+model.train(..., accelerator="gpu", devices=-1, strategy="ddp_find_unused_parameters_true")
 ```
 - From interactive session (e.g. jupyter notebook):
 ```python

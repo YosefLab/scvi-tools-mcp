@@ -103,7 +103,7 @@ min_cells = int(adata.n_obs * min_detection)
 
 print(f"Peaks before filtering: {adata.n_vars}")
 sc.pp.filter_genes(adata, min_cells=min_cells)
-print(f"Peaks after filtering (>{min_detection*100}% detection): {adata.n_vars}")
+print(f"Peaks after filtering (>{min_detection * 100}% detection): {adata.n_vars}")
 
 # Check batch balance in remaining data
 print("\nCells per batch after filtering:")
@@ -178,7 +178,8 @@ print(f"Number of batches: {bdata.var['batch'].nunique()}")
 # Initialize model with L2 regularization for integration
 # This is the KEY parameter for batch correction
 model = scvi.external.SCBASSET(
-    bdata, l2_reg_cell_embedding=1e-8  # CRITICAL: enables batch integration
+    bdata,
+    l2_reg_cell_embedding=1e-8,  # CRITICAL: enables batch integration
 )
 
 print(f"L2 regularization: {model.module.l2_reg_cell_embedding}")

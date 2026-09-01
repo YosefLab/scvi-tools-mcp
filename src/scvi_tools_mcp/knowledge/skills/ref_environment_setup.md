@@ -62,9 +62,7 @@ print(f"GPU available: {torch.cuda.is_available()}")
 
 if torch.cuda.is_available():
     print(f"GPU device: {torch.cuda.get_device_name(0)}")
-    print(
-        f"GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB"
-    )
+    print(f"GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 ```
 
 ## GPU Configuration
@@ -166,14 +164,10 @@ Each model has its own setup method:
 scvi.model.SCVI.setup_anndata(adata, layer="counts", batch_key="batch")
 
 # scANVI
-scvi.model.SCANVI.setup_anndata(
-    adata, layer="counts", batch_key="batch", labels_key="cell_type"
-)
+scvi.model.SCANVI.setup_anndata(adata, layer="counts", batch_key="batch", labels_key="cell_type")
 
 # totalVI
-scvi.model.TOTALVI.setup_anndata(
-    adata, layer="counts", protein_expression_obsm_key="protein"
-)
+scvi.model.TOTALVI.setup_anndata(adata, layer="counts", protein_expression_obsm_key="protein")
 
 # MultiVI (uses MuData)
 scvi.model.MULTIVI.setup_mudata(mdata, rna_layer="counts", atac_layer="counts")
@@ -182,9 +176,7 @@ scvi.model.MULTIVI.setup_mudata(mdata, rna_layer="counts", atac_layer="counts")
 scvi.model.PEAKVI.setup_anndata(adata, batch_key="batch")
 
 # veloVI
-scvi.external.VELOVI.setup_anndata(
-    adata, spliced_layer="spliced", unspliced_layer="unspliced"
-)
+scvi.external.VELOVI.setup_anndata(adata, spliced_layer="spliced", unspliced_layer="unspliced")
 ```
 
 ### Minimum Version Requirements

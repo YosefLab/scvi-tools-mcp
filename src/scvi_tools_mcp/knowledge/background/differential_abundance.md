@@ -36,9 +36,7 @@ Evaluate at cell $n$ to quantify how likely cell $n$ belongs to group $A$.
 
 ```python
 # With MrVI or CytoVI
-da_df = model.differential_abundance(
-    adata, sample_key="donor", groupby="condition", group1="disease", group2="control"
-)
+da_df = model.differential_abundance(adata, sample_key="donor", groupby="condition", group1="disease", group2="control")
 ```
 
 ## Supported Models

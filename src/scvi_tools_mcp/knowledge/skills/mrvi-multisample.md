@@ -164,9 +164,7 @@ cd8_distances = distances.loc[{"cell_type_name": "CD8 T cells"}]
 **Example 2: Differential expression for specific comparison**
 ```python
 # After training model...
-de_results = run_differential_expression(
-    model, sample_cov_keys=["treatment"], store_lfc=True
-)
+de_results = run_differential_expression(model, sample_cov_keys=["treatment"], store_lfc=True)
 
 # Get effect sizes for treatment
 treatment_effects = de_results.effect_size.sel(covariate="treatment_Treated")

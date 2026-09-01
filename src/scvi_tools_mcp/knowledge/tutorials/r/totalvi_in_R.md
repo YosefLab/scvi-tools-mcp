@@ -16,7 +16,7 @@ library(anndata)
 ```
 
 ```python
-use_condaenv("base", required = TRUE)
+use_condaenv("base", required=TRUE)
 ```
 
 ## Loading and processing data with Bioconductor
@@ -41,7 +41,7 @@ For general pre-processing for various datatypes used by scvi-tools models, see 
 ```
 
 ```python
-unfiltered <- sce.pbmc
+unfiltered < -sce.pbmc
 ```
 
 ```python
@@ -77,8 +77,7 @@ gridExtra::grid.arrange(
 ```
 
 ```python
-plotColData(unfiltered, x="sum", y="subsets_Mito_percent",
-    colour_by="discard") + scale_x_log10()
+plotColData(unfiltered, x="sum", y="subsets_Mito_percent", colour_by="discard") + scale_x_log10()
 ```
 
 ## Normalization
@@ -87,10 +86,10 @@ While we normalize the data here using standard Bioconductor practices, we will 
 
 ```python
 set.seed(1000)
-clusters <- quickCluster(sce.pbmc)
-sce.pbmc <- computeSumFactors(sce.pbmc, cluster=clusters)
-altExp(sce.pbmc) <- computeMedianFactors(altExp(sce.pbmc))
-sce.pbmc <- logNormCounts(sce.pbmc, use_altexps=TRUE)
+clusters < -quickCluster(sce.pbmc)
+sce.pbmc < -computeSumFactors(sce.pbmc, cluster=clusters)
+altExp(sce.pbmc) < -computeMedianFactors(altExp(sce.pbmc))
+sce.pbmc < -logNormCounts(sce.pbmc, use_altexps=TRUE)
 ```
 
 ## Data conversion (SCE -> AnnData)

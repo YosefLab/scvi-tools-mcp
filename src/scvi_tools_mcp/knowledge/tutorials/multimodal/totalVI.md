@@ -130,13 +130,9 @@ We will plot the loss curves for training and validation using auto alignment fo
 ```python
 last_val_valid = np.array(model.history["elbo_validation"])[-1]
 last_val_train = np.array(model.history["elbo_train"])[-1]
-global_min_loss = min(
-    np.min(model.history["elbo_train"]), np.min(model.history["elbo_validation"])
-)
+global_min_loss = min(np.min(model.history["elbo_train"]), np.min(model.history["elbo_validation"]))
 last_max_loss = max(last_val_train, last_val_valid)[0]
-global_max_loss = max(
-    np.max(model.history["elbo_train"]), np.max(model.history["elbo_validation"])
-)
+global_max_loss = max(np.max(model.history["elbo_train"]), np.max(model.history["elbo_validation"]))
 ```
 
 ```python
@@ -144,9 +140,7 @@ global_max_loss = max(
 min_loss = min(min(last_val_train, last_val_valid), global_min_loss)
 max_loss = max(max(last_val_train, last_val_valid), global_max_loss)
 ylim_min = 0.995 * min_loss  # 0.5% below the minimum
-ylim_max = min(
-    global_max_loss, ylim_min + (last_max_loss - ylim_min) * 4
-)  # keep it under the 25% part of figure
+ylim_max = min(global_max_loss, ylim_min + (last_max_loss - ylim_min) * 4)  # keep it under the 25% part of figure
 ```
 
 ```python
@@ -273,9 +267,7 @@ We do not recommend using totalVI denoised values in other differential expressi
 ```
 
 ```python
-de_df = model.differential_expression(
-    groupby="rna_subset:leiden_totalVI", delta=0.5, batch_correction=True
-)
+de_df = model.differential_expression(groupby="rna_subset:leiden_totalVI", delta=0.5, batch_correction=True)
 de_df.head(5)
 ```
 

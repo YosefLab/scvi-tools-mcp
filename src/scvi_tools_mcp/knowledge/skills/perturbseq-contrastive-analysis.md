@@ -130,9 +130,7 @@ print(f"Cell cycle phases:\n{adata.obs['phase'].value_counts()}")
 # CRITICAL: Adjust the column name and control label for your data
 # Common column names: 'perturbation', 'gene_program', 'guide_id', 'condition'
 perturbation_col = "perturbation"  # <-- MODIFY for your data
-control_label = (
-    "Ctrl"  # <-- MODIFY for your data (e.g., 'non-targeting', 'NT', 'control')
-)
+control_label = "Ctrl"  # <-- MODIFY for your data (e.g., 'non-targeting', 'NT', 'control')
 
 # Verify the column exists and show available labels
 print(f"Available perturbations:\n{adata.obs[perturbation_col].value_counts()}")
@@ -156,7 +154,8 @@ assert len(target_indices) > 0, "No perturbed cells found! Check perturbation_co
 ```python
 # Setup AnnData for scvi
 scvi.external.ContrastiveVI.setup_anndata(
-    adata, layer=count_layer  # Use the layer containing raw counts
+    adata,
+    layer=count_layer,  # Use the layer containing raw counts
 )
 
 # Create model instance
@@ -164,9 +163,7 @@ scvi.external.ContrastiveVI.setup_anndata(
 # - n_salient_latent: dimensions for perturbation-specific effects (default: 10)
 # - n_background_latent: dimensions for shared variations (default: 10)
 # - use_observed_lib_size: whether to use observed library size (default: False)
-model = scvi.external.ContrastiveVI(
-    adata, n_salient_latent=10, n_background_latent=10, use_observed_lib_size=False
-)
+model = scvi.external.ContrastiveVI(adata, n_salient_latent=10, n_background_latent=10, use_observed_lib_size=False)
 
 print(model)
 ```
@@ -204,9 +201,7 @@ plt.show()
 perturbed_adata = adata[adata.obs[perturbation_col] != control_label].copy()
 
 # Extract salient representation (perturbation-specific)
-perturbed_adata.obsm["salient_rep"] = model.get_latent_representation(
-    perturbed_adata, representation_kind="salient"
-)
+perturbed_adata.obsm["salient_rep"] = model.get_latent_representation(perturbed_adata, representation_kind="salient")
 
 # Extract background representation (shared variations)
 perturbed_adata.obsm["background_rep"] = model.get_latent_representation(
@@ -214,17 +209,11 @@ perturbed_adata.obsm["background_rep"] = model.get_latent_representation(
 )
 
 # For the full dataset (control + perturbed)
-adata.obsm["salient_rep"] = model.get_latent_representation(
-    adata, representation_kind="salient"
-)
-adata.obsm["background_rep"] = model.get_latent_representation(
-    adata, representation_kind="background"
-)
+adata.obsm["salient_rep"] = model.get_latent_representation(adata, representation_kind="salient")
+adata.obsm["background_rep"] = model.get_latent_representation(adata, representation_kind="background")
 
 print(f"Salient representation shape: {perturbed_adata.obsm['salient_rep'].shape}")
-print(
-    f"Background representation shape: {perturbed_adata.obsm['background_rep'].shape}"
-)
+print(f"Background representation shape: {perturbed_adata.obsm['background_rep'].shape}")
 ```
 
 ---

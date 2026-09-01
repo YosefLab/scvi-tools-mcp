@@ -257,9 +257,7 @@ da_res
 ```
 
 ```python
-adata.obs = pd.concat(
-    [adata.obs, pd.DataFrame(da_res.values, columns=da_res.columns, index=adata.obs.index)], axis=1
-)
+adata.obs = pd.concat([adata.obs, pd.DataFrame(da_res.values, columns=da_res.columns, index=adata.obs.index)], axis=1)
 sc.pl.umap(adata, color=da_res.columns, cmap="icefire", ncols=3, vmin=-3, vmax=3)
 ```
 

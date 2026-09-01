@@ -45,9 +45,7 @@ We start by downloading the model from its hub.
 Note that the model is very large therefore it will take time to being download.
 
 ```python
-tahoe_hubmodel = scvi.hub.HubModel.pull_from_huggingface_hub(
-    repo_name="vevotx/Tahoe-100M-SCVI-v1", cache_dir="."
-)
+tahoe_hubmodel = scvi.hub.HubModel.pull_from_huggingface_hub(repo_name="vevotx/Tahoe-100M-SCVI-v1", cache_dir=".")
 ```
 
 We can see the model card
@@ -393,9 +391,7 @@ import plotnine as p9
 
 (
     p9.ggplot(de_change, p9.aes("lfc_mean", "-log10_pscore", color="Biotype"))
-    + p9.geom_point(
-        de_change.query("Biotype == 'protein_coding'"), alpha=0.5
-    )  # Plot other genes with transparence
+    + p9.geom_point(de_change.query("Biotype == 'protein_coding'"), alpha=0.5)  # Plot other genes with transparence
     + p9.xlim(-5, 5)  # Set x limits
     + p9.ylim(0, 2.5)  # Set y limits
     + p9.geom_point(de_change.query("Biotype != 'protein_coding'"))

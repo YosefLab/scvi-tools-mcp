@@ -123,7 +123,9 @@ model.train(batch_size=64)  # Default is 128
 
 # 2. Use smaller model architecture
 model = scvi.model.SCVI(
-    adata, n_latent=10, n_layers=1  # Default is 10-30  # Default is 1-2
+    adata,
+    n_latent=10,
+    n_layers=1,  # Default is 10-30  # Default is 1-2
 )
 
 # 3. Subset to fewer genes
@@ -301,9 +303,7 @@ balanced = []
 min_size = adata.obs["batch"].value_counts().min()
 for batch in adata.obs["batch"].unique():
     batch_data = adata[adata.obs["batch"] == batch]
-    balanced.append(
-        batch_data[np.random.choice(len(batch_data), min_size, replace=False)]
-    )
+    balanced.append(batch_data[np.random.choice(len(batch_data), min_size, replace=False)])
 adata_balanced = sc.concat(balanced)
 ```
 

@@ -223,9 +223,7 @@ In this example we can observe how nicely the arterial endotehlial cells (EC5_ar
 
 ```python
 # low dpi for uploading to github
-sc.settings.set_figure_params(
-    dpi=60, color_map="RdPu", dpi_save=200, vector_friendly=True, format="svg"
-)
+sc.settings.set_figure_params(dpi=60, color_map="RdPu", dpi_save=200, vector_friendly=True, format="svg")
 sc.pl.spatial(
     st_adata,
     img_key="hires",

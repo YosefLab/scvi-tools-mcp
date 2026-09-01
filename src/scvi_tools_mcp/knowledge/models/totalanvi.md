@@ -31,9 +31,7 @@ TotalANVI extends TotalVI by incorporating cell type labels into the model. It:
 ```python
 import scvi
 
-scvi.external.TOTALANVI.setup_anndata(
-    adata, protein_expression_obsm_key="protein_expression", labels_key="cell_type"
-)
+scvi.external.TOTALANVI.setup_anndata(adata, protein_expression_obsm_key="protein_expression", labels_key="cell_type")
 model = scvi.external.TOTALANVI(adata)
 model.train()
 

@@ -267,9 +267,7 @@ print(f"Common genes: {len(common_genes)}")
 # Add depth as continuous covariate
 adata.obs["log_counts"] = np.log1p(adata.obs["total_counts"])
 
-scvi.model.SCVI.setup_anndata(
-    adata, layer="counts", batch_key="sample", continuous_covariate_keys=["log_counts"]
-)
+scvi.model.SCVI.setup_anndata(adata, layer="counts", batch_key="sample", continuous_covariate_keys=["log_counts"])
 ```
 
 ### Unbalanced Cell Types

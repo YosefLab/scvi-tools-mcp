@@ -85,9 +85,7 @@ if "counts" not in rna.layers:
     rna.layers["counts"] = rna.X.copy()
 else:
     rna.layers["counts"] = (
-        rna.layers["counts"].toarray()
-        if hasattr(rna.layers["counts"], "toarray")
-        else rna.layers["counts"]
+        rna.layers["counts"].toarray() if hasattr(rna.layers["counts"], "toarray") else rna.layers["counts"]
     )
 
 # Check protein names
@@ -190,7 +188,8 @@ print(f"Latent representation shape: {latent.shape}")
 ```python
 # Get denoised RNA and protein
 rna_denoised, protein_denoised = model.get_normalized_expression(
-    n_samples=25, return_mean=True  # Monte Carlo samples  # Return mean of samples
+    n_samples=25,
+    return_mean=True,  # Monte Carlo samples  # Return mean of samples
 )
 
 # Store denoised values
@@ -199,15 +198,11 @@ protein.layers["denoised_protein"] = protein_denoised
 
 # Get protein foreground probability
 # (probability that signal is real, not background)
-protein_fg_prob = model.get_protein_foreground_probability(
-    n_samples=25, return_mean=True
-)
+protein_fg_prob = model.get_protein_foreground_probability(n_samples=25, return_mean=True)
 protein.layers["foreground_prob"] = protein_fg_prob
 
 print("Denoised values extracted")
-print(
-    f"Protein foreground probability range: {protein_fg_prob.min():.2f} - {protein_fg_prob.max():.2f}"
-)
+print(f"Protein foreground probability range: {protein_fg_prob.min():.2f} - {protein_fg_prob.max():.2f}")
 ```
 
 **Key Outputs**:
@@ -440,13 +435,9 @@ def validate_citeseq_data(mdata):
 
     # Check protein count
     if protein.n_vars < 10:
-        recommendations.append(
-            f"Few proteins ({protein.n_vars}). Consider if TotalVI is needed."
-        )
+        recommendations.append(f"Few proteins ({protein.n_vars}). Consider if TotalVI is needed.")
     if protein.n_vars > 200:
-        recommendations.append(
-            f"Many proteins ({protein.n_vars}). May need longer training."
-        )
+        recommendations.append(f"Many proteins ({protein.n_vars}). May need longer training.")
 
     # Check for zeros
     zero_proteins = (protein.X.sum(axis=0) == 0).sum()
@@ -457,9 +448,7 @@ def validate_citeseq_data(mdata):
     if "batch" in rna.obs.columns:
         batch_sizes = rna.obs["batch"].value_counts()
         if batch_sizes.min() < 100:
-            recommendations.append(
-                "Some batches have <100 cells. May affect batch correction."
-            )
+            recommendations.append("Some batches have <100 cells. May affect batch correction.")
 
     print("CITE-Seq Data Validation:")
     for issue in issues:

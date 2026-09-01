@@ -92,7 +92,9 @@ sc.pp.log1p(adata_hvg)
 
 # Select HVGs
 sc.pp.highly_variable_genes(
-    adata_hvg, n_top_genes=2000, flavor="seurat"  # or "cell_ranger"
+    adata_hvg,
+    n_top_genes=2000,
+    flavor="seurat",  # or "cell_ranger"
 )
 
 # Transfer HVG annotation
@@ -135,7 +137,9 @@ scvi.model.SCVI.setup_anndata(adata, layer="counts")  # Specify layer with raw c
 
 ```python
 scvi.model.SCVI.setup_anndata(
-    adata, layer="counts", batch_key="batch"  # Column in adata.obs
+    adata,
+    layer="counts",
+    batch_key="batch",  # Column in adata.obs
 )
 ```
 
@@ -219,9 +223,7 @@ For a complete preparation function, use `prepare_adata()` from `scripts/model_u
 from model_utils import prepare_adata
 
 # Prepare data with QC, HVG selection, and layer setup
-adata = prepare_adata(
-    adata, batch_key="batch", n_top_genes=2000, min_genes=200, max_mito_pct=20
-)
+adata = prepare_adata(adata, batch_key="batch", n_top_genes=2000, min_genes=200, max_mito_pct=20)
 
 # Then setup for your model
 import scvi
