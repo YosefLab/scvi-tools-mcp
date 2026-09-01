@@ -52,7 +52,7 @@ scvi.__file__
 
 ## Data loading
 
-In this tutorial we load a human breast cancer section, generated with [10X Xenium](https://www.nature.com/articles/s41467-023-43458-x). 
+In this tutorial we load a human breast cancer section, generated with [10X Xenium](https://www.nature.com/articles/s41467-023-43458-x).
 The cell segmentation originally performed on this data resulted in many erroneously assigned transcripts and therefore re-segmented the cells using the [ProSeg](https://www.biorxiv.org/content/10.1101/2024.04.25.591218v1) algorithm, which is a scalable algorithm for transcriptome-informed segmentation.
 
 ```python
@@ -76,12 +76,12 @@ adata.obs["cell_type"].value_counts()
 
 ## Train scVIVA model
 
-We first define the neighborhood of each cell using a k-nn graph. We set $k=20$. Then, the environment features are defined in two ways - the first is the cell-type composition of its cellular neighborhood. The second is the average gene expression state of neighboring cells, with a separate profile for each of the present cell types. These cell-intrinsic gene expression states can be learned with a spatially unaware model such as scANVI, or with resolVI. 
+We first define the neighborhood of each cell using a k-nn graph. We set $k=20$. Then, the environment features are defined in two ways - the first is the cell-type composition of its cellular neighborhood. The second is the average gene expression state of neighboring cells, with a separate profile for each of the present cell types. These cell-intrinsic gene expression states can be learned with a spatially unaware model such as scANVI, or with resolVI.
 
 Here we assume that scANVI has already been trained on the data, and that the embeddings are stored in the AnnData object. We refer to the scANVI tutorial for training the model.
 
 
-Environment features computations occur in the `preprocessing_anndata` method, that adds the relevant keys to the AnnData object. 
+Environment features computations occur in the `preprocessing_anndata` method, that adds the relevant keys to the AnnData object.
 
 ```python
 setup_kwargs = {
@@ -159,13 +159,13 @@ nichevae.history["kl_local_validation"].plot()
 nichevae.history["reconstruction_loss_validation"].plot()
 ```
 
-After training the model, we can compute and store the latent space: 
+After training the model, we can compute and store the latent space:
 
 ```python
 adata.obsm["X_scVIVA"] = nichevae.get_latent_representation()
 ```
 
-We may visualize the latent space in UMAP coordinates, coloring by cell type. 
+We may visualize the latent space in UMAP coordinates, coloring by cell type.
 
 ```python
 sc.pp.neighbors(adata, use_rep="X_scVIVA", n_neighbors=30)
@@ -176,7 +176,7 @@ sc.pl.umap(adata, color="cell_type", frameon=False)
 
 ## Differential expression analysis
 
-We now use the generative model to test hypotheses of differential expression between the niches. We'll focus on endothelial cells. 
+We now use the generative model to test hypotheses of differential expression between the niches. We'll focus on endothelial cells.
 
 ```python
 adata_endothelial = adata[adata.obs["cell_type"] == "Endothelial"].copy()
@@ -226,9 +226,9 @@ adata.obs.loc[adata.obs["cell_type"] == "Endothelial", "leiden_scVIVA"] = adata_
 adata.obs["leiden_scVIVA"].value_counts()
 ```
 
-We now run the differential expression function, between the cell groups $\textit{G1}=tumor~endothelial$ and $\textit{G2}=stromal~endothelial$. We first set the number of nearest neighbors to compute the non-endothelial neighbors of $\textit{G1}$ and $\textit{G2}$, called $\textit{N1}$ and $\textit{N2}$, respectively. 
+We now run the differential expression function, between the cell groups $\textit{G1}=tumor~endothelial$ and $\textit{G2}=stromal~endothelial$. We first set the number of nearest neighbors to compute the non-endothelial neighbors of $\textit{G1}$ and $\textit{G2}$, called $\textit{N1}$ and $\textit{N2}$, respectively.
 
-Setting `niche_mode=True`, we compute 4 different DE tests:  $\{\textit{G1}~vs~\textit{G2}\}$,  $\{\textit{G1}~vs~\textit{N1}\}$,  $\{\textit{N1}~vs~\textit{G2}\}$ and $\{\textit{N1}~vs~\textit{N2}\}$ (in this order). We set a test-specific treshold for significant log-fold change `DELTA`. 
+Setting `niche_mode=True`, we compute 4 different DE tests:  $\{\textit{G1}~vs~\textit{G2}\}$,  $\{\textit{G1}~vs~\textit{N1}\}$,  $\{\textit{N1}~vs~\textit{G2}\}$ and $\{\textit{N1}~vs~\textit{N2}\}$ (in this order). We set a test-specific treshold for significant log-fold change `DELTA`.
 
 Other parameters include the number of samples to draw from the posterior `N_SAMPLES_DE`, `PSEUDOCOUNTS` for stability and `FDR` for the FDR correction. More details can be found in Boyeau et al. PNAS 2023.
 
@@ -264,9 +264,9 @@ DE_1_0 = nichevae.differential_expression(
 )
 ```
 
-Let's analysize the DE test: $\textit{G1}=tumor~endothelial$ vs $\textit{G2}=stromal~endothelial$. The DE function returns a Dataclass object `DE_1_0`. 
+Let's analysize the DE test: $\textit{G1}=tumor~endothelial$ vs $\textit{G2}=stromal~endothelial$. The DE function returns a Dataclass object `DE_1_0`.
 
-We can access the Gaussian process classifier properties with the `gpc` attribute: 
+We can access the Gaussian process classifier properties with the `gpc` attribute:
 
 ```python
 DE_1_0.gpc
@@ -276,7 +276,7 @@ DE_1_0.gpc
 DE_1_0.gpc_info()
 ```
 
-The $\textit{G1}$ vs $\textit{G2}$ differential expression results are stored in the `g1_g2` attribute: 
+The $\textit{G1}$ vs $\textit{G2}$ differential expression results are stored in the `g1_g2` attribute:
 
 ```python
 DE_1_0.g1_g2
@@ -300,11 +300,11 @@ g1_g3_genes = DE_1_0.g1_g2[
 ].index
 ```
 
-We then display the results: median Log-Fold Change (LFC) of upregulated genes in $\textit{G1}$ vs $\textit{G2}$ displayed on the x-axis, while we compare differential expression computed between $\textit{N1}$  and $\textit{G2}$ on the y-axis. 
+We then display the results: median Log-Fold Change (LFC) of upregulated genes in $\textit{G1}$ vs $\textit{G2}$ displayed on the x-axis, while we compare differential expression computed between $\textit{N1}$  and $\textit{G2}$ on the y-axis.
 
 Genes are colored by their marker label (yellow=significantly upregulated in $\textit{G1}$ vs $\textit{N1}$, green otherwise).
 
-We also display the classifier decision boundary (the predicted probability of being in the yellow class). 
+We also display the classifier decision boundary (the predicted probability of being in the yellow class).
 
 ```python
 PLOT_MARGIN = 0.2
@@ -374,7 +374,7 @@ def get_gene_percentiles_list(adata, gene_list, p, layer=None):
     return percentiles
 ```
 
-We display _ESM1_, _KDR_, _SNAI1_, critical genes for angiogenesis in invasive cancer. We aslo display _FOXA1_, that is both upregulated in $\textit{G1}$ and $\textit{N1}$, to show how our procedure can filter such genes. 
+We display _ESM1_, _KDR_, _SNAI1_, critical genes for angiogenesis in invasive cancer. We aslo display _FOXA1_, that is both upregulated in $\textit{G1}$ and $\textit{N1}$, to show how our procedure can filter such genes.
 
 ```python
 gene_list_invasive = ["ESM1", "KDR", "SNAI1", "FOXA1"]

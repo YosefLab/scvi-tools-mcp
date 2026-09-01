@@ -1,6 +1,6 @@
 # Improving embeddings for low-count cells with JointEmbeddingSCVI
 
-It is recommended to filter scRNA-seq data to remove cells with few UMI counts: 
+It is recommended to filter scRNA-seq data to remove cells with few UMI counts:
 their standard SCVI representations carry little biological signal, so they are usually discarded during quality control. Unfortunately, if there are issues with the sample
 source for the cells, you might obtain a dataset with a large fraction of low-UMI cells,
 meaning that you would end up discarding a large amount of precious data.
@@ -13,7 +13,7 @@ option if possible. It will not work well if _all_ cells have extremely low UMI:
 when there is a large number of cells to train on (so there are many examples for
 the paired training).
 
-In this tutorial we use subsampling to illustrate how to use the `JointEmbeddingSCVI` 
+In this tutorial we use subsampling to illustrate how to use the `JointEmbeddingSCVI`
 model to improve embeddings for low-UMI cells.
 
 Reference: Svensson, *Improving SCVI for low-count cells through self-supervised augmentation*, bioRxiv 2026.
@@ -51,7 +51,7 @@ save_dir = tempfile.TemporaryDirectory()
 
 We use the human PBMC dataset GSE310923 (51,277 cells, young/old donors), downloaded from
 [Zenodo](https://zenodo.org/records/20902782) (about 400 MB). Raw integer counts are in `adata.X`, and
-`adata.obs["cell_type"]` holds 18 annotated cell types we will use for coloring. We 
+`adata.obs["cell_type"]` holds 18 annotated cell types we will use for coloring. We
 don't subset to highly variable genes — the model is trained on all genes.
 
 ```python
@@ -383,7 +383,7 @@ sc.pl.umap(
 )
 ```
 
-## Quantifying cell type mixing 
+## Quantifying cell type mixing
 
 The TSNE visualization indicates that low-UMI cells intermix with high-UMI cells
 supposedly of the same cell type.

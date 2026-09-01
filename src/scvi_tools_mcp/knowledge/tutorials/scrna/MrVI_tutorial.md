@@ -55,7 +55,7 @@ sc.pp.highly_variable_genes(
 adata
 ```
 
-Before training, we need to specify which covariates in `obs` should be used as target (`sample_key`) and nuisance variables (`batch_key`). 
+Before training, we need to specify which covariates in `obs` should be used as target (`sample_key`) and nuisance variables (`batch_key`).
 In this tutorial, we will use donor IDs (`patient_id`) as the target variable, and leave the batch variable empty since the data is already subsetted to the Newcastle cohort (denoted in `Site`).
 
 Otherwise, we will focus on the following `obs` keys for the analysis:
