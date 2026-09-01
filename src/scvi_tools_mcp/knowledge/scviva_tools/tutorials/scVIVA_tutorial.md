@@ -25,11 +25,11 @@ import random
 import tempfile
 import rapids_singlecell as rsc
 import scvi
-import numpy as np
-import scanpy as sc
-import scviva
-import torch
-from rich import print
+import numpy as np  
+import scanpy as sc  
+import scviva  
+import torch  
+from rich import print  
 ```
 
 ```python
