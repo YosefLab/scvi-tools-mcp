@@ -88,8 +88,8 @@ pancreas_query = pancreas_query[:, pancreas_ref.var_names].copy()
 
 #### Train reference
 
-We train the reference using the standard SCVI workflow, except we add a few non-default parameters that were identified to work well with scArches.
-It is essential to encode covariates here as this allows scArches to map new batches in the encoder to the existing data and thereby provides batch integration.
+We train the reference using the standard SCVI workflow, except we add a few non-default parameters that were identified to work well with scArches. 
+It is essential to encode covariates here as this allows scArches to map new batches in the encoder to the existing data and thereby provides batch integration. 
 
 ```python
 scvi.model.SCVI.setup_anndata(pancreas_ref, batch_key="tech", layer="counts")

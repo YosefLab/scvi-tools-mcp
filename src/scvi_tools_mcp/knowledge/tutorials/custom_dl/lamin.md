@@ -94,7 +94,7 @@ pbmc_dataset_filtered.obs.loc[
 pbmc_dataset_filtered
 ```
 
-The list of different cell types for the first dataaset can be seen
+The list of different cell types for the first dataaset can be seen 
 
 ```python
 pbmc_dataset_filtered.obs["cell_type"].value_counts()
@@ -365,7 +365,7 @@ plt.ylabel("Observed")
 
 ## Run regulary using adata and compare
 
-We will use the adata we already extracted and train an SCVI and SCANVI models under the
+We will use the adata we already extracted and train an SCVI and SCANVI models under the 
 same conditions as was done for Lamin, in order to compare the results
 
 ```python
@@ -513,6 +513,6 @@ bm.benchmark()
 bm.plot_results_table(min_max_scale=False)
 ```
 
-As expected SCANVI outperforms the SCVI using the labels data,
+As expected SCANVI outperforms the SCVI using the labels data, 
 however as can be seen the regular use of Anndataloader dataloader
 gives 5% better integration results comparing to the lamin dataloader
