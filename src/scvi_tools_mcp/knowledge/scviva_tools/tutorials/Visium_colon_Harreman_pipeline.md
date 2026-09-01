@@ -47,7 +47,7 @@ import matplotlib.pyplot as plt
 import scviva
 import tempfile
 import requests
-from plotnine import * 
+from plotnine import *
 from scipy.stats import zscore
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
