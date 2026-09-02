@@ -48,7 +48,8 @@ Notes
 -----
 See further usage examples in the following tutorials:
 
-1. :doc:`/tutorials/DestVI_tutorial`
+1. :doc:`/tutorials/notebooks/spatial/DestVI_tutorial`
+2. :doc:`/tutorials/notebooks/r/DestVI_in_R`
 
 ## setup_anndata
 
