@@ -9,6 +9,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-09-19
+
 ### Added
 
 - scviva-tools knowledge source and tools — the companion spatial toolkit (ResolVI, DestVI, scVIVA, GIMVI, DiagVI, Stereoscope, Tangram, Harreman):
