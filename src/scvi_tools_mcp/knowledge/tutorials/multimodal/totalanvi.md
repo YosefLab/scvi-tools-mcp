@@ -1,5 +1,5 @@
- # Semi-supervised CITE-seq analysis with TotalANVI
-  With TotalANVI, we can perform semi-supervised analysis of CITE-seq data by leveraging partial cell type annotations to jointly model RNA and protein. Starting from a pretrained totalVI model, TotalANVI fine-tunes the latent space to predict cell type labels for unannotated cells, impute missing protein measurements, and perform differential abundance analysis. Here we demonstrate this functionality with an immune aging CITE-seq dataset spanning multiple tissues and donors, measured across two protein panels.
+ # Semi-supervised CITE-seq analysis with TotalANVI                                                                                                             
+  With TotalANVI, we can perform semi-supervised analysis of CITE-seq data by leveraging partial cell type annotations to jointly model RNA and protein. Starting from a pretrained totalVI model, TotalANVI fine-tunes the latent space to predict cell type labels for unannotated cells, impute missing protein measurements, and perform differential abundance analysis. Here we demonstrate this functionality with an immune aging CITE-seq dataset spanning multiple tissues and donors, measured across two protein panels.                                                                                   
 
 ```python
 !pip install --quiet scvi-colab
@@ -158,7 +158,9 @@ original_mask = ~sub_concat.obs_names.str.endswith("_no_protein")
 prot_concat.obsm["protein_original"] = np.zeros(
     (len(sub_concat), mdata_cd["prot"].obsm["protein_original"].shape[1]), dtype=np.float32
 )
-prot_concat.obsm["protein_original"][original_mask] = mdata_cd["prot"][sub.obs_names].obsm["protein_original"]
+prot_concat.obsm["protein_original"][original_mask] = mdata_cd["prot"][sub.obs_names].obsm[
+    "protein_original"
+]
 
 mdata_concat = md.MuData({"rna": sub_concat, "prot": prot_concat})
 ```
@@ -273,8 +275,8 @@ def extract_protein_prediction(mdata, model, model_name, n_samples=25, gene_list
 extract_protein_prediction(mdata_concat, totalvi, model_name="totalvi")
 ```
 
-*** Note ***
- You can use `transform_batch=batches` during protein imputation  to generate predictions relative to specific donor_tissue batches. Example for the current dataset:
+*** Note *** 
+ You can use `transform_batch=batches` during protein imputation  to generate predictions relative to specific donor_tissue batches. Example for the current dataset: 
 
 batches = list(
     mdata[mdata.obs['donor'].isin(['778C', 'D523'])]
@@ -397,7 +399,7 @@ mdataf_orig.mod["rna"].obsm["X_scVI"] = sub.obsm["X_scVI"]
 mdataf_orig.write(os.path.join(save_dir.name, "mdataf_orig.h5mu"))
 ```
 
-# Comparing integration metrics using scib-metrics package
+# Comparing integration metrics using scib-metrics package  
 
 
 Compute multiple integration metrics across the scvi, scANVI, totalVI, and totalANVI embeddings to quantitatively compare biological conservation and batch integration performance. We use the scib-metrics package
@@ -490,7 +492,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-##  Distribution divergence
+##  Distribution divergence 
 Jensen-Shannon (JS) divergence measures how much the predicted cell-type
 proportions differ from the true proportions.
 JS = 0 → predicted distribution is identical to the true distribution.
@@ -510,10 +512,16 @@ dist_scanvi = get_dist(pred_scanvi)
 
 js_totalanvi = jensenshannon(dist_true, dist_totalanvi)
 js_scanvi = jensenshannon(dist_true, dist_scanvi)
-w_totalanvi = wasserstein_distance(range(len(all_labels)), range(len(all_labels)), dist_true, dist_totalanvi)
-w_scanvi = wasserstein_distance(range(len(all_labels)), range(len(all_labels)), dist_true, dist_scanvi)
+w_totalanvi = wasserstein_distance(
+    range(len(all_labels)), range(len(all_labels)), dist_true, dist_totalanvi
+)
+w_scanvi = wasserstein_distance(
+    range(len(all_labels)), range(len(all_labels)), dist_true, dist_scanvi
+)
 
-print(f"Jensen-Shannon divergence — totalANVI : {js_totalanvi:.4f}  (0=identical, 1=max divergence)")
+print(
+    f"Jensen-Shannon divergence — totalANVI : {js_totalanvi:.4f}  (0=identical, 1=max divergence)"
+)
 print(f"Jensen-Shannon divergence — scANVI    : {js_scanvi:.4f}")
 print(f"Wasserstein distance      — totalANVI : {w_totalanvi:.4f}")
 print(f"Wasserstein distance      — scANVI    : {w_scanvi:.4f}")
@@ -535,7 +543,10 @@ for ax, dist_pred, model_name, js in zip(
     ax.bar(x + width / 2, dist_pred, width, label=model_name, color="coral")
     ax.set_xticks(x)
     ax.set_xticklabels(all_labels, rotation=45, ha="right")
-    ax.set_title(f"{model_name} — predicted vs true distribution\nJS divergence = {js:.4f}  (0=identical, 1=max)")
+    ax.set_title(
+        f"{model_name} — predicted vs true distribution\n"
+        f"JS divergence = {js:.4f}  (0=identical, 1=max)"
+    )
     ax.set_ylabel("Proportion of cells")
     ax.set_xlabel("Cell type")
     ax.legend()
@@ -543,7 +554,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-# Visualizing the embeddings and denoised protein values
+# Visualizing the embeddings and denoised protein values  
 
 ```python
 mdata = md.read_h5mu(os.path.join(save_dir.name, "mdataf_orig.h5mu"))
@@ -552,7 +563,9 @@ for col in mdata.mod["rna"].obs.columns:
     if col not in mdata.obs.columns:
         mdata.obs[col] = mdata.mod["rna"].obs[col].values
 
-sc.pl.umap(mdata, color=["totalanvi_predicted_celltypes", "celltype"], legend_loc="on data", frameon=False)
+sc.pl.umap(
+    mdata, color=["totalanvi_predicted_celltypes", "celltype"], legend_loc="on data", frameon=False
+)
 
 sc.pl.umap(mdata, color=["tissue", "donor", "site"], vmax="p98", frameon=False)
 ```
@@ -691,7 +704,10 @@ enriched_tissues = ["SPL", "BMA", "MLN"]
 
 plot_mean = pd.concat(
     [
-        mdata_cmv.obs[mdata_cmv.obs["tissue"] == tg].groupby("celltype")[f"da_log_probs_{tg}"].mean().rename(tg)
+        mdata_cmv.obs[mdata_cmv.obs["tissue"] == tg]
+        .groupby("celltype")[f"da_log_probs_{tg}"]
+        .mean()
+        .rename(tg)
         for tg in enriched_tissues
     ],
     axis=1,
@@ -699,7 +715,10 @@ plot_mean = pd.concat(
 
 plot_sem = pd.concat(
     [
-        mdata_cmv.obs[mdata_cmv.obs["tissue"] == tg].groupby("celltype")[f"da_log_probs_{tg}"].sem().rename(tg)
+        mdata_cmv.obs[mdata_cmv.obs["tissue"] == tg]
+        .groupby("celltype")[f"da_log_probs_{tg}"]
+        .sem()
+        .rename(tg)
         for tg in enriched_tissues
     ],
     axis=1,
@@ -713,7 +732,9 @@ width = 0.25
 colors = ["steelblue", "coral", "forestgreen"]
 
 for i, (tg, color) in enumerate(zip(enriched_tissues, colors, strict=False)):
-    ax.bar(x + i * width, plot_mean[tg], width, yerr=plot_sem[tg], capsize=3, label=tg, color=color)
+    ax.bar(
+        x + i * width, plot_mean[tg], width, yerr=plot_sem[tg], capsize=3, label=tg, color=color
+    )
 
 ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
 ax.set_xticks(x + width)

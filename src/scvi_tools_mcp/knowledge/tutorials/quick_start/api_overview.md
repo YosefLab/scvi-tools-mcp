@@ -130,7 +130,7 @@ All scvi-tools models run faster when using a GPU. By default, scvi-tools will u
 model.train(train_size=0.8, check_val_every_n_epoch=1)
 ```
 
-Note how we trained the model with `train_size=0.8`, that means 80% of data will be used for training, while 20% will be used for model validation.
+Note how we trained the model with `train_size=0.8`, that means 80% of data will be used for training, while 20% will be used for model validation. 
 The additional `check_val_every_n_epoch = 1` means that validation losses will be recorded each epoch and may be used for other callbacks, for example early_stopping (stopping the training process before overfitting the model, based on validation loss).
 
 Other parameters will not be discussed here, and we encourage the reader to view the rest of the API.
@@ -192,14 +192,16 @@ The reconstruction loss is equal to the maximum likelihood term of the ELBO loss
 
 ```python
 # Local KL divergence
-plot_metric("kl_local_train", "kl_local_validation", "KL divergence (latent z)", "KL(q(z|x)||p(z))")
+plot_metric(
+    "kl_local_train", "kl_local_validation", "KL divergence (latent z)", "KL(q(z|x)||p(z))"
+)
 ```
 
 The KL divergence controls the latent space regularization and minizmizing it means to better approximate posterior and the prior
 
 When trainnig SCVI models we often would like to prevent overfitting (validation loss curve increase for ELBO, KL divergence not stable, Reconstrucion loss explodes) and also train enough for not doing underfitting (train ELBO did not converge).
 
-Both things are importnat for the correctness of the downstream analysis of the model.
+Both things are importnat for the correctness of the downstream analysis of the model.    
 
 ## Obtaining model outputs
 
@@ -213,7 +215,7 @@ adata.obsm[SCVI_LATENT_KEY] = latent
 latent.shape
 ```
 
-The `model.get...()` functions default to using the AnnData that was used to initialize the model.
+The `model.get...()` functions default to using the AnnData that was used to initialize the model. 
 It's possible to also query a subset of the anndata, or even use a completely independent anndata object as long as the anndata is organized in an equivalent fashion.
 
 Here we show the usage of `get_latent_representation()` - The model learned latent (embeddings) space and `get_normalized_expression()` - the models estimated gene space
@@ -329,7 +331,9 @@ adata.obs.cell_type.head()
 For example, a 1-vs-1 DE test is as simple as:
 
 ```python
-de_df = model.differential_expression(groupby="cell_type", group1="Endothelial", group2="Fibroblast")
+de_df = model.differential_expression(
+    groupby="cell_type", group1="Endothelial", group2="Fibroblast"
+)
 de_df.head()
 ```
 

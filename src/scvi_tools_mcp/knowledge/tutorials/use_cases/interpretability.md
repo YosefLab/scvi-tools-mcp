@@ -1,8 +1,8 @@
 # Using SHAP values and IntegratedGradients for cell type classification interpretability
 
-Previously we saw semi-supervised models, like SCANVI being used for tasks like cell type classification, enabling researchers to uncover complex biological patterns. However, as these models become more sophisticated, it is essential to understand not just the predictions they make, but why they make them. This is where interpretability methods like [SHAP (SHapley Additive exPlanations)](https://shap.readthedocs.io/en/latest/generated/shap.DeepExplainer.html#shap.DeepExplainer) and [CAPTUM IntegratedGradients](https://captum.ai/api/integrated_gradients.html) come into play. By providing insights into the influence of individual features on model predictions, these methods help us trust and validate our models in critical biological contexts.
+Previously we saw semi-supervised models, like SCANVI being used for tasks like cell type classification, enabling researchers to uncover complex biological patterns. However, as these models become more sophisticated, it is essential to understand not just the predictions they make, but why they make them. This is where interpretability methods like [SHAP (SHapley Additive exPlanations)](https://shap.readthedocs.io/en/latest/generated/shap.DeepExplainer.html#shap.DeepExplainer) and [CAPTUM IntegratedGradients](https://captum.ai/api/integrated_gradients.html) come into play. By providing insights into the influence of individual features on model predictions, these methods help us trust and validate our models in critical biological contexts. 
 
-In this tutorial, we'll explore the significance of interpretability techniques in supervised cell classification using ScanVI, which are now avialble as part of SCVI-Tools.
+In this tutorial, we'll explore the significance of interpretability techniques in supervised cell classification using ScanVI, which are now avialble as part of SCVI-Tools. 
 
 ```{note}
 Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
@@ -247,7 +247,9 @@ pivot_df = pivot_df.sort_values(by="total", ascending=False)  # Sort by the tota
 pivot_df = pivot_df.head(top_n)  # Select the top 10 features
 
 # Plotting the horizontal stacked bar plot
-ax = pivot_df.drop("total", axis=1).plot(kind="barh", stacked=True, figsize=(10, 6), colormap="tab20")
+ax = pivot_df.drop("total", axis=1).plot(
+    kind="barh", stacked=True, figsize=(10, 6), colormap="tab20"
+)
 
 # Add labels and title
 ax.set_xlabel("IG Contribution Value")
@@ -378,7 +380,9 @@ fig.tight_layout()
 ```python
 top_n = 20
 # Pivot the data so that each group becomes a column for stacking
-pivot_df = attributions_class_pos_agg.pivot_table(index="gene", columns="class", values="mean_shap", aggfunc="sum")
+pivot_df = attributions_class_pos_agg.pivot_table(
+    index="gene", columns="class", values="mean_shap", aggfunc="sum"
+)
 
 # Sort by the total sum of each feature (sum across all groups)
 pivot_df["total"] = pivot_df.sum(axis=1)  # Calculate the total sum for each feature
@@ -386,7 +390,9 @@ pivot_df = pivot_df.sort_values(by="total", ascending=False)  # Sort by the tota
 pivot_df = pivot_df.head(top_n)  # Select the top 10 features
 
 # Plotting the horizontal stacked bar plot
-ax = pivot_df.drop("total", axis=1).plot(kind="barh", stacked=True, figsize=(10, 6), colormap="tab20")
+ax = pivot_df.drop("total", axis=1).plot(
+    kind="barh", stacked=True, figsize=(10, 6), colormap="tab20"
+)
 
 # Add labels and title
 ax.set_xlabel("SHAP Contribution Value")

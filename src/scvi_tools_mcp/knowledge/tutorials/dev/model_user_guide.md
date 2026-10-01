@@ -136,7 +136,9 @@ class SCVI(UnsupervisedTrainingMixin, BaseModelClass):
             n_latent=n_latent,
             **model_kwargs,
         )
-        self._model_summary_string = f"SCVI Model with the following params: \nn_latent: {n_latent}"
+        self._model_summary_string = (
+            f"SCVI Model with the following params: \nn_latent: {n_latent}"
+        )
         self.init_params_ = self._get_init_params(locals())
 
     @classmethod
@@ -189,7 +191,8 @@ The `AnnDataManager` class stores state on data registered with scvi-tools. Sinc
 print(f"model instance UUID: {model.id}")
 print(f"adata UUID: {adata.uns['_scvi_uuid']}")
 print(
-    f"AnnDataManager for adata: {SCVI._per_instance_manager_store[model.id][adata.uns['_scvi_uuid']]}"
+    "AnnDataManager for adata: "
+    f"{SCVI._per_instance_manager_store[model.id][adata.uns['_scvi_uuid']]}"
 )  # { model instance UUID: { adata UUID: AnnDataManager } }
 ```
 
@@ -295,7 +298,7 @@ Both methods are practically the same
 The input of it is a list of 3 np.arrays (train/valid/test) of integer indices of the data.
 The train split is always mandatory but the validation and test splits are not (and can be left empty or None), and in any case there must not be duplicates and it should cover the whole data.
 
-If external indices are used it will bypass any tain or valid size or proportion.
+If external indices are used it will bypass any tain or valid size or proportion. 
 
 Example:
 
@@ -304,12 +307,16 @@ valid_ind=np.array([4,5,6])
 test_ind=np.array(None)
 ```python
 # object to make train/test/val dataloaders with external indices
-data_splitter = DataSplitter(external_indexing=[train_ind, valid_ind, test_ind])
+data_splitter = DataSplitter(
+    external_indexing=[train_ind, valid_ind, test_ind]
+)
 model.train(datamodule=datamodule)
 
-# Or insert indices directly in train with datasplitter_kwargs
+#Or insert indices directly in train with datasplitter_kwargs 
 model.train(
-    datasplitter_kwargs={"external_indexing": [train_ind, valid_ind, test_ind]},
+    datasplitter_kwargs={
+        "external_indexing": [train_ind, valid_ind, test_ind]
+    },
 )
 ```
 
@@ -457,7 +464,9 @@ class SCVI(VAEMixin, UnsupervisedTrainingMixin, BaseModelClass):
             n_latent=n_latent,
             **model_kwargs,
         )
-        self._model_summary_string = f"SCVI Model with the following params: \nn_latent: {n_latent}"
+        self._model_summary_string = (
+            f"SCVI Model with the following params: \nn_latent: {n_latent}"
+        )
         self.init_params_ = self._get_init_params(locals())
 
     @classmethod
