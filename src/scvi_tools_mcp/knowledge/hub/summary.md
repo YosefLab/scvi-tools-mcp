@@ -2,7 +2,7 @@
 
 Fetched 121 public model repos from https://huggingface.co/scvi-tools.
 
-**Fetched at:** 2026-08-02T06:26:55Z
+**Fetched at:** 2026-10-01T06:27:20Z
 
 The snapshot is bundled for offline MCP use. Runtime tools do not call Hugging Face.
 
