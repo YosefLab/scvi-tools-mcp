@@ -42,7 +42,7 @@ Notes
 -----
 See further usage examples in the following tutorial:
 
-1. :doc:`/tutorials/notebooks/spatial/gimvi_tutorial`
+1. :doc:`/tutorials/gimvi_tutorial`
 
 ## setup_anndata
 

@@ -65,7 +65,7 @@ Notes
 -----
 See further usage examples in the following tutorials:
 
-1. :doc:`/tutorials/notebooks/spatial/scVIVA_tutorial`
+1. :doc:`/tutorials/scVIVA_tutorial`
 
 See Also
 --------
