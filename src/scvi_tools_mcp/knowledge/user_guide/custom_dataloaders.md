@@ -85,9 +85,7 @@ import scvi
 census = cellxgene_census.open_soma(census_version="stable")
 
 experiment_name = "mus_musculus"
-obs_value_filter = (
-    'is_primary_data == True and tissue_general in ["kidney"] and nnz >= 3000'
-)
+obs_value_filter = 'is_primary_data == True and tissue_general in ["kidney"] and nnz >= 3000'
 
 hv_idx = np.arange(100)  # just to make it smaller and faster for debug
 
