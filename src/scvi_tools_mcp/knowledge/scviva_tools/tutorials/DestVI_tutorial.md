@@ -16,13 +16,12 @@ Visium spots (55 µm) typically contain several cells. Most deconvolution method
 7. Integrate DestVI proportions with Harreman to infer cell-type-aware metabolic cell-cell communication (CCC).
 
 ```python
-#!pip install --quiet git+https://github.com/yoseflab/destvi_utils.git@main
+#!pip install --quiet --force-reinstall --no-deps git+https://github.com/yoseflab/destvi_utils.git@main
 ```
 
 ```python
+import os
 import tempfile
-import rapids_singlecell as rsc
-
 import destvi_utils
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,11 +33,20 @@ import torch
 from scvi.model import CondSCVI
 from scviva.model._destvi import DestVI
 import gc
-import os
 
 gc.collect()
 
 torch.cuda.empty_cache()
+```
+
+```python
+try:
+    import rapids_singlecell as rsc
+
+    print("RAPIDS SingleCell is installed and can be imported")
+    HAS_RSC = True
+except ImportError:
+    HAS_RSC = False
 ```
 
 ```python
@@ -74,13 +82,17 @@ Both files are hosted in the [DestVI reproducibility repository](https://github.
 
 ```python
 out1_path = os.path.join(save_dir.name, "ST-LN-compressed.h5ad")
-st_adata = sc.read(out1_path, backup_url="https://exampledata.scverse.org/scvi-tools/ST-LN-compressed.h5ad")
+st_adata = sc.read(
+    out1_path, backup_url="https://exampledata.scverse.org/scvi-tools/ST-LN-compressed.h5ad"
+)
 st_adata
 ```
 
 ```python
 out2_path = os.path.join(save_dir.name, "scRNA-LN-compressed.h5ad")
-sc_adata = sc.read(out2_path, backup_url="https://exampledata.scverse.org/scvi-tools/scRNA-LN-compressed.h5ad")
+sc_adata = sc.read(
+    out2_path, backup_url="https://exampledata.scverse.org/scvi-tools/scRNA-LN-compressed.h5ad"
+)
 sc_adata
 ```
 
@@ -106,7 +118,9 @@ sc.pp.filter_genes(sc_adata, min_counts=10)
 sc_adata.layers["counts"] = sc_adata.X.copy()  # preserve raw counts before normalization
 
 # Select highly variable genes for model training (seurat_v3 uses raw counts)
-sc.pp.highly_variable_genes(sc_adata, n_top_genes=G, subset=True, layer="counts", flavor="seurat_v3")
+sc.pp.highly_variable_genes(
+    sc_adata, n_top_genes=G, subset=True, layer="counts", flavor="seurat_v3"
+)
 
 sc.pp.normalize_total(sc_adata, target_sum=10e4)
 sc.pp.log1p(sc_adata)
@@ -202,7 +216,10 @@ st_adata.obs["batch"] = "spatial"  # distinguish from scRNA-seq batches in the r
 
 def spatial_nn_gex_smth(stadata, n_neighs):
     # Spatially smooth raw counts by averaging over k nearest neighbors.
-    rsc.pp.neighbors(stadata, n_neighs, use_rep="spatial", key_added="Xspatial")
+    if not HAS_RSC:
+        sc.pp.neighbors(stadata, n_neighs, use_rep="spatial", key_added="Xspatial")
+    else:
+        rsc.pp.neighbors(stadata, n_neighs, use_rep="spatial", key_added="Xspatial")
     stadata.obsp["Xspatial_connectivities"] = stadata.obsp["Xspatial_connectivities"].ceil()
     stadata.obsp["Xspatial_connectivities"].setdiag(1)
     return stadata.obsp["Xspatial_connectivities"].dot(stadata.layers["counts"])
@@ -280,7 +297,9 @@ Because stLVM proportion estimates are never exactly zero, follow-up analyses th
 `destvi_utils.automatic_proportion_threshold` determines a data-driven cutoff for each cell type. This utility is part of the `destvi_utils` companion package (installable from GitHub; see the top of this notebook).
 
 ```python
-ct_thresholds = destvi_utils.automatic_proportion_threshold(st_adata, ct_list=ct_list, kind_threshold="secondary")
+ct_thresholds = destvi_utils.automatic_proportion_threshold(
+    st_adata, ct_list=ct_list, kind_threshold="secondary"
+)
 ```
 
 The results confirm the expected spatial compartmentalization: B cells in the follicle zone, CD8 T cells in T-cell zones, and condition-dependent monocyte distribution (refer to the DestVI paper for full details).
@@ -315,6 +334,103 @@ destvi_utils.explore_gamma_space(st_model, sc_model, ct_list=ct_list, ct_thresho
 ```
 
 The spatially-weighted PCA and its functional annotation provide a systematic way to formulate hypotheses about cell-state variation in spatial context — e.g., which sub-states are concentrated in which tissue compartments and how they change between conditions.
+
+## Step 4b — Pathway/signature scoring with VISION
+
+DestVI's cell-type proportions and gamma values tell us *which* cell types are
+present in each spot and how their internal state varies, but not *what
+pathways* are active there. We use `scviva.tools.vision.VisionAnalysis` — the
+same standalone VISION pipeline demonstrated in
+[`Vision_tutorial`](Vision_tutorial.ipynb) — to score every spot against the
+same KEGG metabolic pathway gene sets used later in Step 6's Harreman
+metabolic-module analysis, then ask which pathways track which cell-type
+proportions. This is a complementary, curated-pathway-first counterpart to
+Step 6's data-driven Hotspot module discovery.
+
+
+```python
+import requests
+
+from scviva.tools.vision import VisionAnalysis
+
+# st_adata.X is already log-normalized (see Data loading and preprocessing above),
+# so norm_data_key=None tells VisionAnalysis to score directly from adata.X.
+va = VisionAnalysis(st_adata, norm_data_key=None)
+va.setup(compute_neighbors_on_key="spatial", num_neighbors=5)
+
+resp = requests.get("https://exampledata.scverse.org/scvi-tools/KEGG_metab_m.json")
+resp.raise_for_status()
+kegg_metab = resp.json()
+print(f"KEGG metabolic pathways available: {len(kegg_metab)}")
+
+va.load_signatures(dicts=[kegg_metab], min_signature_genes=5, sig_gene_threshold=0.001)
+va.compute_signatures()
+
+autocorr_sig = st_adata.uns["vision_signature_scores"].sort_values("c_prime", ascending=False)
+print(f"vision_signatures: {st_adata.obsm['vision_signatures'].shape}")
+print("\nTop 10 most spatially autocorrelated KEGG pathways:")
+print(autocorr_sig.head(10).round(4).to_string())
+```
+
+### Correlating signature scores with cell-type proportions
+
+Cell-type proportions are compositional — they sum to 1 per spot and aren't
+normally distributed — so we use **Spearman** rank correlation rather than
+Pearson between each KEGG pathway's per-spot VISION score and each cell
+type's per-spot proportion.
+
+
+```python
+import pandas as pd
+from scipy.stats import spearmanr
+
+sig_scores = st_adata.obsm["vision_signatures"]
+proportions = st_adata.obsm["proportions"]
+
+corr = pd.DataFrame(index=sig_scores.columns, columns=proportions.columns, dtype=float)
+for ct in proportions.columns:
+    for sig in sig_scores.columns:
+        corr.loc[sig, ct] = spearmanr(sig_scores[sig], proportions[ct]).statistic
+
+# Keep only the pathways most strongly associated with at least one cell type
+top_sigs = corr.abs().max(axis=1).sort_values(ascending=False).head(20).index
+
+plt.figure(figsize=(8, 8))
+sns.heatmap(corr.loc[top_sigs].astype(float), cmap="RdBu_r", center=0, vmin=-0.5, vmax=0.5)
+plt.title("Spearman correlation: KEGG pathway score vs. cell-type proportion")
+plt.tight_layout()
+plt.show()
+```
+
+### Per-cell-type pathway enrichment
+
+`destvi_utils.automatic_proportion_threshold` already gave us a data-driven cutoff (`ct_thresholds`) separating spots where a cell type is genuinely present from spots where its estimated proportion is residual noise (Step 3). We use it to test (per KEGG pathway, per cell type in `ct_list`) whether the pathway's VISION score is significantly higher in spots where the cell type is present (one-sided Mann-Whitney U, BH-corrected).
+
+```python
+from scipy.stats import mannwhitneyu
+from statsmodels.stats.multitest import multipletests
+
+enrichment_records = []
+for ct in ct_list:
+    present = proportions[ct].values > ct_thresholds[ct]
+    for sig in sig_scores.columns:
+        stat, pval = mannwhitneyu(
+            sig_scores.loc[present, sig], sig_scores.loc[~present, sig], alternative="greater"
+        )
+        enrichment_records.append({"cell_type": ct, "signature": sig, "pval": pval})
+
+enrichment = pd.DataFrame(enrichment_records)
+enrichment["fdr"] = multipletests(enrichment["pval"], method="fdr_bh")[1]
+
+print("Top KEGG pathways enriched in cell-type-present spots (FDR < 0.05):")
+print(
+    enrichment[enrichment["fdr"] < 0.05]
+    .sort_values(["cell_type", "fdr"])
+    .groupby("cell_type")
+    .head(3)
+    .to_string(index=False)
+)
+```
 
 ## Step 5 — Cell-type-specific differential expression (B cells)
 
@@ -361,24 +477,40 @@ ct = "B cells"
 imputation = st_model.get_scale_for_ct(ct)
 color = np.log(1 + 1e5 * imputation["Ifit3"].values)
 threshold = 4  # separates IFN-high from IFN-low B-cell spots
+```
 
+```python
 # IFN-rich zone: treated sections (TC or BD) with high Ifit3 expression
 mask = np.logical_and(
     np.logical_or(st_adata.obs["LN"] == "TC", st_adata.obs["LN"] == "BD"),
     color > threshold,
 ).values
+```
 
+```python
 # Comparison zone: same sections but low Ifit3 expression
 mask2 = np.logical_and(
     np.logical_or(st_adata.obs["LN"] == "TC", st_adata.obs["LN"] == "BD"),
     color < threshold,
 ).values
+```
 
+```python
 # Run KS test on imputed B-cell expression; results stored in st_adata.uns["IFN_rich"]
-_ = destvi_utils.de_genes(st_model, mask=mask, mask2=mask2, threshold=ct_thresholds[ct], ct=ct, key="IFN_rich")
+#_ = destvi_utils.de_genes(
+#    st_model, mask=mask, mask2=mask2, threshold=ct_thresholds[ct], ct=ct, key="IFN_rich"
+#)
+_ = destvi_utils.de_genes(
+    st_model, mask=mask, mask2=mask2, threshold=ct_thresholds[ct], ct=ct, key="IFN_rich",
+    st_adata=st_adata,                                                                                                                                                                                                                                                                                  
+) 
+```
 
+```python
 display(st_adata.uns["IFN_rich"]["de_results"].head(10))
+```
 
+```python
 destvi_utils.plot_de_genes(
     st_adata,
     interesting_genes=["Ifit3", "Ifit3b", "Ifit1", "Isg15", "Oas3", "Usp18", "Isg20"],
@@ -438,7 +570,7 @@ ha.compute_gene_pairs(ct_specific=True)
 # Infer cell-type-aware metabolic CCC:
 # mode="cell_type" uses proportion-weighted expression layers
 # Both parametric (DANB) and non-parametric (1000-permutation) tests are run
-ha.compute_cell_communication(mode="cell_type", n_permutations=1000, test="both")
+ha.compute_cell_communication(mode="cell_type",  n_permutations=1000, test="both")
 ```
 
 ```python
@@ -456,7 +588,9 @@ We run the Hotspot pipeline to identify **spatially co-varying metabolic gene mo
 
 ```python
 # Compute spatial autocorrelation restricted to mouse metabolic enzymes (DANB model)
-ha.hs.compute_local_autocorrelation(layer_key="counts", model="danb", species="mouse", use_metabolic_genes=True)
+ha.hs.compute_local_autocorrelation(
+    layer_key="counts", model="danb", species="mouse", use_metabolic_genes=True
+)
 ```
 
 ```python
@@ -485,7 +619,9 @@ We compute per-spot interaction scores in cell-type-aware mode (`mode='cell_type
 ```python
 # Compute per-spot interaction scores in cell-type-aware mode
 # Both parametric and non-parametric scores are computed
-ha.compute_interacting_cell_scores(mode="cell_type", test="both", device="cpu", n_permutations=1000)
+ha.compute_interacting_cell_scores(
+    mode="cell_type", test="both", device="cpu", n_permutations=1000
+)
 ```
 
 ```python
@@ -500,7 +636,7 @@ ha.tl.compute_interaction_module_correlation(
 ```
 
 ```python
-ha.pl.plot_interaction_module_correlation(threshold=0.1)
+ha.pl.plot_interaction_module_correlation(threshold=0.1, figsize = (10, 80))
 ```
 
 ```python

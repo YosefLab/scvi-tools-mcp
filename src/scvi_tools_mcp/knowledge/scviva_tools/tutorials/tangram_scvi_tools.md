@@ -143,6 +143,10 @@ mdata.mod["sc_train"] = mdata.mod["sc"][:, genes].copy()
 ```
 
 ```python
+mdata.update()
+```
+
+```python
 # global
 mdata.var_names = mdata.var_names.astype(str)
 mdata.var_names_make_unique()

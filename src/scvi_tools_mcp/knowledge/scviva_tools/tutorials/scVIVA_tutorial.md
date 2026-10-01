@@ -25,11 +25,11 @@ import random
 import tempfile
 import rapids_singlecell as rsc
 import scvi
-import numpy as np
-import scanpy as sc
-import scviva
-import torch
-from rich import print
+import numpy as np  
+import scanpy as sc  
+import scviva  
+import torch  
+from rich import print  
 ```
 
 ```python
@@ -226,7 +226,9 @@ sc.pl.spatial(
 
 ```python
 adata.obs["leiden_scVIVA"] = "Unknown"
-adata.obs.loc[adata.obs["cell_type"] == "Endothelial", "leiden_scVIVA"] = adata_endothelial.obs["leiden_scVIVA"]
+adata.obs.loc[adata.obs["cell_type"] == "Endothelial", "leiden_scVIVA"] = adata_endothelial.obs[
+    "leiden_scVIVA"
+]
 ```
 
 ```python
@@ -302,7 +304,9 @@ We can then filter genes to upregulated genes, i.e. such that the median Log-Fol
 ```python
 PROBA_TRES = 0.8
 
-g1_g3_genes = DE_1_0.g1_g2[(DE_1_0.g1_g2["lfc_median"] > 0) & (DE_1_0.g1_g2["proba_de"] > PROBA_TRES)].index
+g1_g3_genes = DE_1_0.g1_g2[
+    (DE_1_0.g1_g2["lfc_median"] > 0) & (DE_1_0.g1_g2["proba_de"] > PROBA_TRES)
+].index
 ```
 
 We then display the results: median Log-Fold Change (LFC) of upregulated genes in $\textit{G1}$ vs $\textit{G2}$ displayed on the x-axis, while we compare differential expression computed between $\textit{N1}$  and $\textit{G2}$ on the y-axis.
@@ -383,7 +387,9 @@ We display _ESM1_, _KDR_, _SNAI1_, critical genes for angiogenesis in invasive c
 
 ```python
 gene_list_invasive = ["ESM1", "KDR", "SNAI1", "FOXA1"]
-percentiles_invasive = get_gene_percentiles_list(adata, gene_list_invasive, 99.9, layer="min_max_scaled")
+percentiles_invasive = get_gene_percentiles_list(
+    adata, gene_list_invasive, 99.9, layer="min_max_scaled"
+)
 ```
 
 We first plot these genes in endothelial cells:
@@ -421,6 +427,67 @@ sc.pl.spatial(
     cmap="plasma",
 )
 ```
+
+## Identifying niche-dependent genes with VIVS
+
+Beyond the joint niche/state latent space above, we can ask a more targeted question: which genes' expression is actually shaped by the cellular niche? [VIVS](https://doi.org/10.1186/s13059-024-03419-z) ({class}`~scvi.external.VIVS`) is a conditional randomization test (CRT) that yields FDR-controlled p-values per gene for conditional dependence on a chosen response `Y`, using a deep generative model as a calibrated "knockoff" sampler.
+
+Here we reuse the niche composition that scVIVA's `preprocessing_anndata` already computed and stored in `adata.obsm["niche_composition"]` as the response `Y`. Unlike the standalone [VIVS tutorial](https://docs.scvi-tools.org/en/stable/tutorials/use_cases/VIVS_niche_gene_selection.html) (which trains a fresh plain `SCVI` knockoff sampler), we can reuse `nichevae` directly: its module (`nicheVAE`) is a `scvi.module.VAE` subclass, so VIVS can reuse its already-trained encoder/decoder (frozen) instead of fitting a new generative model.
+
+We register the same `adata` for VIVS, with `y_obsm_key="niche_composition"` pointing at the niche composition scVIVA already computed above. Passing `x_model=nichevae` tells VIVS to reuse `nichevae`'s already-trained module (frozen) as its knockoff sampler, instead of fitting a new generative VAE — VIVS's `.train()` call then only fits the importance-score network for `Y | X`.
+
+```python
+from scvi.external import VIVS
+from scvi.external.vivs import plot_hier_importance
+
+VIVS.setup_anndata(
+    adata,
+    y_obsm_key="niche_composition",  # niche composition computed by SCVIVA.preprocessing_anndata above
+    layer="counts",  # same raw-count layer used to train scVIVA
+    batch_key="sample",  # column in adata.obs that contains the batch covariate
+)
+
+vivs_model = VIVS(adata, x_model=nichevae)
+vivs_model.train(max_epochs=200)
+```
+
+`get_hier_importance` clusters genes by decoder-scale correlation at several resolutions, then re-runs the conditional randomization test with group-level knockoff substitution at each resolution, giving FDR-controlled p-values both for individual genes and for coarser gene clusters. Passing `n_clusters_list=[50, 100, 200]` tests three resolutions in addition to the finest (per-gene) one.
+
+```python
+res = vivs_model.get_hier_importance(
+    n_clusters_list=[50, 100, 200], batch_size=8192, n_mc_samples=100
+)
+res
+```
+
+`plot_hier_importance` renders the multi-resolution results as a significance dendrogram: genes/clusters found significant (BH-adjusted p-value below `significance_threshold`) at the coarsest resolution are shown, colored by significance, across all tested resolutions.
+
+```python
+plot_hier_importance(res, theme_kwargs={"figure_size": (15, 3)})
+```
+
+```python
+# p-values on the held-out validation split (the default -- see `get_importance`'s docstring)
+vivs_model_res = vivs_model.get_importance(indices=vivs_model.validation_indices, n_mc_samples=200)
+pvalues = vivs_model_res["pvalues"][:, 0]
+```
+
+```python
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(5, 4))
+ax.hist(pvalues, bins=20, range=(0, 1), density=True, alpha=0.8)
+ax.axhline(1.0, color="black", linestyle="--", linewidth=1)
+ax.set_xlabel("p-value")
+ax.set_ylabel("density")
+ax.set_title("VIVS model: p-value histogram")
+ax.legend()
+fig.tight_layout()
+```
+
+A gene (or gene cluster) called significant at a given resolution means the CRT rejected the null hypothesis that gene expression is conditionally independent of the niche composition `Y`, at the chosen FDR level, when knockoffs are drawn from SCVI's generative model — i.e. that gene's expression carries information about the surrounding niche beyond what is already explained by every other gene. Coarser resolutions (larger gene clusters) aggregate evidence across correlated genes and tend to have more power to detect weaker, distributed niche effects, while the finest (per-gene) resolution pinpoints individual genes.
+
+For a per-cell rather than per-dataset view of which cells drive a given gene's (or gene cluster's) importance score, see {meth}`~scvi.external.VIVS.get_cell_scores`. For a calibration sanity check (are the p-values well-behaved on a semi-synthetic response with known ground-truth genes?), see the [VIVS tutorial](https://docs.scvi-tools.org/en/stable/tutorials/use_cases/VIVS_niche_gene_selection.html).
 
 ```python
 import gc
