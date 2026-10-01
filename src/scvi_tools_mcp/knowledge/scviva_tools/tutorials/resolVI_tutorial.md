@@ -52,9 +52,7 @@ The data was originally labeled using Leiden clustering of an optimized segmenta
 
 ```python
 adata_path = os.path.join(save_dir.name, "tutorial_xenium_brain.h5ad")
-adata = sc.read(
-    adata_path, backup_url="https://exampledata.scverse.org/scvi-tools/tutorial_xenium_brain.h5ad"
-)
+adata = sc.read(adata_path, backup_url="https://exampledata.scverse.org/scvi-tools/tutorial_xenium_brain.h5ad")
 adata
 ```
 
@@ -112,9 +110,7 @@ ref_adata
 ```
 
 ```python
-ref_adata.obsm["resolvi_celltypes"] = supervised_resolvi.predict(
-    ref_adata, num_samples=3, soft=True
-)
+ref_adata.obsm["resolvi_celltypes"] = supervised_resolvi.predict(ref_adata, num_samples=3, soft=True)
 ```
 
 ```python
@@ -245,9 +241,7 @@ ref_adata.layers["generated_expression"] = samples_corr.loc["post_sample_q50", "
 
 ```python
 sc.pl.umap(ref_adata, color=["resolvi_predicted", "Slc17a6"], layer="counts", vmax="p98")
-sc.pl.umap(
-    ref_adata, color=["resolvi_predicted", "Slc17a6"], layer="generated_expression", vmax="p98"
-)
+sc.pl.umap(ref_adata, color=["resolvi_predicted", "Slc17a6"], layer="generated_expression", vmax="p98")
 ```
 
 ## Query transfer
@@ -268,9 +262,7 @@ query_resolvi.train(max_epochs=20)
 ```
 
 ```python
-query_adata.obs["resolvi_predicted"] = query_resolvi.predict(
-    query_adata, num_samples=3, soft=False
-)
+query_adata.obs["resolvi_predicted"] = query_resolvi.predict(query_adata, num_samples=3, soft=False)
 query_adata.obsm["X_resolVI"] = query_resolvi.get_latent_representation(query_adata)
 ```
 
@@ -289,9 +281,7 @@ sc.pl.spatial(query_adata, color=["predicted_celltype", "resolvi_predicted"], sp
 We can now concatenate the datasets again and find good integration and accurate cell-type information.
 
 ```python
-full_adata = ref_adata.concatenate(
-    query_adata, batch_key="source", batch_categories=["reference", "query"]
-)
+full_adata = ref_adata.concatenate(query_adata, batch_key="source", batch_categories=["reference", "query"])
 ```
 
 ```python

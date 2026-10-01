@@ -30,7 +30,6 @@ import scviva
 
 from scviva.tools.harreman.datasets import load_visium_mouse_colon_dataset
 from scviva.tools.vision import VisionAnalysis
-
 ```
 
 ```python
@@ -132,7 +131,7 @@ va.compute_differential_expression()
 
 cond_diff = adata.uns["vision_signature_differential"]["cond"]
 for group, df in cond_diff.groupby("group"):
-    top = df[df['pvals_adj'] < 0.05].sort_values("logfoldchanges", ascending=False).head(5)
+    top = df[df["pvals_adj"] < 0.05].sort_values("logfoldchanges", ascending=False).head(5)
     print(f"\nTop 5 KEGG pathways up in {group} (vs rest):")
     print(top[["names", "logfoldchanges", "pvals_adj"]].to_string(index=False))
 ```
