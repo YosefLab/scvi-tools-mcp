@@ -1,7 +1,7 @@
 # ATAC-seq analysis in R
 
 
-In this tutorial, we go over how to use scvi-tools functionality in R for analyzing ATAC-seq data. We will closely follow the PBMC tutorial from [Signac](https://satijalab.org/signac/articles/pbmc_vignette.html), using scvi-tools when appropriate. In particular, we will 
+In this tutorial, we go over how to use scvi-tools functionality in R for analyzing ATAC-seq data. We will closely follow the PBMC tutorial from [Signac](https://satijalab.org/signac/articles/pbmc_vignette.html), using scvi-tools when appropriate. In particular, we will
 
 1. Use PeakVI for dimensionality reduction and differential accessiblity for the ATAC-seq data
 2. Use scVI to integrate the unpaired ATAC-seq dataset with a match scRNA-seq dataset of PBMCs
@@ -11,7 +11,9 @@ This tutorial requires Reticulate. Please check out our installation [guide](htt
 ## Loading and processing data with Signac
 
 ```python
-system("wget https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5")
+system(
+    "wget https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_filtered_peak_bc_matrix.h5"
+)
 system("wget https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_singlecell.csv")
 system("wget https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz")
 system("wget https://cf.10xgenomics.com/samples/cell-atac/1.0.1/atac_v1_pbmc_10k/atac_v1_pbmc_10k_fragments.tsv.gz.tbi")
@@ -32,7 +34,7 @@ set.seed(1234)
 ```
 
 ```python
-use_condaenv("base", required = TRUE)
+use_condaenv("base", required=TRUE)
 ```
 
 ## Pre-processing
@@ -72,26 +74,26 @@ pbmc <- CreateSeuratObject(
 ```
 
 ```python
-pbmc = UpdateSeuratObject(object = pbmc) 
+pbmc = UpdateSeuratObject(object=pbmc)
 pbmc
 ```
 
 ```python
-pbmc[['peaks']]
+pbmc[["peaks"]]
 ```
 
 We add gene annotation information to facilitate downstream functionality.
 
 ```python
 # extract gene annotations from EnsDb
-annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75)
+annotations < -GetGRangesFromEnsDb(ensdb=EnsDb.Hsapiens.v75)
 
 # change to UCSC style since the data was mapped to hg19
-seqlevelsStyle(annotations) <- 'UCSC'
-genome(annotations) <- "hg19"
+seqlevelsStyle(annotations) < -"UCSC"
+genome(annotations) < -"hg19"
 
 # add the gene information to the object
-Annotation(pbmc) <- annotations
+Annotation(pbmc) < -annotations
 ```
 
 ## Computing QC metrics
@@ -116,22 +118,22 @@ pbmc
 
 ```python
 VlnPlot(
-  object = pbmc,
-  features = c('pct_reads_in_peaks', 'peak_region_fragments',
-               'TSS.enrichment', 'blacklist_ratio', 'nucleosome_signal'),
-  ncol = 5
+    object=pbmc,
+    features=c("pct_reads_in_peaks", "peak_region_fragments", "TSS.enrichment", "blacklist_ratio", "nucleosome_signal"),
+    ncol=5,
 )
 ```
 
 ```python
-pbmc <- subset(
-  x = pbmc,
-  subset = peak_region_fragments > 3000 &
-    peak_region_fragments < 20000 &
-    pct_reads_in_peaks > 15 &
-    blacklist_ratio < 0.05 &
-    nucleosome_signal < 4 &
-    TSS.enrichment > 2
+pbmc < -subset(
+    x=pbmc,
+    subset=peak_region_fragments
+    > 3000 & peak_region_fragments
+    < 20000 & pct_reads_in_peaks
+    > 15 & blacklist_ratio
+    < 0.05 & nucleosome_signal
+    < 4 & TSS.enrichment
+    > 2,
 )
 pbmc
 ```
@@ -184,7 +186,7 @@ pbmc <- RunUMAP(pbmc, reduction = "peakvi", dims=1:ndims)
 ```
 
 ```python
-DimPlot(object = pbmc, label = TRUE) + NoLegend()
+DimPlot(object=pbmc, label=TRUE) + NoLegend()
 ```
 
 ## Create a gene activity matrix
@@ -221,14 +223,14 @@ FeaturePlot(
 
 We can integrate the gene activity matrix with annotated scRNA-seq data using scANVI.
 
-First we download the Seurat-processed PBMC 10k dataset (as in their tutorial). 
+First we download the Seurat-processed PBMC 10k dataset (as in their tutorial).
 
 ```python
-pbmc_rna <- readRDS(url("https://www.dropbox.com/s/3f3p5nxrn5b3y4y/pbmc_10k_v3.rds?dl=1"))
+pbmc_rna < -readRDS(url("https://www.dropbox.com/s/3f3p5nxrn5b3y4y/pbmc_10k_v3.rds?dl=1"))
 ```
 
 ```python
-pbmc_rna<-UpdateSeuratObject(pbmc_rna)
+pbmc_rna < -UpdateSeuratObject(pbmc_rna)
 ```
 
 And we convert it to AnnData using sceasy again. Subsequently, we follow the standard scANVI workflow: pretraining with scVI then running scANVI.
@@ -255,10 +257,10 @@ head(py_to_r(adata_both$obs))
 
 ```python
 sc$pp$highly_variable_genes(
-    adata_both, 
-    flavor="seurat_v3", 
-    n_top_genes=r_to_py(3000), 
-    batch_key="batch", 
+    adata_both,
+    flavor="seurat_v3",
+    n_top_genes=r_to_py(3000),
+    batch_key="batch",
     subset=TRUE
 )
 scvi$model$SCVI$setup_anndata(adata_both, labels_key="celltype", batch_key="batch")
@@ -274,7 +276,7 @@ lvae <- scvi$model$SCANVI$from_scvi_model(model, "Unknown", adata=adata_both)
 lvae$train(max_epochs = as.integer(100), n_samples_per_label = as.integer(100))
 ```
 
-Here we only use the prediction functionality of scANVI, but we also could have viewed an integrated representation of the ATAC and RNA using UMAP. 
+Here we only use the prediction functionality of scANVI, but we also could have viewed an integrated representation of the ATAC and RNA using UMAP.
 
 ```python
 adata_both$obs$insert(adata_both$obs$shape[1], "predicted.labels", lvae$predict())
@@ -318,7 +320,7 @@ adata$obs$insert(adata$obs$shape[1], "predicted_ct", pbmc[["predicted.labels"]][
 Using our trained PEAKVI model, we call the `differential_accessibility()` (DA) method
 We pass `predicted_ct` to the groupby argument and compare between naive CD4s and CD14 monocytes.
 
-The output of DA is a DataFrame with the bayes factors. Bayes factors > 3 have high probability of being differentially expressed. You can also set fdr_target, which will return the differentially expressed genes based on the posteior expected FDR. 
+The output of DA is a DataFrame with the bayes factors. Bayes factors > 3 have high probability of being differentially expressed. You can also set fdr_target, which will return the differentially expressed genes based on the posteior expected FDR.
 
 ```python
 DA <- pvi$differential_accessibility(adata, groupby="predicted_ct", group1 = "CD4 Naive", group2 = "CD14+ Monocytes")
@@ -333,7 +335,7 @@ head(DA)
 ```
 
 ```python
-DefaultAssay(pbmc) <- 'peaks'
+DefaultAssay(pbmc) < -"peaks"
 ```
 
 ```python
@@ -345,17 +347,13 @@ head(Idents(pbmc))
 ```
 
 ```python
-plot1 <- VlnPlot(
-  object = pbmc,
-  features = rownames(DA)[1],
-  idents = c("CD4 Naive","CD14+ Monocytes")
-)
+plot1 < -VlnPlot(object=pbmc, features=rownames(DA)[1], idents=c("CD4 Naive", "CD14+ Monocytes"))
 ```
 
 ```python
-plot2 <- FeaturePlot(
-  object = pbmc,
-  features = rownames(DA)[1],
+plot2 < -FeaturePlot(
+    object=pbmc,
+    features=rownames(DA)[1],
 )
 ```
 

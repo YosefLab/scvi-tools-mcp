@@ -97,9 +97,7 @@ print(hmch.model_card.content)
 Note: Suppose I wanted to change the content a little bit. To do that, I'd save the card to disk, change it manually as I wish, and then pass its path to `HubModel`.
 
 ```python
-hmch.model_card.save(
-    "local/my_model_card.md"
-)  # then change the markdown file on disk...
+hmch.model_card.save("local/my_model_card.md")  # then change the markdown file on disk...
 ```
 
 ## Create a `HubModel` and upload it
@@ -114,9 +112,7 @@ hmo
 To upload, you need to call:
 
 ```python
-hmo.push_to_huggingface_hub(
-    repo_name=repo_name, repo_token=repo_token, repo_create=True
-)
+hmo.push_to_huggingface_hub(repo_name=repo_name, repo_token=repo_token, repo_create=True)
 ```
 
 We won't do it here but will explain the parameters you need to pass:

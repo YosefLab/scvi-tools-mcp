@@ -304,9 +304,7 @@ de_df.head()
 We can also do a 1-vs-all DE test, which compares each cell type with the rest of the dataset:
 
 ```python
-de_df = model.differential_expression(
-    groupby="cell_type", mode="change", dataloader=dm.inference_dataloader()
-)
+de_df = model.differential_expression(groupby="cell_type", mode="change", dataloader=dm.inference_dataloader())
 de_df.head()
 ```
 

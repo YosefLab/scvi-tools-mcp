@@ -293,9 +293,7 @@ de_comp.loc[lambda x: x["gene_name"].str.contains("flp-"), "gene_type"] = "FPL"
 
 (
     p9.ggplot(de_comp, p9.aes("lfc_mean", "-log10_pscore", color="gene_type"))
-    + p9.geom_point(
-        de_comp.query("gene_type == 'Other'"), alpha=0.5
-    )  # Plot other genes with transparence
+    + p9.geom_point(de_comp.query("gene_type == 'Other'"), alpha=0.5)  # Plot other genes with transparence
     + p9.geom_point(de_comp.query("gene_type != 'Other'"))
     + p9.labs(x="LFC mean", y="Significance score (higher is more significant)")
     + p9.facet_wrap("flavor")
@@ -333,9 +331,7 @@ marker_genes = (
     change_per_cluster_de.reset_index()
     .loc[lambda x: x.comparison.isin(cell_types.associated_test.values)]
     .groupby("comparison")
-    .apply(
-        lambda x: x.sort_values("lfc_mean", ascending=False).iloc[:5]
-    )  # Select top 5 DE genes per comparison
+    .apply(lambda x: x.sort_values("lfc_mean", ascending=False).iloc[:5])  # Select top 5 DE genes per comparison
     .reset_index(drop=True)["index"]
     .unique()
 )

@@ -484,9 +484,7 @@ sc.pp.filter_genes(sc_adata, min_counts=10)
 
 sc_adata.layers["counts"] = sc_adata.X.copy()
 
-sc.pp.highly_variable_genes(
-    sc_adata, n_top_genes=G, subset=True, layer="counts", flavor="seurat_v3"
-)
+sc.pp.highly_variable_genes(sc_adata, n_top_genes=G, subset=True, layer="counts", flavor="seurat_v3")
 
 sc.pp.normalize_total(sc_adata, target_sum=10e4)
 sc.pp.log1p(sc_adata)

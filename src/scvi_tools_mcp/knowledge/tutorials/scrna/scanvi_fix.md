@@ -7,7 +7,7 @@ As of the scvi-tools 1.1.0 release, we have included a critical bug fix for [scA
 - Inferior performance in label transferring to query data
 - Latent space with conservation of cell-type variability
 
-Users may refer to the corresponding [pull request](https://github.com/scverse/scvi-tools/pull/2301) for more details about the fix. 
+Users may refer to the corresponding [pull request](https://github.com/scverse/scvi-tools/pull/2301) for more details about the fix.
 
 In this tutorial, we use the data and preprocessing steps in [Atlas-level integration of lung data](https://docs.scvi-tools.org/en/latest/tutorials/notebooks/scrna/harmonization.html), while comparing the previous and fixed models. In addition to these, we include in our comparison a version of the fixed model with a simpler, linear classifier. We hypothesize that the previous (more complex) MLP classifier was necessary since the model specification was incorrect.
 
@@ -210,7 +210,7 @@ def plot_classification_metrics(
 plot_classification_metrics(model_no_fix, model_fix, model_fix_linear)
 ```
 
-Looking at the top row, we can immediately notice that the pre-fix model has a classification loss a magnitude larger than the other two (smaller is better). The curves don't seem as dramatic since the validation loss does not seem to diverge that much (*i.e.* the validation loss stays fairly close to the training loss), so we might incorrectly assume that the no fix model classifier is training with stability. 
+Looking at the top row, we can immediately notice that the pre-fix model has a classification loss a magnitude larger than the other two (smaller is better). The curves don't seem as dramatic since the validation loss does not seem to diverge that much (*i.e.* the validation loss stays fairly close to the training loss), so we might incorrectly assume that the no fix model classifier is training with stability.
 
 However, once we take a look at the calibration error and accuracy, the problem is clear: in later epochs, these metrics increase (in the case of calibration error) or decrease (in the case of accuracy) sharply, indicating something wrong with model training.
 

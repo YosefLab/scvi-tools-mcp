@@ -115,9 +115,7 @@ census_model.adata, census_model_all.adata
 By default scvi-tools loads models as not minified. We set up the model here with minified data, so we minify the model using the respective obsm fields.
 
 ```python
-census_model.minify_adata(
-    use_latent_qzm_key="_scvi_latent_qzm", use_latent_qzv_key="_scvi_latent_qzv"
-)
+census_model.minify_adata(use_latent_qzm_key="_scvi_latent_qzm", use_latent_qzv_key="_scvi_latent_qzv")
 ```
 
 ### Get the latent space and compute UMAP
@@ -180,9 +178,7 @@ print(sum(cell_idx2), "cells of type", tissue2)
 A simple DE analysis can then be performed using the following command
 
 ```python
-de_change = census_model.differential_expression(
-    idx1=cell_idx1, idx2=cell_idx2, all_stats=False, mode="change"
-)
+de_change = census_model.differential_expression(idx1=cell_idx1, idx2=cell_idx2, all_stats=False, mode="change")
 ```
 
 This method returns a pandas DataFrame, where each row corresponds to a gene.
@@ -212,18 +208,14 @@ gene_annotations = sc.queries.biomart_annotations(
 ```python
 gene_annotations.index = gene_annotations["ensembl_gene_id"]
 gene_annotation_dict = gene_annotations["gene_biotype"].to_dict()
-de_change["Biotype"] = [
-    gene_annotation_dict.pop(i, "Unannotated") for i in de_change["feature_id"]
-]
+de_change["Biotype"] = [gene_annotation_dict.pop(i, "Unannotated") for i in de_change["feature_id"]]
 de_change["Biotype"].value_counts()
 ```
 
 ```python
 (
     p9.ggplot(de_change, p9.aes("lfc_mean", "-log10_pscore", color="Biotype"))
-    + p9.geom_point(
-        de_change.query("Biotype == 'protein_coding'"), alpha=0.5
-    )  # Plot other genes with transparence
+    + p9.geom_point(de_change.query("Biotype == 'protein_coding'"), alpha=0.5)  # Plot other genes with transparence
     + p9.xlim(-10, 10)  # Set x limits
     + p9.ylim(0, 7)  # Set y limits
     + p9.geom_point(de_change.query("Biotype != 'protein_coding'"))
@@ -232,9 +224,7 @@ de_change["Biotype"].value_counts()
 ```
 
 ```python
-upregulated_genes = de_change.loc[
-    de_change["lfc_median"] > 0, ["feature_id", "feature_name"]
-].head(4)
+upregulated_genes = de_change.loc[de_change["lfc_median"] > 0, ["feature_id", "feature_name"]].head(4)
 ```
 
 Display generated counts from scVI model
@@ -281,9 +271,7 @@ cell_types.loc[:, "associated_test"] = cell_types.index.astype(str) + " vs Rest"
 
 ```python
 change_per_cluster_de = change_per_cluster_de.join(census_model.adata.var, how="inner")
-change_per_cluster_de = change_per_cluster_de[
-    change_per_cluster_de[["scale1", "scale2"]].max(axis=1) > 1e-4
-]
+change_per_cluster_de = change_per_cluster_de[change_per_cluster_de[["scale1", "scale2"]].max(axis=1) > 1e-4]
 change_per_cluster_de.head(20)
 ```
 
@@ -293,9 +281,7 @@ marker_genes = (
     change_per_cluster_de.reset_index()
     .loc[lambda x: x.comparison.isin(cell_types.associated_test.values)]
     .groupby("comparison")
-    .apply(
-        lambda x: x.sort_values("lfc_mean", ascending=False).iloc[:5]
-    )  # Select top 5 DE genes per comparison
+    .apply(lambda x: x.sort_values("lfc_mean", ascending=False).iloc[:5])  # Select top 5 DE genes per comparison
     .reset_index(drop=True)[["feature_name", "soma_joinid"]]
     .drop_duplicates()
 )
@@ -315,9 +301,7 @@ marker_genes = (
     change_per_cluster_de.reset_index()
     .loc[lambda x: x.comparison.isin(cell_types.associated_test.values)]
     .groupby("comparison")
-    .apply(
-        lambda x: x.sort_values("lfc_mean", ascending=False).iloc[:5]
-    )  # Select top 5 DE genes per comparison
+    .apply(lambda x: x.sort_values("lfc_mean", ascending=False).iloc[:5])  # Select top 5 DE genes per comparison
     .reset_index(drop=True)[["feature_name", "soma_joinid"]]
     .drop_duplicates()
 )
@@ -328,9 +312,7 @@ adata = cellxgene_census.get_anndata(
     census=census,
     organism="Homo sapiens",
     var_coords=marker_genes["soma_joinid"].to_list(),
-    obs_coords=census_model.adata.obs.loc[
-        census_model.adata.obs["assay"] == "10x 3' v3", "soma_joinid"
-    ].to_list(),
+    obs_coords=census_model.adata.obs.loc[census_model.adata.obs["assay"] == "10x 3' v3", "soma_joinid"].to_list(),
     column_names={
         "obs": [
             "soma_joinid",

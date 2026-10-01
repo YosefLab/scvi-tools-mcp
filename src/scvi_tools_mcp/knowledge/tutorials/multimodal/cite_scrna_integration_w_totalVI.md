@@ -72,9 +72,7 @@ adata.obsm["protein_expression"].loc[batch == "PBMC5k"] = np.zeros_like(
 ```
 
 ```python
-sc.pp.highly_variable_genes(
-    adata, batch_key="batch", flavor="seurat_v3", n_top_genes=4000, subset=True
-)
+sc.pp.highly_variable_genes(adata, batch_key="batch", flavor="seurat_v3", n_top_genes=4000, subset=True)
 ```
 
 ```{important}
@@ -82,9 +80,7 @@ scvi-tools will automatically detect proteins as missing in a certain batch if t
 ```
 
 ```python
-scvi.model.TOTALVI.setup_anndata(
-    adata, batch_key="batch", protein_expression_obsm_key="protein_expression"
-)
+scvi.model.TOTALVI.setup_anndata(adata, batch_key="batch", protein_expression_obsm_key="protein_expression")
 ```
 
 ## Prepare and run model
@@ -116,9 +112,7 @@ PROTEIN_FG_KEY = "protein_fg_prob"
 adata.obsm[TOTALVI_LATENT_KEY] = model.get_latent_representation()
 adata.obsm[PROTEIN_FG_KEY] = model.get_protein_foreground_probability(transform_batch="PBMC10k")
 
-rna, protein = model.get_normalized_expression(
-    transform_batch="PBMC10k", n_samples=25, return_mean=True
-)
+rna, protein = model.get_normalized_expression(transform_batch="PBMC10k", n_samples=25, return_mean=True)
 ```
 
 ```{note}

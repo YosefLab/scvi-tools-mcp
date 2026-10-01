@@ -133,9 +133,7 @@ If the data includes multiple batches, we encourage setting `batch_correction=Tr
 
 ```python
 # (1.1) using a known factor to compare two clusters
-da_res11 = model.differential_accessibility(
-    groupby=PEAKVI_CLUSTERS_KEY, group1="3", group2="0", test_mode="two"
-)
+da_res11 = model.differential_accessibility(groupby=PEAKVI_CLUSTERS_KEY, group1="3", group2="0", test_mode="two")
 
 # (1.2) using a known factor to compare a cluster against all other clusters
 ## if we only provide group1, group2 is all other cells by default
