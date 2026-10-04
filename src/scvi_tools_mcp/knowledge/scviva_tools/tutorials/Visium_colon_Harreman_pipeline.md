@@ -63,6 +63,16 @@ from scviva.tools.harreman.datasets import load_visium_mouse_colon_dataset
 ```
 
 ```python
+try:
+    import rapids_singlecell as rsc
+
+    print("RAPIDS SingleCell is installed and can be imported")
+    HAS_RSC = True
+except ImportError:
+    HAS_RSC = False
+```
+
+```python
 torch.cuda.empty_cache()
 warnings.filterwarnings("ignore")
 scviva.settings.seed = 0
@@ -506,7 +516,7 @@ for cond in conditions:
         return y_min_global + (((y - y_min) / (y_max - y_min)) * (y_max_global / 2))
 
     cond_adata.obs["dist_norm"] = cond_adata.obs.groupby("ord_bin")["dist"].transform(dist_normalization)
-    adata.obs["dist_norm"][adata.obs["cond"] == cond] = cond_adata.obs["dist_norm"]
+    adata.obs.loc[adata.obs["cond"] == cond, "dist_norm"] = cond_adata.obs["dist_norm"]
 ```
 
 ```python
@@ -601,7 +611,7 @@ ha.vs.analyze_vision(norm_data_key="log_norm", signature_varm_key="signatures", 
 
 ```python
 # Correlate VISION pathway scores with super-module scores to find module-pathway associations
-ha.hs.integrate_vision_hotspot_results(use_super_modules=True)
+ha.vs.integrate_vision_hotspot_results(use_super_modules=True)
 ```
 
 ```python
@@ -734,7 +744,7 @@ The `test='both'` argument computes scores using both raw counts (parametric pat
 ```python
 # Compute per-spot interaction scores for all significant gene pairs and metabolites
 # 'both': scores computed from raw counts (parametric) and log-normalized (non-parametric)
-ha2.compute_interacting_cell_scores(mode="standard", test="both", n_permutations=1000)
+ha2.compute_interacting_cell_scores(mode="standard", test="both", n_permutations=1000, device="cpu")
 ```
 
 ### Step 5 — Correlate interaction scores with metabolic module scores

@@ -459,7 +459,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-In the scVI embedding, the two modalities do not overlap at all. In contrast, scVI appears to slightly overintegrate the data, leading to some overlap between cell types. The embeddings produced by scANVI and DiagVI, look quite similar.
+In the PCA embedding, the two modalities do not overlap at all. In contrast, scVI appears to slightly overintegrate the data, leading to some overlap between cell types. The embeddings produced by scANVI and DiagVI, look quite similar.
 
 For quantitative comparison, we use the [scib-metrics](https://scib-metrics.readthedocs.io/en/stable/) package, which implements a standardized collection of metrics for evaluating integration performance and biological signal preservation in latent representations.
 
