@@ -124,8 +124,89 @@ res
 plot_hier_importance(res, theme_kwargs={"figure_size": (15, 3)})
 ```
 
+```python
+# p-values on the held-out validation split (the default -- see `get_importance`'s docstring)
+vivs_model_res = vivs_model.get_importance(indices=vivs_model.validation_indices, n_mc_samples=200)
+pvalues = vivs_model_res["pvalues"][:, 0]
+```
+
+```python
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(5, 4))
+ax.hist(pvalues, bins=20, range=(0, 1), density=True, alpha=0.8)
+ax.axhline(1.0, color="black", linestyle="--", linewidth=1)
+ax.set_xlabel("p-value")
+ax.set_ylabel("density")
+ax.set_title("VIVS model: p-value histogram")
+ax.legend()
+fig.tight_layout()
+fig
+```
+
 ## Interpretation and next steps
 
 A gene (or gene cluster) called significant at a given resolution means the CRT rejected the null hypothesis that gene expression is conditionally independent of the niche composition `Y`, at the chosen FDR level, when knockoffs are drawn from SCVI's generative model — i.e. that gene's expression carries information about the surrounding niche beyond what is already explained by every other gene. Coarser resolutions (larger gene clusters) aggregate evidence across correlated genes and tend to have more power to detect weaker, distributed niche effects, while the finest (per-gene) resolution pinpoints individual genes.
 
 For a per-cell rather than per-dataset view of which cells drive a given gene's (or gene cluster's) importance score, see {meth}`~scvi.external.VIVS.get_cell_scores`, which returns unsummed, per-cell importance scores for a chosen set of genes and responses.
+
+## Sanity check: is VIVS calibrated on this data?
+
+Ground truth is unknown for `niche_composition` on real data, so the significant genes found above cannot be directly checked against a known answer. To still validate that VIVS's p-values are calibrated *on this dataset* (same cell count, same expression noise, same batch structure), we build a **semi-synthetic response**: a nonlinear function of a handful of "true" genes' own expression, plus Gaussian noise. Genes not among these "true" genes are, by construction, conditionally independent of the response given the rest of the transcriptome — so under a well-calibrated CRT, their p-values (computed on the held-out validation split) should look ~`Uniform(0, 1)`, while the true genes' p-values should be very small.
+
+This reuses the already-trained `scvi_model` as the knockoff sampler (as above), so only a new importance-score net needs to be fit.
+
+```python
+N_TRUE_GENES = 5
+rng = np.random.default_rng(0)
+
+true_gene_idx = rng.choice(adata.n_vars, size=N_TRUE_GENES, replace=False)
+x_true = adata.layers["counts_log1p"][:, true_gene_idx]
+if hasattr(x_true, "todense"):
+    x_true = np.asarray(x_true.todense())
+x_true = x_true - x_true.mean(0, keepdims=True)
+
+# nonlinear (quadratic) combination of the true genes, corrupted by Gaussian noise
+y_synthetic = (x_true**2).sum(1, keepdims=True)
+y_synthetic = y_synthetic + rng.normal(scale=y_synthetic.std() * 0.5, size=y_synthetic.shape)
+adata.obsm["synthetic_niche"] = y_synthetic.astype(np.float32)
+
+print("true genes:", adata.var_names[true_gene_idx].tolist())
+```
+
+```python
+VIVS.setup_anndata(
+    adata,
+    y_obsm_key="synthetic_niche",
+    layer="counts",
+    batch_key="sample",
+)
+
+calibration_model = VIVS(adata, x_model=scvi_model)
+calibration_model.train(max_epochs=200)
+```
+
+```python
+# p-values on the held-out validation split (the default -- see `get_importance`'s docstring)
+calib_res = calibration_model.get_importance(indices=calibration_model.validation_indices, n_mc_samples=200)
+pvalues = calib_res["pvalues"][:, 0]
+
+is_true_gene = np.isin(np.arange(adata.n_vars), true_gene_idx)
+null_pvalues = pvalues[~is_true_gene]
+print(f"null p-values: mean={null_pvalues.mean():.3f} (should be close to 0.5 if calibrated)")
+print("true-gene p-values:", pvalues[is_true_gene])
+```
+
+```python
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(5, 4))
+ax.hist(null_pvalues, bins=20, range=(0, 1), density=True, alpha=0.8)
+ax.axhline(1.0, color="black", linestyle="--", linewidth=1, label="Uniform(0, 1)")
+ax.set_xlabel("p-value")
+ax.set_ylabel("density")
+ax.set_title("VIVS calibration: null-gene p-value histogram")
+ax.legend()
+fig.tight_layout()
+fig
+```
