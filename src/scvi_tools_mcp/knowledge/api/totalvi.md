@@ -126,7 +126,7 @@ None. Adds the following fields:
 ## train
 
 ```python
-TOTALVI.train(self, max_epochs: 'int | None' = None, lr: 'float' = 0.004, accelerator: 'str' = 'auto', devices: 'int | list[int] | str' = 'auto', train_size: 'float | None' = None, validation_size: 'float | None' = None, shuffle_set_split: 'bool' = True, batch_size: 'int' = 256, early_stopping: 'bool' = True, check_val_every_n_epoch: 'int | None' = None, reduce_lr_on_plateau: 'bool' = True, n_steps_kl_warmup: 'int | None' = None, n_epochs_kl_warmup: 'int | None' = None, adversarial_classifier: 'bool | None' = None, datasplitter_kwargs: 'dict | None' = None, plan_kwargs: 'dict | None' = None, external_indexing: 'list[np.array]' = None, **kwargs)
+TOTALVI.train(self, max_epochs: 'int | None' = None, lr: 'float' = 0.004, accelerator: 'str' = 'auto', devices: 'int | list[int] | str' = 'auto', train_size: 'float | None' = None, validation_size: 'float | None' = None, shuffle_set_split: 'bool' = True, batch_size: 'int' = 256, early_stopping: 'bool' = True, check_val_every_n_epoch: 'int | None' = None, reduce_lr_on_plateau: 'bool' = True, n_steps_kl_warmup: 'int | None' = None, n_epochs_kl_warmup: 'int | None' = None, adversarial_classifier: 'bool | None' = None, datasplitter_kwargs: 'dict | None' = None, plan_kwargs: 'dict | None' = None, external_indexing: 'list[np.ndarray]' = None, **kwargs)
 ```
 
 Trains the model using amortized variational inference.
