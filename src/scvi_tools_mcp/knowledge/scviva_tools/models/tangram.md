@@ -16,17 +16,17 @@ Currently the "cells" and "constrained" modes are implemented.
 Parameters
 ----------
 mdata
-    MuData object that has been registered via :meth:`~scvi.external.Tangram.setup_mudata`.
+    MuData object that has been registered via :meth:`~scviva.external.Tangram.setup_mudata`.
 constrained
     Whether to use the constrained version of Tangram instead of cells mode.
 target_count
     The number of cells to be filtered. Necessary when `constrained` is True.
 **model_kwargs
-    Keyword args for :class:`~scvi.external.tangram.TangramMapper`
+    Keyword args for :class:`~scviva.external.tangram.TangramMapper`
 
 Examples
 --------
->>> from scvi.external import Tangram
+>>> from scviva.external import Tangram
 >>> ad_sc = anndata.read_h5ad(path_to_sc_anndata)
 >>> ad_sp = anndata.read_h5ad(path_to_sp_anndata)
 >>> markers = pd.read_csv(path_to_markers, index_col=0)  # genes to use for mapping
@@ -53,7 +53,7 @@ Examples
 Notes
 -----
 See further usage examples in the following tutorials:
-1. :doc:`/tutorials/notebooks/spatial/tangram_scvi_tools`
+1. :doc:`/tutorials/tangram_scvi_tools`
 
 ## setup_anndata
 
@@ -116,7 +116,6 @@ The advantages of Tangram are:
 
 The limitations of Tangram include:
 
--   The scvi-tools model page is deprecated starting v1.5.
 -   It requires matched genes between the single-cell and spatial modalities used for
     training.
 -   Training is not mini-batched in the current implementation, so memory use depends on
