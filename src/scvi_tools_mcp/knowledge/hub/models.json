@@ -1,6 +1,6 @@
 {
   "api_url": "https://huggingface.co/api/models?author=scvi-tools&full=false&sort=lastModified&direction=-1&limit=200",
-  "fetched_at": "2026-10-01T06:27:20Z",
+  "fetched_at": "2026-11-01T11:57:19Z",
   "models": [
     {
       "anndata_version": "0.13.4",
@@ -14,7 +14,7 @@
         "adata.h5ad",
         "model.pt"
       ],
-      "last_modified": "2026-09-30T16:24:02.000Z",
+      "last_modified": "2026-10-31T15:43:39.000Z",
       "license": "cc-by-4.0",
       "likes": 1,
       "modalities": [
@@ -22,7 +22,7 @@
       ],
       "model_class": "SCVI",
       "model_id": "scvi-tools/test-scvi-minified",
-      "scvi_version": "1.5.1",
+      "scvi_version": "1.5.2",
       "tissues": [],
       "url": "https://huggingface.co/scvi-tools/test-scvi-minified"
     },
@@ -37,7 +37,7 @@
         "_scvi_required_metadata.json",
         "model.pt"
       ],
-      "last_modified": "2026-09-30T16:24:00.000Z",
+      "last_modified": "2026-10-31T15:43:37.000Z",
       "license": "cc-by-4.0",
       "likes": 0,
       "modalities": [
@@ -45,7 +45,7 @@
       ],
       "model_class": "SCVI",
       "model_id": "scvi-tools/test-scvi-no-anndata",
-      "scvi_version": "1.5.1",
+      "scvi_version": "1.5.2",
       "tissues": [],
       "url": "https://huggingface.co/scvi-tools/test-scvi-no-anndata"
     },
@@ -62,7 +62,7 @@
         "metrics.json",
         "model.pt"
       ],
-      "last_modified": "2026-09-30T16:23:58.000Z",
+      "last_modified": "2026-10-31T15:43:36.000Z",
       "license": "cc-by-4.0",
       "likes": 0,
       "modalities": [
@@ -70,7 +70,7 @@
       ],
       "model_class": "SCVI",
       "model_id": "scvi-tools/test-scvi",
-      "scvi_version": "1.5.1",
+      "scvi_version": "1.5.2",
       "tissues": [],
       "url": "https://huggingface.co/scvi-tools/test-scvi"
     },
