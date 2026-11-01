@@ -36,17 +36,16 @@ We are excited to release our new `autotune` module for scVI, based on `hyperopt
 
 ```python
 import logging
-
 logger = logging.getLogger("scvi.inference.autotune")
 logger.setLevel(logging.DEBUG)
 
 if __name__ == "__main__":
-    best_trainer, trials = auto_tune_scvi_model(
-        gene_dataset=dataset,
-        parallel=True,
-        exp_key="cortex_test",
-        max_evals=100,
-    )
+	best_trainer, trials = auto_tune_scvi_model(
+	    gene_dataset=dataset,
+	    parallel=True,
+	    exp_key="cortex_test",
+	    max_evals=100,
+	)
 ```
 
 Note that the default behaviour of `auto_tune_scvi_model` is as follows:
