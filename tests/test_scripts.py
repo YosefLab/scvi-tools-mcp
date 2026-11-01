@@ -374,7 +374,7 @@ def test_refresh_github_repo_keeps_existing_and_partial_progress_on_rate_limit(m
     )
     new_issue = se.parse_snapshot("## #2: New\n**Issue:** #2 | **Last activity:** 2026-10-01T00:00:00Z\n\nnew\n")
 
-    def fake_issues_and_pulls(repo, existing, now):
+    def fake_issues_and_pulls(repo, existing, now, since=None):
         raise se.PartialFetchError(se.RateLimitedError("limit"), new_issue, [])
 
     def fail_discussions(*args, **kwargs):  # must not be called once rate limited
@@ -488,3 +488,55 @@ def test_parse_snapshot_ignores_markdown_headings_inside_bodies():
     assert [e.item_id for e in entries] == [3500]
     assert "## Test plan" in entries[0].body
     assert parse_snapshot(render_snapshot("T", "PRs", entries)) == entries
+
+
+def test_build_github_entry_includes_pr_reviews_and_inline_comments_in_time_order():
+    from scripts.scrape_external import build_github_entry
+
+    item = {
+        "number": 9,
+        "title": "PR",
+        "state": "open",
+        "pull_request": {},
+        "user": {"login": "dev", "type": "User"},
+        "updated_at": "2026-05-05T00:00:00Z",
+        "body": "",
+    }
+    comments = [{"user": {"login": "a", "type": "User"}, "body": "third", "created_at": "2026-05-03T00:00:00Z"}]
+    reviews = [
+        {
+            "user": {"login": "r", "type": "User"},
+            "body": "first",
+            "state": "CHANGES_REQUESTED",
+            "submitted_at": "2026-05-01T00:00:00Z",
+        },
+        {
+            "user": {"login": "r", "type": "User"},
+            "body": "",
+            "state": "APPROVED",
+            "submitted_at": "2026-05-04T00:00:00Z",
+        },
+    ]
+    review_comments = [
+        {
+            "user": {"login": "r", "type": "User"},
+            "body": "second",
+            "path": "src/x.py",
+            "created_at": "2026-05-02T00:00:00Z",
+        },
+        {
+            "user": {"login": "bot[bot]", "type": "Bot"},
+            "body": "noise",
+            "path": "src/x.py",
+            "created_at": "2026-05-02T00:00:00Z",
+        },
+    ]
+
+    rendered = build_github_entry(item, comments, reviews, review_comments).render()
+
+    assert "**Comments:** 3" in rendered
+    first = rendered.index("**@r (review, changes requested):** first")
+    second = rendered.index("**@r on `src/x.py`:** second")
+    third = rendered.index("**@a:** third")
+    assert first < second < third
+    assert "noise" not in rendered

@@ -370,15 +370,12 @@ from it). The scANVI registry is the one with the labels field registered; the s
 one is not. Using the wrong registry therefore raises:
 
 ```python
-scvi_model = SCVI(adata=None, registry=registry_scvi)  # datamodule-trained scVI
+scvi_model = SCVI(adata=None, registry=registry_scvi)   # datamodule-trained scVI
 scvi_model.is_trained_ = True
 
 SCANVI.from_scvi_model(
-    scvi_model,
-    unlabeled_category="label_0",
-    labels_key="labels",
-    adata=None,
-    registry=registry_scanvi,
+    scvi_model, unlabeled_category="label_0", labels_key="labels",
+    adata=None, registry=registry_scanvi,
 )
 # KeyError: 'unlabeled_category'
 #   from _set_indices_and_labels -> labels_state_registry.unlabeled_category
@@ -398,10 +395,10 @@ Where it does not r …
 requested `sample_shape`, and applies `sample_shape` only to the Gamma draw:
 
 ```python
-mixing_sample = torch.distributions.Bernoulli(pi).sample()  # batch_shape only
+mixing_sample = torch.distributions.Bernoulli(pi).sample()        # batch_shape only
 mu = self.mu1 * mixing_sample + self.mu2 * (1 - mixing_sample)
 gamma_d = _gamma(theta, mu, self.on_mps)
-p_means = gamma_d.sample(sample_shape)  # sample_shape applied here
+p_means = gamma_d.sample(sample_shape)                            # sample_shape applied here
 ```
 
 So the component assignment is fixed per batch element and reused for every draw in
@@ -443,7 +440,7 @@ The sibling `ZeroInflatedNegativeBinomial.sample` already does this correctly: i
 
 ```python
 if theta2 is not None:
-    self.theta2 = broadcast_all(mu1, theta2)  # -> (tensor, tensor)
+    self.theta2 = broadcast_all(mu1, theta2)   # -> (tensor, tensor)
 else:
     self.theta2 = None
 ```
@@ -453,10 +450,8 @@ dispersion breaks the distribution outright:
 
 ```python
 d = NegativeBinomialMixture(
-    mu1=torch.tensor([4.0]),
-    mu2=torch.tensor([200.0]),
-    theta1=torch.tensor([50.0]),
-    mixture_logits=torch.zeros(1),
+    mu1=torch.tensor([4.0]), mu2=torch.tensor([200.0]),
+    theta1=torch.tensor([50.0]), mixture_logits=torch.zeros(1),
     theta2=torch.tensor([3.0]),
 )
 
@@ -544,7 +539,7 @@ Backport PR #4049: perf: remove per-minibatch overhead in data loading and infer
 
 ## #4049: perf: remove per-minibatch overhead in data loading and inference
 **PR:** #4049 | **Last activity:** 2026-10-07T10:59:17Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-10-06 | **Labels:** on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/4049
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2026-10-06 | **Labels:** on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/4049
 
 Trimmed port of #4017, plus the crash fix from #4018. Outputs are
   bit-identical before and after.
@@ -559,6 +554,8 @@ Trimmed port of #4017, plus the crash fix from #4018. Outputs are
   differential_expression(mode="change") -45%, one pair -32%,
   get_likelihood_parameters -84%, get_latent_representation -34%,
   get_normalized_expression -20%, training epoch -5.5%.
+
+**@ori-kron-wis on `src/scvi/model/base/_rnamixin.py`:** Valid edge case, but it's pre-existing rather than introduced here: on main the non-n_samples_overall path already labels rows with adata.obs_names[indices] while rows follow the loader's emitted order, so backing AnnData with unsorted indices (or shuffle=True via data_loader_kwargs) already mislabels rows there, and the same assumption holds for every per-cell output method. This PR only fixes the shape crash and follows the existing convention. Tracking the emitted order properly touches all per-cell outputs across models, so I'll open a separate issue for it rather than widen this perf PR.
 
 ## #3907: Backport PR #3906 on branch 1.5.x (docs: automated update of tutorials)
 **PR:** #3907 | **Last activity:** 2026-10-07T07:31:09Z
@@ -815,7 +812,7 @@ Backport PR #3866: Add DRVI
 
 ## #3866: feat: Add DRVI
 **PR:** #3866 | **Last activity:** 2026-10-05T13:32:14Z
-**State:** merged | **Author:** @moinfar | **Comments:** 15 | **Created:** 2026-06-21 | **Labels:** cuda tests, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3866
+**State:** merged | **Author:** @moinfar | **Comments:** 36 | **Created:** 2026-06-21 | **Labels:** cuda tests, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3866
 
 ## Add DRVI
 
@@ -850,6 +847,29 @@ Here are some TODOs in my list that will be issues in the next few days:
 
 After the first iteration of review/changes, I will finally run the DRVI benchmark to make sure it performs the same.
 
+**@ori-kron-wis on `src/scvi/external/drvi/_generative_mixin.py`:** The finally block resets inspect_mode but not the training/eval state. If the module was in train() mode when the generator is consumed (e.g., from a training loop or a test that doesn't call
+  model.train() beforehand), it stays in eval mode permanently. Fix: save was_training = self.module.training before eval() and restore with self.module.train(was_training) in finally.
+
+also self.module.fully_deterministic = False  - always, even if it was True before
+
+Is this behavior expected? what about saving/loading models? is this still holds?
+
+**@ori-kron-wis on `src/scvi/nn/_base_components.py`:** The changes are minimal, justified, and safe. But this should go in a separate preparatory PR (Im not sure it is mandatory for this drVI PR, no?)
+
+**@ori-kron-wis on `src/scvi/external/drvi/_model.py`:** while its gene_likelihood="pnb" by default in the module, its "nb" in the model, is it ok?
+
+**@ori-kron-wis on `src/scvi/external/drvi/_base_components.py`:** perhaps better to validate the structure of reuse_weights and raise ValueError if fails
+
+**@ori-kron-wis on `src/scvi/external/drvi/_base_components.py`:** Better to have ValueError with a message than an assert (which is mainly for tests)
+
+**@ori-kron-wis on `src/scvi/external/drvi/_interpretability_mixin.py`:** Better to have ValueError with a message than an assert (which is mainly for tests)
+
+**@ori-kron-wis on `src/scvi/external/drvi/_interpretability_mixin.py`:** if we have a random here, I would also expect the option for a seed in sake of reproducibility, no?
+
+**@ori-kron-wis on `src/scvi/external/drvi/_interpretability_mixin.py`:** is this metric and calculation explained somewhere in the docs?
+
+**@ori-kron-wis (review, commented):** overall looks very good. several few points to think about
+
 **@cvduffy:** Are there any notable differences between this implementation and the drvi-py standalone one? I trained models with drvi-py and am considering whether to re-train with this implementation once it's merged/released. Thanks!
 
 **@moinfar:** Hi @cvduffy,
@@ -857,6 +877,32 @@ After the first iteration of review/changes, I will finally run the DRVI benchma
 I'm not changing any of DRVI's logic for the scvi-tools port, which means no retraining will be needed!
 
 I'll also do my best to add a function/snippet in drvi-py for backward compatibility, making it easy to move already-trained models over to the new scvi-tools version (but this may take a bit of time).
+
+**@moinfar on `tests/external/drvi/test_drvi.py`:** @ori-kron-wis
+I opened a PR (#3879) to fix this in scvi. When merged, this will be uncommented
+
+**@moinfar on `src/scvi/external/drvi/_base_components.py`:** Validation added.
+
+**@moinfar on `src/scvi/external/drvi/_interpretability_mixin.py`:** Added seed param. sets seed if not none.
+
+**@moinfar on `src/scvi/external/drvi/_generative_mixin.py`:** This scenario does not happen in normal pipelines.
+Fixed (revert to initial state in `finally`) to be on the safe side.
+
+**@moinfar on `src/scvi/external/drvi/_model.py`:** Thanks for noticing this. `pnb` should be the default. Fixed.
+
+**@moinfar on `src/scvi/external/drvi/_base_components.py`:** Done.
+
+**@moinfar on `src/scvi/external/drvi/_interpretability_mixin.py`:** Done.
+
+**@moinfar on `src/scvi/external/drvi/_interpretability_mixin.py`:** I've now added extensive explanations and docs for the interpretability mixin.
+
+**@moinfar on `src/scvi/nn/_base_components.py`:** Moved the changes on base components to #3880
+
+I merged that branch here (to keep the tests passing).
+So, the changes will still be visible. When that branch is merged, it will go away from here.
+
+**@moinfar (review, commented):** Thanks for reviewing the code.
+I addressed all the comments / issues.
 
 **@moinfar:** I will write here if I add or fix anything beyond the above discussions.
 
@@ -870,6 +916,11 @@ Commit ddb3ba5211028a5d0d456aaa8566e34f2c76ba6d add mean_activation to enforce, 
 Perhaps you will want to take a look at it before we finally merge it.
 
 Besides that, the tutorial is all that is missing now.
+
+**@moinfar on `CHANGELOG.md`:** @ori-kron-wis
+Is this change intentional?
+
+**@ori-kron-wis on `CHANGELOG.md`:** you can keep
 
 **@moinfar:** @ori-kron-wis
 Thanks for your efforts and for merging the required PRs.
@@ -982,7 +1033,7 @@ Backport PR #3899: fix: annbatch memory test
 
 ## #3806: feat: add harreman for metabolic exchange inference in spatial transcriptomics
 **PR:** #3806 | **Last activity:** 2026-09-30T15:02:29Z
-**State:** closed | **Author:** @oieretxezarreta | **Comments:** 0 | **Created:** 2026-05-12 | **Labels:** cuda tests, optional tests, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3806
+**State:** closed | **Author:** @oieretxezarreta | **Comments:** 34 | **Created:** 2026-05-12 | **Labels:** cuda tests, optional tests, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3806
 
 ## Description
 This PR adds Harreman (`scvi.external.harreman`), a toolkit for inferring
@@ -1002,6 +1053,95 @@ metabolic exchanges in tissues using spatial transcriptomics data.
 ## Related
 - Harreman package: https://github.com/YosefLab/Harreman
 - Harreman docs: https://harreman.readthedocs.io
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/__init__.py`:** Why do you have a local copy of Hotspot? isnt just using the latest from pip enough? if not, why not update and release a new version of hotspot in pip, so that Harreman and others will use? (major code reuse)
+
+**@ori-kron-wis on `src/scvi/external/harreman/tools/knn.py`:** compute_neighbors_from_distances called with wrong positional args — knn.py:94
+  Called as: compute_neighbors_from_distances(adata, distances_obsp_key, n_neighbors, sample_key, verbose)
+  Defined as: def compute_neighbors_from_distances(adata, distances_obsp_key="distances", sample_key=None, verbose=False)
+  The function accepts 4 args max but receives 5 → TypeError at runtime. n_neighbors is silently passed as sample_key.
+
+**@ori-kron-wis on `src/scvi/external/harreman/tools/knn.py`:** seems that very strict. so you are saying the adata of a user MUST have an und column that is called spot_diameter?or is that inferred automaticaly during the pre process step? (setup_anndata )
+
+**@ori-kron-wis on `src/scvi/external/harreman/preprocessing/anndata.py`:** Because it is mandatory (?) switch the place of it and sample_key which can get a None value by default.
+
+**@ori-kron-wis on `src/scvi/external/harreman/tools/knn.py`:** here for example, spot_diameter is not a parameter to the function, not part of any class that hold it and not inferred otherwise. how can this function run?
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/local_autocorrelation.py`:** passes nonexistent jobs=1 kwarg
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/local_autocorrelation.py`:** passes nonexistent jobs=1 kwarg
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/local_autocorrelation.py`:** not used any where - why add it? other functions behave the same. make sure not to merge redundant code!
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/local_autocorrelation.py`:** if it is supposed to be used somehow, show how at least in a test function - otherwise remove it. same goes to any other function that is not used,
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/modules.py`:** wat is compute_signatures_anndata? what is scvi.external.harreman.vision.signature its not existing anywhere....
+
+**@ori-kron-wis on `src/scvi/external/harreman/tools/knn.py`:** I would create a class from this, so other models can use
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/modules.py`:** but again this whole integrate_vision_hotspot_results is not being used anywhere
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/local_correlation.py`:** whats vals here? how can this be working at all?
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/local_autocorrelation.py`:** the torch device is evaluated at imported time, you dont have to deal with this at all in the code (and it exists in many places here). you can use the same idea from scvi that if you want to select your accelerator/device you do it once on  top level (i.e compute_knn_graph) and this is also why you need to consider to make it a class
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/local_autocorrelation.py`:** is this S3 real?
+anyway  scvi-tools convention requires known hashes for all remote data. we cant leave the hash None
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/local_correlation.py`:** again looks like dead code - also clear for redundant comments throughout the codebase
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/modules.py`:** why do you need it inside the loop?
+
+**@ori-kron-wis on `pyproject.toml`:** no need, we install pooch in "file_sharing" namespace. and its mainly for tests/tutorial. if need as a dependency tell me
+
+**@ori-kron-wis on `src/scvi/external/harreman/datasets/datasets.py`:** Created at import time. Lifetime is tied to module GC, not to the function call. this is suitable for tutorials, not codebase of package. All downloaded datasets silently land in the same temp dir and are deleted unpredictably. Use pooch's like in other function we have
+
+**@ori-kron-wis on `src/scvi/external/harreman/datasets/datasets.py`:** so we wont be able to use figshare anymore - need to move to sverse s3 and store there. also scanpy backup_url is ok for tutorials but  pooch is prefered also here.
+
+**@ori-kron-wis on `src/scvi/external/harreman/datasets/datasets.py`:** same as above:
+so we wont be able to use figshare anymore - need to move to sverse s3 and store there. also scanpy backup_url is ok for tutorials but pooch is prefered also here.
+
+**@ori-kron-wis on `src/scvi/external/harreman/datasets/datasets.py`:** need to move everything to scverse s3 like we did with rest of external metadata we use
+
+**@ori-kron-wis on `src/scvi/external/harreman/preprocessing/anndata.py`:** applymap deprecated in pandas 2.x — preprocessing/anndata.py:343,346,349,362,366,557,562
+  DataFrame.applymap was deprecated in pandas 2.1.0 (use DataFrame.map). Will emit FutureWarning on current pandas, will break on future pandas - we actualy already support pandas 3 so this takes us backwards
+
+**@ori-kron-wis on `src/scvi/external/harreman/preprocessing/anndata.py`:** applymap fix, like above
+
+**@ori-kron-wis on `src/scvi/external/harreman/tools/cell_communication.py`:** applymap fix, like above
+
+**@ori-kron-wis on `src/scvi/external/harreman/tools/cell_communication.py`:** applymap fix, like above
+
+**@ori-kron-wis on `src/scvi/external/harreman/preprocessing/anndata.py`:** can break without warning between AnnData versions. Use out_adata = out_adata[nonzero_mask].copy() instead.
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/__init__.py`:** I dont think we need all hotspot to be added to scvi-tools (it has its own pakcage for that) - just the parts that Harreman needs
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/local_autocorrelation.py`:** why there always bool | None ?  The type should be bool, not bool | None, when the default is False.
+
+**@ori-kron-wis on `src/scvi/external/harreman/hotspot/local_autocorrelation.py`:** unused in file. beware of unused imports (this is soemthing pre-commits should fix for. you)
+
+**@ori-kron-wis on `tests/external/harreman/test_harreman.py`:** Test coverage critically sparse
+  Only 7 tests cover
+compute_knn_graph variants and basic autocorrelation. None of these are tested:
+  - compute_cell_communication / compute_ct_cell_communication
+  - create_modules, calculate_module_scores, calculate_super_module_scores
+  - extract_interaction_db / database loading
+  - datasets.load_* functions
+  - preprocessing.setup_deconv_adata
+
+if they are not needed remove those functions, otherwise you will need to add tets for them
+
+**@ori-kron-wis on `src/scvi/external/__init__.py`:** Please change to at least capital H at the beginning  of Harreman
+
+**@ori-kron-wis (review, commented):** Main focus of review:
+1. Logic issues in several functions
+2. Old legacy syntax in the code
+3. Uploading data to scverse S3 and use pooch only
+4. Dead code: many functions, redundant imports
+5. Not all functions are covered in tests
+6. Seems we can do better in object-oriented programming. its all a bunch of functions now with no relation to each other. Classes can help a lot to organize it.
+
+**@ori-kron-wis on `docs/tutorials/index_spatial.md`:** I saw 4 tutorials in harreman docs, is that the only one you consider to add?
 
 ## #3898: Backport PR #3880 on branch 1.4.x (Fix: Extract some methods from FCLayers for easier inheritance)
 **PR:** #3898 | **Last activity:** 2026-09-28T12:01:12Z
@@ -1349,14 +1489,55 @@ Backport PR #3620: feat: Adding support for Annbatch
 
 ## #3620: feat: Adding support for Annbatch
 **PR:** #3620 | **Last activity:** 2026-09-15T15:31:19Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2025-11-25 | **Labels:** custom_dataloader, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3620
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 18 | **Created:** 2025-11-25 | **Labels:** custom_dataloader, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3620
+
+**@ilan-gold on `src/scvi/model/base/_base_model.py`:** You can also do further validation on whether or not the collection contains data: https://annbatch.readthedocs.io/en/stable/generated/annbatch.DatasetCollection.html#annbatch.DatasetCollection.is_empty because people could provide random zarr paths here that are not actually collections
+
+**@ilan-gold on `src/scvi/model/base/_base_model.py`:** Make this optional? This way people could provide just a `zarr_path` (which maybe should be named `dataset_collection_path` or something) without having to provide input h5ads. The `obs` keys could then work on the existing store.
+
+**@ilan-gold on `src/scvi/model/base/_base_model.py`:** Not sure here, maybe Felix has an opinion.  Your categories for hold-out validation could be spread out across files to begin with - T cells across a bunch of h5ads or something.  In this sense, it might make sense to expose `_load_adata_from_path` with an extra `train` / `val` arg of some sort to the user so they can choose which datasets/categories get loaded.
+
+**@ilan-gold on `src/scvi/model/base/_base_model.py`:** New name?
+
+**@ilan-gold on `src/scvi/model/base/_base_model.py`:** Is there any case where people would want more than one `X` to have for future use - PCA isn't a big deal for scvi, I guess, but maybe a different data representation in `layers`? xxxVI is more opinionated in this respect, so just thinking out load.
+
+**@ilan-gold on `src/scvi/dataloaders/_custom_dataloaders.py`:** Why not
+1. to torch csr data structure
+2. to gpu
+3. to dense
+4. then to float
+?
+
+**@ilan-gold (review, commented):** High level stuff but overall very good and cool! Happy to help with docs as well!
 
 **@ilan-gold:** @felix0097 please review!!
+
+**@ilan-gold on `src/scvi/model/base/_base_model.py`:** Similarly, would it make sense to allow users to present their own `Loader` objects? I think things like `continuous_covariate_keys` and `categorical_covariate_keys` could be inferred directly from what is present in `obs`.  You could enforce that the `batch` key has a certain name (like `batch`) or that `batch_key` is an argument that can be applied.
+
+**@ori-kron-wis on `src/scvi/model/base/_base_model.py`:** no more than one X. we do have a different layers option. added a test for this.
+
+**@ori-kron-wis on `src/scvi/model/base/_base_model.py`:** We need to leave those open for users; covariates can be anything, really, as well as batch_key. we cant enforce their data
+
+**@ilan-gold on `src/scvi/model/base/_base_model.py`:** Ah, so this I would say is hardcoded in `annbatch`.  We only look in `X` (and this will remain the default although we'll probably allow new arguments when https://anndata.readthedocs.io/en/latest/accessors.html is released). So what you have now makes sense - just put in `X`.
+
+**@ilan-gold on `src/scvi/model/base/_base_model.py`:** My thinking goes that if a user presents a `Loader` with preloaded `obs`:
+
+1. User specificies `batch_key` and `labels_key`, `unlabeled_category` to `scvi` (optionally)
+2. Everything that is categorical (checkable by `dtype`) in `obs` outside of the above special keys is a  `categorical_covariate_keys`
+3. The numeric keys are `continuous_covariate_keys`
+
+**@ori-kron-wis on `src/scvi/model/base/_base_model.py`:** there can be more metadata which is categorical or cont but users will not want to set it up in their data object.
+
+**@ori-kron-wis on `src/scvi/model/base/_base_model.py`:** that ok - we follow anndata principles
+
+**@ilan-gold on `src/scvi/model/base/_base_model.py`:** Totally agreed, but I think then they should simply not put that metadata in the `Loader` when they load their anndata objects/`DatasetCollection` into the `Loader`. But if you want to make this explicit, also good.
 
 **@ori-kron-wis:** Resolvi annabtch implementation still loads data into memory and can't be based on annbatch, although what was committed here. There is no real gain from it right now; need to think about graph dataloader for it as @canergen suggested.
 Can it then be optimized with the annbatch backend? This is what we would expect to be in scviva-tools as a spatial dataloader, @ilan-gold (until we think about a spatialdata loader support)
 
 I will remove those commits from here and put them on a side branch for later use: Ori-annbatch-resolvi
+
+**@ilan-gold on `src/scvi/dataloaders/_custom_dataloaders.py`:** I believe this [has been resolved](https://github.com/scverse/annbatch/pull/144): https://github.com/scverse/annbatch/blob/main/src/annbatch/loader.py#L222-L223
 
 ## #3851: Backport PR #3850 on branch 1.4.x (docs: automated update of tutorials)
 **PR:** #3851 | **Last activity:** 2026-09-15T15:01:13Z
@@ -1366,7 +1547,30 @@ Backport PR #3850: docs: automated update of tutorials
 
 ## #3571: model: SENAVAE
 **PR:** #3571 | **Last activity:** 2026-09-15T12:36:50Z
-**State:** open | **Author:** @ori-kron-wis | **Comments:** 3 | **Created:** 2025-10-22 | **Labels:** on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3571
+**State:** open | **Author:** @ori-kron-wis | **Comments:** 10 | **Created:** 2025-10-22 | **Labels:** on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3571
+
+**@ori-kron-wis on `src/scvi/external/SENADVAE/_model.py`:** Those 2 go-file links and gene_symb file as mandatory inputs to the model will be untrivial to manage, as it doesn't exist for any of the other models. You will have to provide a function that checks for the correctness of those files.
+You will have to provide a full description of what those files are and their structure.
+You will have to upload such data for the unit-test example.
+
+**@ori-kron-wis on `src/scvi/external/SENADVAE/_model.py`:** I think we can use the generic src/scvi/_settings.py set seed (+ what you added). better than the reuse of code.
+
+**@ori-kron-wis on `src/scvi/external/SENADVAE/_model.py`:** We usually use the VAE suffix to describe the module, not the model. It can be confusing.
+How hard is is to change the model name to SENA and the module to SENAVAE
+
+**@ori-kron-wis on `src/scvi/external/SENADVAE/_module.py`:** Betten to have SENAVAE
+
+**@ori-kron-wis on `src/scvi/external/SENADVAE/_model.py`:** can we wrap this whole part of files pre-processing into a util function? It should also check for correctness of files and their structures.
+seems that we would only want a function that, given those 3 file links, we will produce  rel_dict, go_map and gos that the model will use, and I want to separate the way to get them from the real init of the model.
+
+**@ori-kron-wis on `src/scvi/external/SENADVAE/_model.py`:** There is more pre-processing here, can it fits in a function elsewhere? We want to keep the setup_anndata function to do just that....
+
+**@ori-kron-wis (review, commented):** Let's have the external folder name in lower case to match other external models.
+Add the class model name to the index init file of the external folder.
+Add Tutorial(s) to scvi-tutorials
+Add model description md file
+Add Unit tests (most important)
+Add changlog
 
 **@ori-kron-wis:** Hey @aperonalope , what is the status of the PR? Can we expect more commits to it?
 Otherwise, could you please go over my comments here, review, and confirm correctness?
@@ -1446,7 +1650,43 @@ Backport PR #3954: Feat: VIVS: conditional-randomization-test model for gene-lev
 
 ## #3954: Feat: VIVS: conditional-randomization-test model for gene-level variable selection against niche composition or other obsm responses
 **PR:** #3954 | **Last activity:** 2026-09-09T11:35:54Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-08-03 | **Labels:** cuda tests, on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3954
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 5 | **Created:** 2026-08-03 | **Labels:** cuda tests, on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3954
+
+**@PierreBoyeau on `docs/user_guide/models/vivs.md`:** ```suggestion
+-   The knockoff sampler's quality (how well the generative VAE models gene expression `p(X)`) is necessary for the p-values returned by VIVS to be calibrated. A poorly fit VAE can inflate false-discovery rates
+```
+
+**@PierreBoyeau on `src/scvi/external/vivs/_model.py`:** ```suggestion
+        This implementation samples ``z`` a single time per batch and only
+        resamples the decoder's noise across MC knockoff draws.
+```
+
+**@PierreBoyeau on `src/scvi/external/vivs/_model.py`:** ```suggestion
+        `z`/`library` must come from `_encode_for_knockoffs`, called ONCE per batch outside
+        the MC loop — only the decoder's `px.sample()` varies across MC knockoff draws.
+```
+
+**@PierreBoyeau on `src/scvi/external/vivs/_model.py`:** currently, by default, the model uses all data to compute significance scores. this does not match what is documented in the paper.
+I would recommend ensuring that by default, the `adata` that is used by `get_importance`/`get_hier_importance` corresponds to heldout data (i.e., using `self.validation_indices` as indices)
+
+**@PierreBoyeau (review, changes requested):** This PR looks good to me!
+I left a few comments.
+There are all minor, except for the train/test splitting behavior expected: by default, statistical significance scores should be computed on fresh data.
+
+### Sanity check on synthetic data
+
+I ran the following script, aiming to evaluate to what extend pvalues were calibrated, and true interaction detected, on toy data.
+
+In particular, I considered the following snippet:
+
+```python
+
+"""Assess VIVS calibration on a semi-synthetic scRNA-seq response.
+
+Loads a real PBMC dataset, subsets it to ~10K cells and 500 genes (following
+the gene-selection procedure from the VIVS reproducibility code), builds a
+synthetic response that is a nonlinear function of a handful of "true" genes
+plus Gaussian noise, fits VIVS, and plots the conditional-randomiza …
 
 ## #4010: Backport PR #4009 on branch 1.5.x (docs: automated update of tutorials)
 **PR:** #4010 | **Last activity:** 2026-09-09T11:29:29Z
@@ -1474,7 +1714,7 @@ Backport PR #4004: ci(windows): enable MSVC cl.exe so torch.compile tests can ru
 
 ## #3981: Take the MPS CPU detour only when the torch build needs it
 **PR:** #3981 | **Last activity:** 2026-09-08T08:40:22Z
-**State:** merged | **Author:** @BenjaminDEMAILLE | **Comments:** 13 | **Created:** 2026-09-01 | **Labels:** cuda tests, optional tests, macos tests, mps, on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3981
+**State:** merged | **Author:** @BenjaminDEMAILLE | **Comments:** 19 | **Created:** 2026-09-01 | **Labels:** cuda tests, optional tests, macos tests, mps, on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3981
 
 ## What this changes
 
@@ -1508,6 +1748,26 @@ would disable a kernel that is present; nightlies have the mirror problem. So
 `_mps_supports(op)` calls the op once on a one-element `mps` tensor, caches the answer,
 and treats `NotImplementedError` as "not available". It is only ever reached from a
 distribution whos …
+
+**@ori-kron-wis on `src/scvi/distributions/_negative_binomial.py`:** Please move the 2 new functions to:
+scvi/distributions/utils.py and use it from there in the current function
+
+**@ori-kron-wis (review, commented):** @BenjaminDEMAILLE Thank you so much for supporting the MPS/torch integration in scvi-tools and for showing this amazing speed improvement in MPS for torch 2.14
+I left a small comment here. Please also add the warning updates from the issue https://github.com/scverse/scvi-tools/issues/3980
+
+I will also test and merge it when Torch releases 2.14
+
+**@BenjaminDEMAILLE on `src/scvi/distributions/_negative_binomial.py`:** Done
+
+**@ori-kron-wis on `src/scvi/distributions/_negative_binomial.py`:** I dont see it, is it pushed?
+
+**@BenjaminDEMAILLE on `src/scvi/distributions/_negative_binomial.py`:** Pushed now in 751af908 - my earlier reply was premature, the commit had not left my machine.
+
+Both functions are now in `src/scvi/distributions/_utils.py` and imported from there. I used `_utils.py` rather than `utils.py` because that module already exists in this package (alongside `_constraints.py`) and holds `subset_distribution` and `DistributionConcatenator`. Happy to rename it to a public `utils.py` if you would rather the distributions helpers be part of the public surface.
+
+The warning rewording from #3980 is in the same commit, in `parse_device_args`, with a CHANGELOG entry under Changed.
+
+**@ori-kron-wis on `src/scvi/distributions/_negative_binomial.py`:** Thank you, _utils.py is fine.
 
 **@BenjaminDEMAILLE:** One question on timing: which release are you aiming this at? I put the CHANGELOG entries under 1.5.1, so let me know if they should move.
 
@@ -1993,12 +2253,106 @@ Backport PR #3575: Model: DiagVI (new)
 
 ## #3575: Model: DiagVI (new)
 **PR:** #3575 | **Last activity:** 2026-08-10T13:33:22Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2025-10-27 | **Labels:** on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3575
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 45 | **Created:** 2025-10-27 | **Labels:** on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3575
+
+**@canergen on `pyproject.toml`:** Do you need geomloss? It doesn't seem to be actively maintained.
+
+**@WinterHannah on `pyproject.toml`:** Hi Can, at the moment we rely on geomloss to compute the unbalanced optimal transport loss component. However, we are working on another approach based on [POT](https://github.com/PythonOT/POT), which is more actively maintained.
 
 **@ori-kron-wis:** Hey @WinterHannah , what is the status of the PR? Should we expect more commits to it?
 We can release it without docs or a tutorial, but they are very important for users to engage with the model.
 
 **@WinterHannah:** Hi @ori-kron-wis, I’ll be making a few commits to add documentation and a tutorial. It should take about a week at most!
+
+**@ori-kron-wis on `src/scvi/utils/_metrics.py`:** Please put this function under the diagvi utils function as it is only used by it under the tutorials. its not a generic metric for all scvi-tools. then, revert the __init__.py of utils and update the tutorials import links
+
+**@ori-kron-wis on `src/scvi/distributions/_lognormal.py`:** We would like to save additional code and reuse as much as possible. scvi-tools models that are torch-based use torch.distributions.LogNormal.
+On one hand, keeping it will be consistent with the rest of the distributions you added, but since this class is not used in the rest of the code, except the inheritance of ZeroInflatedLogNormal (in this file), I think we can remove it and inherit torch.distributions.LogNormal in ZeroInflatedLogNormal and apply the required changes there. Then update the init & tests files accordingly.
+
+**@ori-kron-wis on `src/scvi/distributions/_lognormal.py`:** as said in the previous review comment, inherit based torch.distributions.LogNormal and adjust
+
+**@ori-kron-wis on `src/scvi/distributions/_gamma.py`:** See the comment on lognormal. Basically, we want to save code and reuse, if we have already implemented Gamma in torch, remove this implementation and inherit it in ZeroInflatedGamma and adjust (this is the only place in codebase that is used).
+
+**@ori-kron-wis on `src/scvi/distributions/_gamma.py`:** See the comment before. Inherit Gamma from torch, adjust and update init and tests
+
+**@ori-kron-wis on `src/scvi/distributions/__init__.py`:** I feel that there is a major addition to the distribution folder, and I can see why, but:
+
+1. There are some implementations (LogNormal, Gamma) that are not used anywhere in the code but in the local inheritance, and for those implementations, there are already parent torch equivalents that we already use in the codebase, so it's better to just use them and adjust. It will just save a lot of code lines and test functions.
+2. If we still want this addition, I would put it in a separate PR (+ more tests).
+3. I prefer to be based on torch updates/upgrades over a local nuance.
+
+@canergen any other thoughts?
+
+**@ori-kron-wis on `CHANGELOG.md`:** you can move the changelog to the latest version
+
+**@ori-kron-wis on `src/scvi/external/diagvi/_module.py`:** do we need to divide by *nvar as well?, won't it reduce it dramatically to practically 0?
+
+**@ori-kron-wis on `src/scvi/external/diagvi/_module.py`:** verify the logits part - one is .log() that other is .exp() and you substract?
+
+**@ori-kron-wis on `src/scvi/external/diagvi/_module.py`:** Isn't already at the device after init?
+
+**@ori-kron-wis on `src/scvi/distributions/_lognormal.py`:** all other places have support = constraints.nonnegative, but here its positive. is it ok?
+
+**@ori-kron-wis on `src/scvi/external/diagvi/_utils.py`:** is the model runs for both GPU and CPU alike?
+
+**@ori-kron-wis on `src/scvi/external/diagvi/_model.py`:** is it 1 by default on purpose? in other models it is much lower
+
+**@ori-kron-wis on `src/scvi/external/diagvi/_model.py`:** you meant 2048, right?
+
+**@ori-kron-wis on `tests/external/diagvi/test_diagvi.py`:** is there a test to validate the functionality of: predict_celltype, posterior_predictive_sample scarches, semi-supervised training,  minification, DE & DA (new in latest version) in diagvi? those will probably be used/tried by users
+
+**@ori-kron-wis (review, commented):** Impressive work, everyone involved. See my several comments for review.
+
+**@ori-kron-wis on `docs/user_guide/models/diagvi.md`:** We will need to add installation instructions, as for Diagvi, we have special dependencies (geomloss,torch_geomerics) not part of the default of scvi tools.
+So, in order to use that, we need to install scvi-tools[diagvi], as recalled
+
+**@ori-kron-wis on `src/scvi/distributions/_lognormal.py`:** Won't just using the LogNormal above with log1p function (in the generative part) be enough to save more code? Alternatively, add a "p" parameter with a default 0 (potentially 1) and use one of the classes only.
+
+**@ori-kron-wis on `pyproject.toml`:** need to have scvi-tools[jax] into diagvi list as it uses it (see non-jax failed testings)
+
+**@michelta00 on `src/scvi/utils/_metrics.py`:** We have moved the function to the diagvi utils and have updated the corresponding init.py and tutorial imports.
+
+**@michelta00 on `src/scvi/distributions/_lognormal.py`:** We have removed the LogNormal class and ZeroInflatedLogNormal now inherits from the torch distribution.
+
+**@michelta00 on `src/scvi/distributions/_lognormal.py`:** ZeroInflatedLogNormal now inherits from torch.distributions.LogNormal. We have also adapted the parameter naming due to a mismatch between scale in torch.distributions.LogNormal and our former implementation. It now follows the Normal class in _normal.py with scale denoting the standard deviation and normalized_mu the normalized mean.
+
+**@michelta00 on `src/scvi/distributions/_gamma.py`:** We have removed the Gamma class and have adjusted inheritance.
+
+**@michelta00 on `src/scvi/distributions/_gamma.py`:** ZeroInflatedGamma now inherits from torch.distributions.Gamma.
+
+**@michelta00 on `src/scvi/distributions/__init__.py`:** I agree. We have adapted the distributions to your comments (see my answers on your comments). Is there anything else regarding the addition to the distribution folder you think should be adjusted?
+
+**@michelta00 on `src/scvi/external/diagvi/_model.py`:** Yes!
+
+**@michelta00 on `src/scvi/distributions/_lognormal.py`:** We now removed the LogNormal class and let ZeroInflatedLogNormal inherit from torch.distributions.LogNormal. We would therefore keep Log1pNormal as it is. Do you agree with that, or would you rather implement a more general LogNormal class with a "p" parameter?
+
+**@michelta00 on `CHANGELOG.md`:** Done!
+
+**@michelta00 on `src/scvi/external/diagvi/_module.py`:** We have tested different approaches, including kl warmup as done in many other models in scvi-tools, and our current approach worked best empirically.
+
+**@michelta00 on `src/scvi/external/diagvi/_module.py`:** You are right, thanks for catching that! We changed the NegativeBinomial initialisation and now use the (mu, theta) parameterisation correctly translating decoder outputs to distribution parameters.
+
+**@michelta00 on `src/scvi/external/diagvi/_model.py`:** Yes, it is on purpose, and we have checked convergence of DiagVI with early stopping in place.
+
+**@michelta00 on `tests/external/diagvi/test_diagvi.py`:** There are tests covering predict_celltype, posterior_predictive_sample, and semi-supervised training. DiagVI currently does not support scArches or minification, but we plan to add that support in the future (which requires some adaptation due to DiagVI’s multi-adata / multi-modality structure). The same applies to DE and DA.
+
+**@michelta00 on `pyproject.toml`:** I think the issue is that the non-jax workflow does not install the diagvi extras since it does not install scvi-tools[tests] but scvi-tools[autotune,hub,mlflow,file_sharing,regseq,parallel,interpretability]. I have added diagvi in test_linux_nonjax.yml, which should resolve the issue.
+
+**@WinterHannah on `docs/user_guide/models/diagvi.md`:** I added a note to the user guide!
+
+**@ori-kron-wis on `src/scvi/distributions/__init__.py`:** No its fine like this, and a good addition now. Hopefully, other models can use it also.
+
+**@ori-kron-wis on `tests/external/diagvi/test_diagvi.py`:** OK. It's fine like this; we will add any capability down the road when needed.
+
+**@ori-kron-wis on `docs/user_guide/models/diagvi.md`:** Thanks. This might change in the future, if we put them as mandatory dependencies
+
+**@ori-kron-wis on `pyproject.toml`:** I will tend to this
+
+**@ori-kron-wis on `src/scvi/distributions/_lognormal.py`:** It's fine, probably enough for most cases in sc.
+
+**@michelta00 on `src/scvi/external/diagvi/_module.py`:** We have changed the graph handling slightly, which resolves this issue.
+
+**@michelta00 on `src/scvi/external/diagvi/_utils.py`:** Similar to above, the updated graph handling resolves this.
 
 ## #3809: Backport PR #3805 on branch 1.4.x (Fix: grouped-label classification when use_labels_groups=True need to use logits =false.)
 **PR:** #3809 | **Last activity:** 2026-08-10T13:33:08Z
@@ -2008,9 +2362,13 @@ Backport PR #3805: Fix: grouped-label classification when use_labels_groups=True
 
 ## #3805: Fix: grouped-label classification when use_labels_groups=True need to use logits =false.
 **PR:** #3805 | **Last activity:** 2026-08-10T13:00:15Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-05-11 | **Labels:** on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3805
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2026-05-11 | **Labels:** on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3805
 
 close https://github.com/scverse/scvi-tools/issues/3804
+
+**@ori-kron-wis on `src/scvi/module/_scanvae.py`:** @codex address this issue
+
+**@ori-kron-wis on `src/scvi/module/_scanvae.py`:** @codex address this issue
 
 ## #3808: Backport PR #3803 on branch 1.4.x (fix: updates for mudata, scarches tests for anndata 13)
 **PR:** #3808 | **Last activity:** 2026-08-10T13:00:08Z
@@ -2162,7 +2520,9 @@ Also added support for multiGPU validation metrics logging
 
 ## #3756: fix: use persistent=False for n_obs_per_sample buffer in TorchMRVAE to avoid state_dict conflict on load of custom dataloader module
 **PR:** #3756 | **Last activity:** 2026-07-29T06:58:36Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-03-21 | **Labels:** custom_dataloader, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3756
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2026-03-21 | **Labels:** custom_dataloader, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3756
+
+**@justjhong (review, approved):** Thanks!
 
 ## #3420: refactor: remove DEPRECATED SaveBestState class
 **PR:** #3420 | **Last activity:** 2026-07-29T06:58:18Z
@@ -2184,7 +2544,9 @@ Also added support for multiGPU validation metrics logging
 
 ## #3691: Fix: case of loading a minified adata into a non-minified-model
 **PR:** #3691 | **Last activity:** 2026-07-29T06:56:13Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2026-01-28 | **Labels:** hub, private tests, optional tests, internet tests, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3691
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2026-01-28 | **Labels:** hub, private tests, optional tests, internet tests, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3691
+
+**@ori-kron-wis on `src/scvi/model/base/_base_model.py`:** @codex address that feedback
 
 **@ori-kron-wis:** @codex address that feedback
 
@@ -2241,7 +2603,9 @@ Otherwise, if theres no difference, why not using SaveCheckpoint we have now?
 
 ## #3925: docs: update to RTD
 **PR:** #3925 | **Last activity:** 2026-07-29T06:53:00Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-07-20 | **Labels:** on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3925
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2026-07-20 | **Labels:** on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3925
+
+**@ori-kron-wis on `docs/conf.py`:** @codex address that feedback
 
 ## #3743: tests: change download files from github repo of scvi-data to scverse s3
 **PR:** #3743 | **Last activity:** 2026-07-29T06:52:33Z
@@ -2257,9 +2621,11 @@ Otherwise, if theres no difference, why not using SaveCheckpoint we have now?
 
 ## #3667: refactor: Changing figshare storage to SCVERSE S3
 **PR:** #3667 | **Last activity:** 2026-07-29T06:51:48Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2026-01-08 | **Labels:** internet tests, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3667
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2026-01-08 | **Labels:** internet tests, on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3667
 
 **@ori-kron-wis:** @codex address that feedback
+
+**@ori-kron-wis on `src/scvi/data/_built_in_data/_loom.py`:** @codex address that feedback
 
 ## #3752: ci: Update for codecov definitions with carry‑forward flags.
 **PR:** #3752 | **Last activity:** 2026-07-29T06:51:13Z
@@ -2297,25 +2663,141 @@ close https://github.com/scverse/scvi-tools/issues/3460
 
 ## #3121: feat: add get_normalized_expression to more models
 **PR:** #3121 | **Last activity:** 2026-07-29T06:49:37Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2025-01-05 | **Labels:** Still Needs Manual Backport | **URL:** https://github.com/scverse/scvi-tools/pull/3121
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 17 | **Created:** 2025-01-05 | **Labels:** Still Needs Manual Backport | **URL:** https://github.com/scverse/scvi-tools/pull/3121
 
 add this down stream analysis function to several models which don't have it yet
 
+**@canergen on `src/scvi/external/cellassign/_model.py`:** Is CellAssign intended for these functions? I would remove it here.
+
+**@canergen on `src/scvi/module/_mrdeconv.py`:** This doesn't really make sense. Please remove VAEmixin from DestVI
+
+**@canergen on `src/scvi/external/gimvi/_module.py`:** this is wrong. px needs to be the distribution like Poisson or NB.
+
+**@canergen on `src/scvi/model/_destvi.py`:** this is not supported. only supported in destvi-v2.
+
+**@canergen on `src/scvi/module/_mrdeconv.py`:** it is actually fully ignored.
+
+**@canergen on `src/scvi/module/_peakvae.py`:** I prefer it if it is the same. so change to px here.
+
+**@canergen on `src/scvi/module/_vaec.py`:** keep it to x_ to be consistent with other models.
+
+**@canergen (review, approved):** see additional requests.
+
+**@ori-kron-wis on `src/scvi/external/gimvi/_module.py`:** the idea (with every model change in this branch) is to make each model already compatible to the get_norm function we have in rnaseqmixin, which sometimes means changing the generative function return keys (in this example from 'px_r' to 'px'). Otherwise, we will have to create a unique get_norm function for each model separately, and I tried to avoid that, as signature is all fine, except this key.
+There is no change in what is the 'px_r' of gimvi, if that what you meant
+
+**@ori-kron-wis on `src/scvi/module/_mrdeconv.py`:** yes I disable the use of it but Its still there for the same reason of supporting functions signatures.
+
+**@ori-kron-wis on `src/scvi/model/_destvi.py`:** its here only for it to work with rest of changes (esp mrdeconv), the get_norm is deprecated.
+there is no intention to start the logic of batch_key here.
+
+**@ori-kron-wis on `src/scvi/module/_peakvae.py`:** it was originally 'p', changed now to 'px' - but this goes under changing the peakvi model signature
+
+**@ori-kron-wis on `src/scvi/module/_vaec.py`:** ok. this was actually a bug in the log transform
+
+**@canergen on `src/scvi/module/_peakvae.py`:** Yes, we should change the name everywhere to px for consistency.
+
+**@canergen on `src/scvi/model/_destvi.py`:** You should not expose it as a function argument. It should be handled in mrdeconv. Same for other models. The user expects an effect if it is exposed.
+
+**@canergen on `src/scvi/external/gimvi/_module.py`:** I get it, but px is the generative distribution. You should define it here (negative binomial of scale and px_r. You should not just store something under this value.
+
+**@ori-kron-wis on `src/scvi/model/_destvi.py`:** ok, yes make sense
+
 ## #3038: feat: Mudata support for MultiVI
 **PR:** #3038 | **Last activity:** 2026-07-29T06:48:20Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2024-11-06 | **Labels:** multivi | **URL:** https://github.com/scverse/scvi-tools/pull/3038
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 18 | **Created:** 2024-11-06 | **Labels:** multivi | **URL:** https://github.com/scverse/scvi-tools/pull/3038
 
 Added mudata support for MULTIVI + tests
 
+**@canergen on `src/scvi/model/_multivi.py`:** Is this the check for MuData that we use throughout the code in e.g. totalVI. We should wrap it in a helper function then.
+
+**@canergen on `src/scvi/model/_multivi.py`:** Why is this removed?
+
+**@canergen on `src/scvi/model/_multivi.py`:** This should be default. Deprecation warning for anndata should be added and tutorial executed using MuData.
+
+**@canergen on `tests/model/test_multivi.py`:** I'm confused about the batch_key. Does is need to be set up with modalities.
+
+**@ori-kron-wis on `tests/model/test_multivi.py`:** the batch_key under modalities actually tells which modality stores batch_key in its obs data.
+so for example:
+
+```
+    MULTIVI.setup_mudata(
+        mdata,
+        rna_layer="counts",
+        protein_layer=None,
+        batch_key="batch",
+        modalities={
+            "rna_layer": "rna_subset",
+            "protein_layer": "protein",
+            "batch_key": "rna_subset",
+        },
+    )
+```
+
+the batch is here: mdata.mod["rna_subset"].obs["batch"]
+
+**@ori-kron-wis on `src/scvi/model/_multivi.py`:** OK. will add a deprecation warning for both this and toalvi.
+Tutorial wise, maybe we will do it like in totalvi, adding the setup_mudata part on top of what already existed (otherwise write it from scratch) - this will be a different PR
+
+**@ori-kron-wis on `src/scvi/model/_multivi.py`:** fixed
+
+**@canergen on `src/scvi/model/_multivi.py`:** correct: supposed and removed
+
+**@canergen on `src/scvi/model/_totalvi.py`:** I think for TOTALVI, we should deprecate it, but without announcing that it will be removed in 1.4. For MultiVI, it's a bad solution, while for TOTALVI, it's actually quite okay'ish to use obsm.
+
+**@ori-kron-wis on `src/scvi/model/_multivi.py`:** fixed
+
+**@ori-kron-wis on `src/scvi/model/_totalvi.py`:** alright.
+
+**@canergen on `CHANGELOG.md`:** Remove Experimental. If we deprecate setup_anndata it is stable and the recommended way.
+
+**@canergen on `tests/model/test_multivi.py`:** Let's skip the muon testing requirement and use this also for the RNA+ATAC test?
+
+**@canergen on `tests/model/test_multivi.py`:** I don't get this test. We should test all functions with mdata2
+
+**@canergen on `tests/model/test_multivi.py`:** Same here all tests with mdata2
+
+**@canergen (review, approved):** Please check whether we need muon.
+
+**@canergen on `CHANGELOG.md`:** Remove this from the PR. It shouldn't be part of 1.2.X, whereas the rest of the commit should.
+
+**@canergen on `tests/model/test_multivi.py`:** This needs to be fixed. Call other functions with mdata2
+
 ## #3053: Fix: distributed sampler for multi GPU
 **PR:** #3053 | **Last activity:** 2026-07-29T06:48:08Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2024-11-25 | **Labels:** Still Needs Manual Backport, on-merge: backport to 1.3.x, multiGPU tests | **URL:** https://github.com/scverse/scvi-tools/pull/3053
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 15 | **Created:** 2024-11-25 | **Labels:** Still Needs Manual Backport, on-merge: backport to 1.3.x, multiGPU tests | **URL:** https://github.com/scverse/scvi-tools/pull/3053
 
 Update for the dataloader in case of distributed sampler
 
 close https://github.com/scverse/scvi-tools/issues/3047
 
 **@ori-kron-wis:** CUDA-distributed tests work locally, but not from the runner, we need to make it work
+
+**@canergen on `tests/dataloaders/test_dataloaders.py`:** Remove the comment that it works on all systems
+
+**@canergen on `tests/dataloaders/test_dataloaders.py`:** Shouldn't it be assert here?
+
+**@canergen on `tests/model/test_scanvi.py`:** Shouldn't this be in another test all together?
+
+**@canergen on `tests/model/test_scvi.py`:** Same here. Just have one test for ddp and not in the test_scvi thing.
+
+**@canergen on `src/scvi/dataloaders/_samplers.py`:** Still necessary?
+
+**@canergen on `src/scvi/dataloaders/_concat_dataloader.py`:** Do we still need this? Drop_last should have the same effect?
+
+**@canergen on `src/scvi/dataloaders/_ann_dataloader.py`:** What kwargs are missing here?
+
+**@canergen (review, approved):** LGTM. See minor comments.
+
+**@ori-kron-wis on `tests/dataloaders/test_dataloaders.py`:** fixed
+
+**@ori-kron-wis on `tests/model/test_scanvi.py`:** ok
+
+**@ori-kron-wis on `tests/model/test_scvi.py`:** ok
+
+**@ori-kron-wis on `tests/dataloaders/test_dataloaders.py`:** So, there is no such thing as a CUDA flag and I dont want the test to fail on a CPU run, and there are several other such this. Most of tests are both for CPU and GPU. I dont want to divide, except here which are specifically testing on a multi GPU machine.
+
+**@ori-kron-wis on `tests/model/test_scvi.py`:** we can add a label multi-gpu to test those kind of tests
 
 **@ori-kron-wis:** multi gpu tests not working in the runner, but do locally, will continue with this in scvi tools v1.3 to work with other models
 
@@ -2331,11 +2813,19 @@ close https://github.com/scverse/scvi-tools/issues/3047
 
 ## #3032: feat: continuous, embedded covariates re-injected during training
 **PR:** #3032 | **Last activity:** 2026-07-29T06:40:36Z
-**State:** closed | **Author:** @ori-kron-wis | **Comments:** 3 | **Created:** 2024-10-27 | **URL:** https://github.com/scverse/scvi-tools/pull/3032
+**State:** closed | **Author:** @ori-kron-wis | **Comments:** 25 | **Created:** 2024-10-27 | **URL:** https://github.com/scverse/scvi-tools/pull/3032
 
 Added other covariates types (continuous, embedded) to be able to reinjected, and not just to the input layer
 
 **@ori-kron-wis:** close https://github.com/scverse/scvi-tools/issues/3021
+
+**@Hrovatin on `src/scvi/nn/_base_components.py`:** Please remove this docstring part  - I only added it as info for implementing the change.
+
+**@Hrovatin on `src/scvi/nn/_base_components.py`:** I changed the forward parametrization from `(x, *cat_list)` to `(x,cat_list,cont)` - so this will break with other `Modules` using `FCLayers` by passing `cat_list` in expanded `*` format. So either the parametrization here needs to be fixed or the use of `FCLayers` elsewhere.
+
+**@Hrovatin on `src/scvi/nn/_base_components.py`:** See my comment in https://github.com/scverse/scvi-tools/issues/3021
+
+**@ori-kron-wis on `src/scvi/nn/_base_components.py`:** Thanks. I thought I would be able to finish this in one shot for all models, but its a bit more complex than I thought. So, I'll be focusing on scvi and scanvi for now only.
 
 **@ori-kron-wis:** This kind of change requires touching the module for each model. I don't think there is anywhere around it. Its risky and this is why I implemented it only for scvi &  scanvi at the moment (maybe others will work also but I didn't test thoroughly). the rest of the changed modules are mainly things in function headers and placeholders to able to cope with the major changes in base_components (i.e cont_cov is usually None and cant be injected to their hidden layers).
 
@@ -2343,12 +2833,48 @@ To summarise we have 2 parameters to think of:
 - deeply_inject (bool): covariates (continuous or categorial whether being encoded or not) are always injected to the first layer. If this parameter is True they will also be injected to the hidden layer of the encoder/decoder.
 - encode_covariates (bool): this is only relevant …
 
+**@Hrovatin on `src/scvi/module/_vae.py`:** I think here batch_rep should be also concat to cont_covs to be treated as continuous covariate no?
+
+**@Hrovatin on `src/scvi/module/_vae.py`:** Why do you always concatenate continous cov to expression instead of handling them separately as a covariate (sam as for one-hot)?
+
+**@Hrovatin on `src/scvi/nn/_base_components.py`:** This is not used anywhere?
+
+**@Hrovatin on `src/scvi/nn/_base_components.py`:** `encode_covariates` and `batch_representation` are used in Module (e.g. vae) for handling of covariates not here
+
+**@Hrovatin on `src/scvi/nn/_base_components.py`:** I do not think you should check `batch_representation` here - if `n_cat_list` is not empty the covariates need to be accounted for here irrespective of what `batch_representation`  is - as the `batch_representation` is used in Module to determine if batch will be added to the cat list or not. So the input cat cov list will already contain batch if it is not embedded ,besides other cat covariates
+
+**@Hrovatin on `src/scvi/nn/_base_components.py`:** This should be also removed and only kept in Module
+
+**@Hrovatin on `src/scvi/nn/_base_components.py`:** this should be done irregardless of what is batch representation for all covariates that were passed as categorical
+
 **@Hrovatin:** @ori-kron-wis I think there are things that need to be fixed as per my review comments. To summarise:
 I think the behaviour should be as follows:
 - Module passes to layers expression, continuous covariates (can be None), and categorical covariates that need to be one-hot encoded (can be empty list)
 - Module is the one that decides if batch will be embedded and concatenated to continuous covariates or added to the categorical list
 - Layers should not check how the batch is encoded as their init params already tell the number of continous/categorical covariates as determined by the Module.
 - The layers then either inject covariates (continuous and one-hote encoded categorical) into all layers or only add to the first one. - So Module should not be concatenating continuous covariates to …
+
+**@canergen on `src/scvi/external/methylvi/_module.py`:** Can you add the None as an argument in line 148. It makes it cleaner where it comes from.
+
+**@canergen on `src/scvi/external/methylvi/_module.py`:** This is throughout this PR.
+
+**@canergen on `src/scvi/module/_multivae.py`:** Here it's correct.
+
+**@canergen on `src/scvi/module/_multivae.py`:** We shouldn't remove the self.encode covariates check.
+
+**@canergen on `src/scvi/module/_multivae.py`:** why is this hard-coded?
+
+**@canergen on `src/scvi/module/_peakvae.py`:** only if encode covariates
+
+**@canergen on `src/scvi/module/_scanvae.py`:** please explain.
+
+**@canergen on `src/scvi/module/_scanvae.py`:** no this is independent of cont_covs
+
+**@canergen on `src/scvi/module/_scanvae.py`:** this to independent of cont_covs
+
+**@canergen on `src/scvi/module/_vae.py`:** I would prefer to keep all seperated. So you could do deep injection of the batch embedding or covariate.
+
+**@Hrovatin on `src/scvi/module/_vae.py`:** That also sounds good as loong as all can be injected
 
 ## #3908: Refactor [WIP]: Removed the spatial models from scvi-tools in v1.6 and move them to scVIVA-Tools
 **PR:** #3908 | **Last activity:** 2026-07-28T11:35:38Z
@@ -2400,15 +2926,73 @@ Backport PR #3607: refactor: use the scverse cookiecutter template
 
 ## #3823: feat: scVI-X release
 **PR:** #3823 | **Last activity:** 2026-07-28T09:37:23Z
-**State:** open | **Author:** @canergen | **Comments:** 1 | **Created:** 2026-05-22 | **Labels:** on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3823
+**State:** open | **Author:** @canergen | **Comments:** 27 | **Created:** 2026-05-22 | **Labels:** on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3823
 
 Do not merge or review yet.
 
 **@canergen:** @ori-kron-wis code can be checked.
 
+**@ori-kron-wis on `tests/external/scvix/test_scvix.py`:** Results are not equal (only tests failure now), I guess, because of resampling of the minified model, you will need to tweak rtol and atol (increase - but how much?)
+
+**@ori-kron-wis on `src/scvi/external/scvix/_model.py`:** typo?
+
+**@ori-kron-wis on `src/scvi/external/scvix/_module.py`:** if mask is None (default), what are mod_1 and mod_2? it will break.
+also seems that this is the case cause line 661 invokes mmd with mask==None
+its probably not covered in tests
+
+**@ori-kron-wis on `src/scvi/external/scvix/_model.py`:** I guess you will want to put you pre-print title here
+
+**@ori-kron-wis on `src/scvi/external/scvix/_model.py`:** Shouldn't it be 0 by default to match _trainingplans.py?
+
+**@ori-kron-wis on `src/scvi/train/_trainingplans.py`:** if loss -> 0 , this expression goes to inf , was that the intention?
+
+**@ori-kron-wis on `tests/external/scvix/test_scvix.py`:** should you try to do something with adata4?
+
+**@ori-kron-wis on `docs/user_guide/models/scvix.md`:** need to add
+
+**@ori-kron-wis on `docs/user_guide/models/scvix.md`:** Doc file exists but is unreachable via navigation.
+Need to add a link to docs/user_guide/index.md
+
+**@ori-kron-wis on `src/scvi/external/scvix/_model.py`:** not sure what it is.... double verify (or have a test...)
+
+**@ori-kron-wis on `src/scvi/external/scvix/_module.py`:** if encode_covaraites if False, what is self.batch_representation_encoder? might not be utilized later on, but still need a value for this model registry (later save/load etc)
+
+**@ori-kron-wis on `src/scvi/utils/_docstrings.py`:** not used...
+
+**@ori-kron-wis on `src/scvi/external/scvix/_model.py`:** do we need to check assert in the runtime code? It will not tell anything.
+ I suggest otherwise to check if condition, and plot an Error message
+
+**@ori-kron-wis on `src/scvi/external/scvix/_module.py`:** again, better to add a runtime error/warning message
+
+**@ori-kron-wis on `src/scvi/nn/_base_components.py`:** function name misleading as its says 2D, but runs 1D?
+
+**@ori-kron-wis on `src/scvi/train/_trainingplans.py`:** did we validate TotalVI functionality? multivi? There are parameter changes here (perhaps we can encode for scviX but return to previous values otherwise)
+
+**@ori-kron-wis on `src/scvi/train/_trainingplans.py`:** another parameter change, how di dit affect other adversarial models?
+
+**@ori-kron-wis on `src/scvi/external/sysvi/_module.py`:** not in favor of changing api of other modules.
+
+**@ori-kron-wis on `src/scvi/external/sysvi/_base_components.py`:** not in favor of changing api of other modules.
+
+**@ori-kron-wis on `src/scvi/nn/_base_components.py`:** this is still here, but you changed the API (why?) - my suggestion is to revert to n_cont and update scvi_x and not vice versa
+
+**@ori-kron-wis on `src/scvi/nn/_base_components.py`:** again changing api here that affects other models - not in favor - better to change scvi-x internaly
+
+**@ori-kron-wis (review, commented):** I think the api changes in core function (trainingplans and base_components) are not really needed and we can avoid most of it by changing it internally in scvix module, thus, without affect other models.
+
+For the changes in adversarial_classifier - it affect other models for sure (totalvi, gimvi) - are we certain they are ok?
+
+**@ori-kron-wis on `src/scvi/external/gimvi/_task.py`:** a change made to cope with api changes. need to verify
+
+**@ori-kron-wis on `src/scvi/external/sysvi/_base_components.py`:** a change made to cope with api changes. but in this case I think we can revert and change scviX api
+
+**@ori-kron-wis on `src/scvi/module/_multivae.py`:** a change made to cope with api changes. need to verify
+
+**@canergen on `src/scvi/external/scvix/_model.py`:** Instead of only transform_batch for generation, we want to be able to transform_assay (so conditional generation for another assay)
+
 ## #3607: refactor: use the scverse cookiecutter template
 **PR:** #3607 | **Last activity:** 2026-07-28T09:32:53Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 9 | **Created:** 2025-11-18 | **Labels:** autotune, hub, cuda tests, private tests, custom_dataloader, optional tests, internet tests, windows tests, macos tests, mlflow, on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3607
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 10 | **Created:** 2025-11-18 | **Labels:** autotune, hub, cuda tests, private tests, custom_dataloader, optional tests, internet tests, windows tests, macos tests, mlflow, on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3607
 
 Aligns the repository with the [scverse cookiecutter template](https://github.com/scverse/cookiecutter-scverse) v0.8.0 and tracks it in `.cruft.json`, so future template changes arrive as automated pull requests.
 
@@ -2425,6 +3009,16 @@ Closes #3600.
 - `build.yml` → `build.yaml`, `test_linux.yml` → `test.yaml`, `release.yml` → `release.yaml`, with the template's contents: hatch-driven, `permissions:` blocks, actions pinned by digest, and an `alls-green` check so branch protection needs a single required job.
 - The ten specialized workflows were renamed off the `test_linux_*` prefix and rewritten to run through the hatch environments above. Their triggers and label gating are unchanged.
 - The release workflow creates the tag with `gh release cre …
+
+**@Zethson (review, changes requested):** I think that's a start but there's more. I still think that the better way would be to recreate the project from scratch but if this is easier for you, we should ensure that we do it right.
+
+1. What about the issue templates?
+2. What about the hatch test set up?
+3. What about the whole CI set up? Yours differs greatly from the template and I'm a bit surprised at the number of workflows that you have.
+4. The pre-commit setup needs tons of updates, please.
+5. The whole configuration of the linters as well -> please also update the pyproject.toml
+6. The RTD setup needs updates
+7. There's probably more that I missed...
 
 **@Zethson:** @ori-kron-wis where are we with this PR? Should we have an agent finish it? I'd love to see a full version merged.
 
@@ -2585,7 +3179,6 @@ Reproducer:
 
 ```python
 import scvi
-
 print(scvi.model.SCVI.get_normalized_expression.__doc__)
 # ...
 #         return_numpy
@@ -2686,7 +3279,9 @@ Backport PR #3768: [pre-commit.ci] pre-commit autoupdate
 
 ## #3798: feat: Add RESOLVI graph dataloader integration and benchmark CI
 **PR:** #3798 | **Last activity:** 2026-07-07T14:09:52Z
-**State:** open | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-05-05 | **Labels:** on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3798
+**State:** open | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2026-05-05 | **Labels:** on-merge: backport to 1.5.x | **URL:** https://github.com/scverse/scvi-tools/pull/3798
+
+**@canergen on `src/scvi/dataloaders/_graph_dataloader.py`:** You still use this construct.
 
 ## #3767: Backport PR #3766 on branch 1.4.x (docs: updated for mlx)
 **PR:** #3767 | **Last activity:** 2026-07-02T15:00:39Z
@@ -2763,7 +3358,7 @@ Backport PR #3760: [pre-commit.ci] pre-commit autoupdate
 
 ## #3699: Add DRVI
 **PR:** #3699 | **Last activity:** 2026-06-21T08:45:19Z
-**State:** closed | **Author:** @moinfar | **Comments:** 2 | **Created:** 2026-02-04 | **Labels:** on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3699
+**State:** closed | **Author:** @moinfar | **Comments:** 3 | **Created:** 2026-02-04 | **Labels:** on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3699
 
 Dear Maintainers,
 
@@ -2782,6 +3377,8 @@ I removed some extra stuff. The model may still contain much extra functionality
 Please let me know if you need any further explanation of the code's functionality.
 
 Thanks for your time.
+
+**@moinfar on `src/scvi/data/fields/_arraylike_field.py`:** This is required so that we can have query to reference mapping beyond just batch_key (also for cols in cat_covs_key)
 
 **@ori-kron-wis:** Hey @moinfar , can you update on the status of this?
 
@@ -2816,7 +3413,7 @@ Backport PR #3749: fix: PyTorch MRVI to match JAX implementation and work on GPU
 
 ## #3749: fix: PyTorch MRVI to match JAX implementation and work on GPU
 **PR:** #3749 | **Last activity:** 2026-06-17T16:30:59Z
-**State:** merged | **Author:** @justjhong | **Comments:** 3 | **Created:** 2026-03-16 | **Labels:** jax, on-merge: backport to 1.4.x, nonJAX | **URL:** https://github.com/scverse/scvi-tools/pull/3749
+**State:** merged | **Author:** @justjhong | **Comments:** 8 | **Created:** 2026-03-16 | **Labels:** jax, on-merge: backport to 1.4.x, nonJAX | **URL:** https://github.com/scverse/scvi-tools/pull/3749
 
 Fixes the PyTorch MRVI implementation to be numerically equivalent to the JAX version and work correctly on GPU. With identical weights, all forward pass outputs and gradients now match between backends to within float32 precision (~1e-6).
 
@@ -2843,9 +3440,23 @@ Minor fixes
 
 **@justjhong:** @ori-kron-wis having trouble with codecov if you have suggestions or if it looks like somethings broken with the coverage computation
 
+**@ori-kron-wis on `tests/external/test_mrvi_full_model_equivalence.py`:** The need for these tests is clear, but those tests are pretty long also, I would put the JAX flag on them (@pytest.mark.jax) so they will run only if mentioned (only once we make mrvi changes or a major jax version is released), as JAX is not mandatory anymore. then - need to add the jax label
+I would also move them to a different folder (external/mrvi_jax or external/mrvi_torch) and perhaps change the structure to be equivalent to the rest of pytests files (we don't work with `if __name__ == "__main__":)`
+
 **@ori-kron-wis:** > @ori-kron-wis having trouble with codecov if you have suggestions or if it looks like somethings broken with the coverage computation
 
 Absolutely, something I had to fix sometime ago. It's about adding carry‑forward flags for codecov, because we have more labels now. Fix is already merged to main
+
+**@ori-kron-wis on `tests/external/test_mrvi_full_model_equivalence.py`:** One more thing about this: the file Imports jax and jax.numpy at the top level without any guards. jax is not installed by default now, so it will cause an import error. potential fixes:
+1. TYPE_CHECKING block
+2.  pytest.importorskip("jax")
+3. put the jax imports inside the test functions (+ adding those  @pytest.mark.jax decorators)
+
+**@ori-kron-wis on `tests/external/test_mrvi_full_model_equivalence.py`:** easy to test it with non-jax label (its a scvi-tools installed for testing, but without jax) - the test suite should still work! (added)
+
+**@ori-kron-wis (review, commented):** I validated the mrvi_tutorial we have and it's much closer to the original jax version. Looks great!
+
+**@ori-kron-wis on `tests/external/test_mrvi_full_model_equivalence.py`:** This is my only remark
 
 **@ori-kron-wis:** @justjhong can  we merge?
 
@@ -2941,9 +3552,17 @@ Backport PR #3618: feat: add differential abundance for scvi-tools models
 
 ## #3618: feat: add differential abundance for scvi-tools models
 **PR:** #3618 | **Last activity:** 2026-05-24T14:00:20Z
-**State:** merged | **Author:** @lordy5 | **Comments:** 3 | **Created:** 2025-11-24 | **Labels:** on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3618
+**State:** merged | **Author:** @lordy5 | **Comments:** 4 | **Created:** 2025-11-24 | **Labels:** on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3618
 
 @ori-kron-wis @canergen I've finished fixing some issues with the code and have now added tests. Let me know if there's anything else I should do.
+
+**@ori-kron-wis (review, commented):** Thanks @lordy5, I have a few questions/clarifications, mainly engineering wise.
+The general idea is to do as much code reuse, add more tests and have the support for the generalization of this function to all models in a proper way.
+
+So far, we had the DA support for CytoVi and MrVI only.
+1. Is this implementation here should be general enough for all models?
+2. If this is the case, I would expect this PR to have more tests, for other models as well. I would at least add tests for SCANVI, TOTALVI (with mudata input) and a spatial model (RESOLVI, SCVIVA). This is something users are going to try out and lets make sure it works.
+3. If theres no support for specific models I would add a warning of "DA is currently not supported" - This is something we did for get_normalized_expression …
 
 **@canergen:** Some comments
 
@@ -3040,7 +3659,19 @@ Backport PR #3703: refactor: improve slow tests in scvi-tools and put all jax te
 
 ## #3703: refactor: improve slow tests in scvi-tools and put all jax tests under new flag
 **PR:** #3703 | **Last activity:** 2026-05-10T11:39:05Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-02-09 | **Labels:** jax, autotune, cuda tests, private tests, custom_dataloader, optional tests, internet tests, on-merge: backport to 1.4.x, nonJAX, mlflow | **URL:** https://github.com/scverse/scvi-tools/pull/3703
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 6 | **Created:** 2026-02-09 | **Labels:** jax, autotune, cuda tests, private tests, custom_dataloader, optional tests, internet tests, on-merge: backport to 1.4.x, nonJAX, mlflow | **URL:** https://github.com/scverse/scvi-tools/pull/3703
+
+**@ori-kron-wis on `src/scvi/external/cytovi/_plotting.py`:** @codex address that feedback
+
+**@ori-kron-wis on `src/scvi/external/cytovi/_plotting.py`:** @codex address that feedback
+
+**@ori-kron-wis on `src/scvi/external/cytovi/_plotting.py`:** @codex add code fix of your suggestions
+
+**@ori-kron-wis on `src/scvi/external/cytovi/_plotting.py`:** @codex add code fix of your suggestions
+
+**@ori-kron-wis on `src/scvi/external/cytovi/_plotting.py`:** @codex update the PR with the fix
+
+**@ori-kron-wis on `src/scvi/external/cytovi/_plotting.py`:** @codex update the PR with the fix
 
 ## #3700: feat: Resolvi2
 **PR:** #3700 | **Last activity:** 2026-05-09T13:00:07Z
@@ -3228,9 +3859,11 @@ Backport PR #3649: Fix bug in computing MRVI stratifications for adata other tha
 
 ## #3649: Fix bug in computing MRVI stratifications for adata other than self.adata
 **PR:** #3649 | **Last activity:** 2026-03-18T14:04:31Z
-**State:** merged | **Author:** @justjhong | **Comments:** 0 | **Created:** 2025-12-15 | **Labels:** on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3649
+**State:** merged | **Author:** @justjhong | **Comments:** 1 | **Created:** 2025-12-15 | **Labels:** on-merge: backport to 1.4.x | **URL:** https://github.com/scverse/scvi-tools/pull/3649
 
 Addresses issue of running `get_local_sample_distances` on an anndata object other than self.adata. Implemented for both jax and pytorch versions.
+
+**@ori-kron-wis (review, approved):** LGTM
 
 ## #3646: Backport PR #3643 on branch 1.4.x (release: prepare files for release v1.4.1)
 **PR:** #3646 | **Last activity:** 2026-03-10T11:01:03Z
@@ -3566,7 +4199,9 @@ Added general data loader kwargs to down stream analysis functions to be able to
 
 ## #3324: fix: mrvi - change self.adata to just adata inside the function compute local statistics
 **PR:** #3324 | **Last activity:** 2026-01-15T12:23:55Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2025-05-14 | **Labels:** on-merge: backport to 1.3.x, optional tests | **URL:** https://github.com/scverse/scvi-tools/pull/3324
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2025-05-14 | **Labels:** on-merge: backport to 1.3.x, optional tests | **URL:** https://github.com/scverse/scvi-tools/pull/3324
+
+**@justjhong (review, approved):** Looks good thanks ori! Thanks for catching the other instances of the bug as well
 
 ## #3526: release: v1.4
 **PR:** #3526 | **Last activity:** 2026-01-15T12:23:44Z
@@ -3582,11 +4217,17 @@ Added general data loader kwargs to down stream analysis functions to be able to
 
 ## #3369: feat: added posterior predictive samples batch projection
 **PR:** #3369 | **Last activity:** 2026-01-15T12:22:02Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2025-06-04 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3369
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 4 | **Created:** 2025-06-04 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3369
 
 fix in LDA perplexity calc also
 
 **@ori-kron-wis:** close https://github.com/scverse/scvi-tools/issues/3352
+
+**@canergen on `src/scvi/model/_amortizedlda.py`:** Different PR? Feels wrong here but can be merged then.
+
+**@ori-kron-wis on `src/scvi/model/_amortizedlda.py`:** I agree. let me separate this.
+
+**@canergen (review, approved):** LGTM. Please create a separate PR for the ELBO fix.
 
 ## #3446: fix: need to have criticism module in init of scvi-tools
 **PR:** #3446 | **Last activity:** 2026-01-15T12:21:37Z
@@ -3799,13 +4440,27 @@ It the future, maybe we can consider move to public stable api.
 
 ## #3426: Refactor: Make Jax optional dependency
 **PR:** #3426 | **Last activity:** 2025-12-10T12:00:28Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2025-07-20 | **Labels:** autotune, hub, cuda tests, private tests, custom_dataloader, on-merge: backport to 1.3.x, optional tests, internet tests, cuda optional tests | **URL:** https://github.com/scverse/scvi-tools/pull/3426
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 8 | **Created:** 2025-07-20 | **Labels:** autotune, hub, cuda tests, private tests, custom_dataloader, on-merge: backport to 1.3.x, optional tests, internet tests, cuda optional tests | **URL:** https://github.com/scverse/scvi-tools/pull/3426
 
 **@ori-kron-wis:** close https://github.com/scverse/scvi-tools/issues/2281
 
 **@ori-kron-wis:** Also close https://github.com/scverse/scvi-tools/issues/3179
 
 Consider pinning it to 0.4.35 always - not recommended as many packages since upgraded
+
+**@justjhong on `src/scvi/distributions/__init__.py`:** have you checked if you can use existing lazy loading libraries (eg lazy-loader) which can reduce the overhead of these init files?
+
+**@justjhong on `src/scvi/distributions/_negative_binomial.py`:** same here it would be nice if you avoid putting all jax code into blocks as it removes git blame history as well. (of course if theres no better solution i agree this is a working solution)
+
+**@justjhong on `src/scvi/external/mrvi_torch/_components.py`:** should this be in this PR?
+
+**@justjhong (review, commented):** some high level comments, im sure you have considered this but is there any way to lazy load or is the way our code structured prohibit this?
+
+side note: i think the git pr should be merging into the mrvitorch impl pr since the changes are showing up here.
+
+**@ori-kron-wis on `src/scvi/distributions/__init__.py`:** I couldn't find a way around it so far, especially with JAX constraints now. I suggest continuing and have this in another PR, regardless of JAX.
+
+**@ori-kron-wis on `src/scvi/distributions/_negative_binomial.py`:** The idea with all of those additions is to check jax and its dependencies are installed, as this PR is all about making it optional. Once we will remove JAX , we will remove those things as well, without the need to consider lazy-load as well
 
 ## #3519: Backport PR #3517 on branch 1.3.x (docs: automated update of tutorials)
 **PR:** #3519 | **Last activity:** 2025-12-10T11:30:49Z
@@ -3831,9 +4486,17 @@ close https://github.com/scverse/scvi-tools/issues/3020
 
 ## #3039: feat: MULTIVI Mudata Minification
 **PR:** #3039 | **Last activity:** 2025-12-10T10:30:48Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2024-11-12 | **Labels:** multivi, on-merge: backport to 1.3.x, draft | **URL:** https://github.com/scverse/scvi-tools/pull/3039
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 6 | **Created:** 2024-11-12 | **Labels:** multivi, on-merge: backport to 1.3.x, draft | **URL:** https://github.com/scverse/scvi-tools/pull/3039
 
 multivi & totalvi minification on mudata
+
+**@canergen on `src/scvi/model/_multivi.py`:** Why removed?
+
+**@ori-kron-wis on `src/scvi/model/_multivi.py`:** didnt see it used anywhere, but got it back now.
+
+**@canergen on `CHANGELOG.md`:** This should not be backported to the 1.2 branch and to any releases. It shouldn't be part of this commit.
+
+**@ori-kron-wis on `CHANGELOG.md`:** will need to update the changlog
 
 **@ori-kron-wis:** This branch is still waiting for logic fix for multivi
 
@@ -3903,7 +4566,7 @@ Backport PR #3304: refactor: implement MrVI in PyTorch
 
 ## #3304: refactor: implement MrVI in PyTorch
 **PR:** #3304 | **Last activity:** 2025-12-02T09:30:25Z
-**State:** merged | **Author:** @lordy5 | **Comments:** 2 | **Created:** 2025-05-02 | **Labels:** custom_dataloader, on-merge: backport to 1.3.x, optional tests | **URL:** https://github.com/scverse/scvi-tools/pull/3304
+**State:** merged | **Author:** @lordy5 | **Comments:** 29 | **Created:** 2025-05-02 | **Labels:** custom_dataloader, on-merge: backport to 1.3.x, optional tests | **URL:** https://github.com/scverse/scvi-tools/pull/3304
 
 Currently finished first rough implementation in torch, but need to make a lot of fixes and debug still.
 
@@ -3912,6 +4575,69 @@ Added a duplication of old mrVI Jax version for reference/transition period unti
 Added changelog, mrVi test will run from now on (needed to put their label)
 
 **@ori-kron-wis:** close also https://github.com/scverse/scvi-tools/issues/2349
+
+**@PierreBoyeau on `src/scvi/external/mrvi/_model.py`:** - typo in the warning.
+- the same message should be present in the class docstring somehow.
+- "This will be removed" -> "This class will still be usable, but will migrate to `external` models, and won't be as actively maintained as the PyTorch implementation." could make it clear where we stand with (Jax) MrVI
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_model.py`:** `TorchMRVI` could sound confusing if one simply wants to use MrVI and is not aware of our backend issues.
+What I mean is that a regular user might be more naturally inclined to use `MRVI` than `TorchMRVI`.
+An idea could be to rename:
+- `MRVI` to `JaxMRVI`
+- `TorchMRVI` to `MRVI`.
+
+What do you think? If we go this route, a warning needs to be added to current `MRVI` to make clear the behavior of the model might not be exactly the same.
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_model.py`:** `MRVI` sounds more natural to use if one wants to use MrVI than `TorchMRVI`.
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_model.py`:** This applies to Jax modules, here, we should probably inherit from `BaseModelClass`
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_model.py`:** typo
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_module.py`:** There is a bug here. The original implementation in Jax initializes original sample embeddings from a Normal(0, 0.1^2)
+Here, the current implementation adds noise to the embeddings, which does not align with the original implementation.
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_module.py`:** It seems like `_weight` could permit to initialize the sample fashion in the same fashion as in the Jax implementation
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_module.py`:** Alternatively, replace embedding with `nn.Parameter`, which makes initialization easier.
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_module.py`:** LGTM
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_components.py`:** comments can be cleaned
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_components.py`:** could remove comments
+
+**@PierreBoyeau (review, changes requested):** The PR looks great. Please find a few comments, regarding minor/aesthetics details, except for a significant bug I found in one of the encoders. Before I dig any deeper in the code, now is a good time to check if TorchMRVI can reproduce the sample stratifications in monocytes
+
+**@ori-kron-wis on `src/scvi/external/mrvi_torch/_model.py`:** Its a good question and we actually had this way before, but decided to change back to the current situation just for users backcompatibility between versions (i.e MRVI is still JAX and they will be able to load their previous models naturally, scripts will run and so on). Hopefully those warnings will be enough for this transition period.
+
+**@ori-kron-wis on `src/scvi/external/mrvi_torch/_module.py`:** Seems to me to just remove this code block, as init.normal_(self.embedding.weight, std=0.1) exists after init of the embedding, like in jax, and like in other encoders/decoder. This is the only encoder the noise is added afterwards as well.
+
+**@PierreBoyeau on `src/scvi/external/mrvi_torch/_module.py`:** Sounds good!
+
+**@justjhong on `src/scvi/dataloaders/_custom_dataloders.py`:** dataloaders is spelled incorrectly in filename
+
+**@justjhong on `src/scvi/dataloaders/_custom_dataloders.py`:** looks like a job for a separate pr but why is this function being hardcoded? It seems really bad for maintenance
+
+**@justjhong on `src/scvi/external/mrvi_torch/_components.py`:** remove if unused
+
+**@justjhong on `src/scvi/external/mrvi_torch/_components.py`:** why do you need this?
+
+**@justjhong on `src/scvi/external/mrvi_torch/_components.py`:** why do you need to explicitly call train here and below?
+
+**@justjhong on `src/scvi/external/mrvi_torch/_components.py`:** add comment of dimensions for kv as well
+
+**@justjhong on `src/scvi/external/mrvi_torch/_components.py`:** would be helpful to move over the docstrings from the old components file where applicable
+
+**@justjhong (review, commented):** amazing work! this is a huge task so thanks for doing it so carefully. I just left a few comments for readability and style but as far as I could tell the code looks equivalent to the jax implementation
+
+**@ori-kron-wis on `src/scvi/external/mrvi_torch/_model.py`:** we decided to move on with a backend parameter ("jax" or "torch") to the MRVI class
+
+**@ori-kron-wis on `src/scvi/dataloaders/_custom_dataloders.py`:** yes, we use hard-coded registry to support the custom dataloaders. I agree we need to reconsider in a later PR (not only for mRVI but more generally)
+
+**@ori-kron-wis on `src/scvi/external/mrvi_torch/_components.py`:** just a legacy from the jax implementation, i suppose. we still need this wrapper to pass the activation
+
+**@ori-kron-wis on `src/scvi/external/mrvi_torch/_components.py`:** no need i suppose
 
 ## #3496: Backport PR #3495 on branch 1.3.x (update CytoVI docstrings/ fix RTD rendering issues)
 **PR:** #3496 | **Last activity:** 2025-12-02T06:30:26Z
@@ -4017,7 +4743,7 @@ Backport PR #3477: feat: Fix scarches surgery in SysVI
 
 ## #3466: Fix scarches surgery in SysVI
 **PR:** #3466 | **Last activity:** 2025-11-17T14:00:42Z
-**State:** merged | **Author:** @Hrovatin | **Comments:** 8 | **Created:** 2025-08-15 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3466
+**State:** merged | **Author:** @Hrovatin | **Comments:** 9 | **Created:** 2025-08-15 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3466
 
 Changes to scarches implementation from @ori-kron-wis in https://github.com/scverse/scvi-tools/pull/3448
 Not yet tested on real data.
@@ -4031,6 +4757,8 @@ beside that looks good. also tutorial. is there anything else missing? or we goo
 Changing it to a method parameter defeats its purpose. I would strongly push for having it as a class param as this is the only way I could find to message the user that model can not be used with batch surgery (raise error automatically). But if you have another suggestion on how to achieve this feel free to adjust.
 
 EDIT: I guess another option would be to add a validator hook to that scarches function that I can override in SysVI if that fits better
+
+**@Hrovatin on `src/scvi/model/base/_archesmixin.py`:** Should be turned back to class attribute. This is nothing that the user should choose - the purpose is to automatically raise an error
 
 **@ori-kron-wis:** > @ori-kron-wis The purpose of the class attribute for preventing batch surgery in SysVI is that we want to disable surgery on batch whenever SysVI is used, as discussed [here](https://github.com/scverse/scvi-tools/pull/3448#discussion_r2264607523) with @canergen. Changing it to a method parameter defeats its purpose. I would strongly push for having it as a class param as this is the only way I could find to message the user that model can not be used with batch surgery (raise error automatically). But if you have another suggestion on how to achieve this feel free to adjust.
 >
@@ -4094,7 +4822,13 @@ Backport PR #3456: feat: CytoVI
 
 ## #3456: feat: CytoVI
 **PR:** #3456 | **Last activity:** 2025-11-16T09:00:35Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 4 | **Created:** 2025-08-04 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3456
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 8 | **Created:** 2025-08-04 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3456
+
+**@canergen on `src/scvi/external/cytovi/_utils.py`:** I don’t like this. Let’s make it a bigger discussion whether we want NN functions in the code base.
+
+**@canergen (review, changes requested):** Remove read/write functions from here and plotting code. Happy to discuss PyNNDescent use but then it should first be in base model and then we can add missing pieces here. Not convinced yet though. The mask layer in transformations is a bad idea, why not use code similar to totalVI here or at least a sparse matrix with 0 and 1.
+
+**@ori-kron-wis on `src/scvi/external/cytovi/_utils.py`:** @florianingelfinger I think we missed it here, didnt we say pynndescent should be mandatory now?
 
 **@ori-kron-wis:** > Remove read/write functions from here and plotting code. Happy to discuss PyNNDescent use but then it should first be in base model and then we can add missing pieces here. Not convinced yet though. The mask layer in transformations is a bad idea, why not use code similar to totalVI here or at least a sparse matrix with 0 and 1.
 
@@ -4106,11 +4840,13 @@ Plotting functions should be specific for CytoVI , and applied in the tutorial (
 
 Of course, like in the case of destvi and totalvi, those reproducibility repos codes tend to break with time as no-one manages them and knows how to fix them, so we need to carefully think this.
 
+**@florianingelfinger on `src/scvi/external/cytovi/_utils.py`:** It has anyway been a tutorial dependency and we said that we can keep it as an optional dependencies in case the users wanna utilize the NN functionalities.
+
 **@florianingelfinger:** We can move the read/write and plotting discussion offline. I think they are crucial to facilitate low entry hurdles for cytometry users for which there are much less established options available compared to other modalities.
 
 ## #3448: feat: adding scarches/classifier support in sysvi
 **PR:** #3448 | **Last activity:** 2025-11-16T08:30:27Z
-**State:** closed | **Author:** @ori-kron-wis | **Comments:** 11 | **Created:** 2025-07-31 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3448
+**State:** closed | **Author:** @ori-kron-wis | **Comments:** 30 | **Created:** 2025-07-31 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3448
 
 **@ori-kron-wis:** Currently not available.
 @Hrovatin, there is a demand for it. Do you want to contribute?
@@ -4145,6 +4881,53 @@ But I see the value of adding a tutorial on how to do (KNN) classification on to
 **@ori-kron-wis:** I already put the scarches, you will just need to validate from your end.
 
 **@Hrovatin:** Thank you @ori-kron-wis , will start testing it and adding to the tutorial now over the weekend.
+
+**@Hrovatin on `tests/external/sysvi/test_sysvi.py`:** Why are only the first 10 genes compared? - If the test is to assure that the prepare query anndata works, I would also shuffle columns in the mock data before, as now they are both created equal anyways.
+
+**@Hrovatin on `tests/external/sysvi/test_sysvi.py`:** I think this needs adding additional categories to properly test scarches
+
+**@Hrovatin on `tests/external/sysvi/test_sysvi.py`:** The `pesudoinput_data_indices` param could be skipped here. In general, I should have made better tests than just the runthroughs.
+
+**@Hrovatin (review, changes requested):** There are some changes I need to make to tests
+
+**@canergen on `tests/external/sysvi/test_sysvi.py`:** What does it mean to redefine pseudoinput for the Arches model. It should still be the old pseudoinputs after training. Is this done properly right now?
+
+**@canergen on `tests/external/sysvi/test_sysvi.py`:** The pseudoinput should also be frozen during query mapping, except the user requests to unfreeze them.
+
+**@Hrovatin on `tests/external/sysvi/test_sysvi.py`:** What should be frozen are parameters in the VampPrior - as these inputs are used to initialise them. E.g. https://github.com/scverse/scvi-tools/blob/19f8bd5b2552a9bd94eb11041ae5221705299705/src/scvi/external/sysvi/_priors.py#L115
+So we would need to add logic that if using in scarches mode they stay frozen. Need to inspect a bit more how the current scarches implementation wokrs to get this right.
+
+**@Hrovatin on `tests/external/sysvi/test_sysvi.py`:** @canergen I assume we want to enable surgery both on batch and the other categorical covariates right? Since then I need to make sure this is properly handled in the cycle.
+
+**@canergen on `tests/external/sysvi/test_sysvi.py`:** While originally we only supported batch, both are now supported. I think especially for the setup in sysVI, where batch is the system and covariate is the actual sample (right?), not allowing Arches for system would be fine IMO but we need to have covariates working.
+
+**@canergen on `tests/external/sysvi/test_sysvi.py`:** By default they are supposed to be frozen (if shape stays the same it’s frozen for Arches). However, I’m afraid here that if pseudoinput for query has a different shape than reference it will train it. So likely we need to check it and throw an error if setting pseudoinput during query mapping.
+
+**@canergen on `tests/external/sysvi/test_sysvi.py`:** Sorry for not being more helpful with actually checking things (I’m on my phone), while Ori is working again tomorrow and likely can help with getting it working. ;)
+
+**@Hrovatin on `tests/external/sysvi/test_sysvi.py`:** ok then I will firs enable it on covariates (and keep system/batch fixed) - as I think that enabling it on system would require extra benchmarking on data, which I currently can not do
+
+**@Hrovatin on `tests/external/sysvi/test_sysvi.py`:** no worries and thanks for the info - I will go through scarches code to confirm how it would affect sysvi
+
+**@ori-kron-wis on `tests/external/sysvi/test_sysvi.py`:** @Hrovatin Feel free to suggest a fix and merge it into this PR
+
+**@Hrovatin on `tests/external/sysvi/test_sysvi.py`:** @ori-kron-wis is it possible that the test you added for scarches setup may be wrong? Because I am looking at [scarches tutorial](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/multimodal/scarches_scvi_tools.html) and it suggests that the new model should be made directly with the load method (copied below) - which should then automatically take care of the created parameters.
+```
+scvi_query = scvi.model.SCVI.load_query_data(
+    pancreas_query,
+    scvi_ref,
+)
+```
+
+**@Hrovatin on `tests/external/sysvi/test_sysvi.py`:** @ori-kron-wis since we want to disable scarches if number of batches (here systems) is different (allowing only surgery on covariates), we would need to adapt either prepare or load data method - should I create a new scarches child class that adapts one of the two methods accordingly?
+
+**@ori-kron-wis on `tests/external/sysvi/test_sysvi.py`:** I havent tested anything, just added the mixin into your model and made a default test, which might be expended.
+Feel free to change anything that seems right for you (you're the owner of this model)
+
+**@ori-kron-wis on `tests/external/sysvi/test_sysvi.py`:** Better to save code, can it be part of the current implementation with some flag or internal check?
+If its too complex and no other choice then you should inherit it / implement the relevant function as part of your model.
+
+**@Hrovatin on `tests/external/sysvi/test_sysvi.py`:** @ori-kron-wis for some reason I can not close comment threads - is this some kind of scvi-tools repo setting?
 
 **@Hrovatin:** @ori-kron-wis  please have a look at https://github.com/scverse/scvi-tools/pull/3466
 
@@ -4310,9 +5093,22 @@ Backport PR #3414: [pre-commit.ci] pre-commit autoupdate
 
 ## #3362: feat: adding annCollection dataloader
 **PR:** #3362 | **Last activity:** 2025-10-04T15:30:09Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2025-05-29 | **Labels:** Still Needs Manual Backport, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3362
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 6 | **Created:** 2025-05-29 | **Labels:** Still Needs Manual Backport, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3362
 
 based on https://github.com/scverse/scvi-tools/issues/3018
+
+**@canergen on `docs/user_guide/use_case/custom_dataloaders.md`:** In addition to those we also added a {class}`scvi.dataloaders.CollectionAdapter` dataloader which is an scvi-tools wrapper for AnnData's AnnCollection.
+This API is intended for training models on a set of AnnData files. AnnCollection creates a layy concatenation of disk-backed files. The dataloader jointly subsets these datasets along the observations axis.
+This wrapper mimics the standard API, soo in practice, users wrap their collection objects then proceed with the scvi-tools workflow as normal and not using the custom dataloader workflow.
+Note that in order to use it count data should be in sparse form (sparse.csr_matrix).
+
+**@canergen on `src/scvi/dataloaders/_anncollection.py`:** Do we need those functions. In case, it might get called we should improve the error message but likely we can just remove it.
+
+**@canergen on `src/scvi/dataloaders/_anncollection.py`:** Improve error message. Would this fail? I could see calling it on a subset of the data and it shouldn't fail then?
+
+**@canergen on `src/scvi/dataloaders/_anncollection.py`:** Fails if the collection contains less than 64 cells?
+
+**@ori-kron-wis on `src/scvi/dataloaders/_anncollection.py`:** just a legacy from the implementation that we took it from. lets remove.
 
 **@canergen:** There seems to be more legacy. Can your remove all and tag me? I can have another look then.
 
@@ -4567,9 +5363,85 @@ Backport PR #3346: docs: update docs with correct tutorial refs
 
 ## #3172: feat: nicheVI release
 **PR:** #3172 | **Last activity:** 2025-08-20T16:30:28Z
-**State:** merged | **Author:** @LevyNat | **Comments:** 1 | **Created:** 2025-02-03 | **Labels:** Still Needs Manual Backport, on-merge: backport to 1.3.x, draft | **URL:** https://github.com/scverse/scvi-tools/pull/3172
+**State:** merged | **Author:** @LevyNat | **Comments:** 35 | **Created:** 2025-02-03 | **Labels:** Still Needs Manual Backport, on-merge: backport to 1.3.x, draft | **URL:** https://github.com/scverse/scvi-tools/pull/3172
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_base_module.py`:** please move this class into the _module.py file.
+We cant have 2 base_module files in the codebase, very confusing.
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_base_module.py`:** you meant "NicheLossOutput" (its the same as original now), please make sure
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_components.py`:** can the z.ndim be different than 2 or 3? in such case what will be the value of qkv?
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_base_module.py`:** seems to me those next lines can be simply re-written in a for loop of different attributes, all is going under same thing (but I guess we need to fix also original class)
+
+**@ori-kron-wis on `src/scvi/external/__init__.py`:** a tutorial and model description doc are missing
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_module.py`:** see the warning of this function: "The `one_hot` function is deprecated in v1.2 and will be removed in v1.3. "
+"Please use the `one_hot` function in PyTorch instead."
+please use nn.functional.one_hot and verify
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_base_module.py`:** please go over docstrigs again, seems some things are missing , e.g "niche_loss"
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_base_module.py`:** I understand you were mimicing what happens in original base_module LossOutput, but here I suggest 2 options in order for better understanding:
+- make the nichVI LossOutput inherit the original base module LossOutput and add the very small changes or composition_loss and niche_loss during init
+- other option: create a regular __init__ function for this class and use just what is needed
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_module.py`:** remove comments of what is not relevant
+
+**@ori-kron-wis on `src/scvi/external/__init__.py`:** There is a convention that we start a class name with Capital letter
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_model.py`:** minification had some changes lately, did you follow up with all updates? is there something different with nichevi minification or inheriting from BaseMinifiedModeModelClass is enough?
+for example get_minified_adata_scrna has a different sign now
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_model.py`:** to make sure minificaiton is working create a test of it
+
+**@ori-kron-wis on `tests/external/nichevi/test_nichevi.py`:** add a minification test, if indeed relevant to nichevi: do a minified model and check if several downstream analysis function produce the same results as the pre-minified model (see similar tests for reference)
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_vaemixin.py`:** once again this file name is not good as it is the same as base vaemixin for the general purpose. but you will probably remove it.
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_vaemixin.py`:** I think that making a mixin from those 2 functions is not relevant and they can already be part of the nichVI model.
+This is unless you are certain more models will use this mixin? even then, I wouldn't start from creating a mixin from 2 functions, it is just too specific for nicheVI right now.
+
+**@ori-kron-wis on `src/scvi/external/nichevi/_rnamixin.py`:** Once again, please remove this file and have this single function directly as part of the nicheVI model (see other models as reference), Rename (Remove) this file
+
+**@ori-kron-wis on `src/scvi/external/nichevi/differential_expression/__init__.py`:** remvoe comment that are not relevant
+
+**@ori-kron-wis on `src/scvi/external/nichevi/differential_expression/_classifier.py`:** give a better more specific name for this file
+
+**@ori-kron-wis on `src/scvi/external/nichevi/differential_expression/_dataclass.py`:** give better name for file
+
+**@ori-kron-wis on `src/scvi/external/nichevi/differential_expression/_de_utils.py`:** what is under comment please remove. we do not merge such things to main
+
+**@ori-kron-wis on `src/scvi/external/nichevi/differential_expression/_de_core.py`:** this is also already exists for the main use of DE. why do we need to have this duplications?
+Can't it be inherited from updated DE , init and adjusted locally with those parameters? will save alot of code.
+
+**@ori-kron-wis on `tests/external/nichevi/test_nichevi.py`:** except for the fact that it is actually running, dont you also want to verify the pytest to give us good results?
+
+**@ori-kron-wis on `tests/external/nichevi/test_nichevi.py`:** I would add to check if model is trained and several down stream analysis function you should use
 
 **@ori-kron-wis:** please also add changelog record, links to tutorials and model descriptions (see other models that were merged recently like resolvi, sysvi)
+
+**@LevyNat on `src/scvi/external/nichevi/differential_expression/_de_core.py`:** Too many changes due to the neighbor computations, renamed it to _niche_de_core
+
+**@LevyNat on `src/scvi/external/__init__.py`:** as soon as I finish running experiments, because you can't load models if you changed the class
+
+**@LevyNat on `src/scvi/external/nichevi/_rnamixin.py`:** so I remove  NicheRNASeqMixin and NicheVAEMixin, I copy the fcts and instead inherit from RNASeqMixin and VAEMixin
+
+**@LevyNat on `tests/external/nichevi/test_nichevi.py`:** model._check_if_trained(warn=False) ?
+
+**@LevyNat on `tests/external/nichevi/test_nichevi.py`:** e.g. I take tests/model/test_models_with_minified_data.py, rewrite prep_model, then test_scvi_with_minified_adata_save_then_load, test_scvi_with_minified_adata_get_latent_representation
+
+**@canergen on `docs/user_guide/models/nichevi.md`:** Typo nicheVI.
+
+**@canergen on `docs/user_guide/models/nichevi.md`:** Not scRNAseq. All technologies are not sequencing based.
+
+**@canergen on `docs/user_guide/models/nichevi.md`:** Introduce T beforehand as the number of cell-types.
+
+**@canergen on `src/scvi/external/__init__.py`:** At least first letter large for classes. Just call the class NICHEVI - will be more user friendly.
+
+**@canergen on `src/scvi/external/__init__.py`:** Duplicate.
+
+**@canergen on `src/scvi/external/__init__.py`:** You need to release a reproducibility repo with the version of code that you used and use this for revision. See resolVI archive in my GitHub.
 
 ## #3346: docs: update docs with correct tutorial refs
 **PR:** #3346 | **Last activity:** 2025-08-20T15:01:03Z
@@ -4624,7 +5496,13 @@ adding the remark suggested in [https://github.com/Lightning-AI/pytorc…h-light
 
 ## #3237: feat: supervised module class to be used with semisupervised models.
 **PR:** #3237 | **Last activity:** 2025-08-18T08:32:24Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2025-03-04 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3237
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 5 | **Created:** 2025-03-04 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3237
+
+**@canergen on `docs/user_guide/models/resolvi.md`:** Why?
+
+**@canergen (review, approved):** Make sure scANVI fix tutorial yields the same results. Quite sensitive to bugs.
+
+**@ori-kron-wis on `docs/user_guide/models/resolvi.md`:** :-) , it cant link to the tutorial otherwise
 
 **@ori-kron-wis:** we validated this by comparing the before & after tutorials results of methylanvi and scanvi
 @ethanweinberger FYI
@@ -4635,10 +5513,23 @@ Perfect. Thank you for pushing this forward :)!
 
 ## #3164: feat: SemiSupervised Training Mixin class
 **PR:** #3164 | **Last activity:** 2025-08-18T08:32:13Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2025-01-27 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3164
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 6 | **Created:** 2025-01-27 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3164
 
 use what @ethanweinberger  already made as a basis to semisupervisedtrainingmixin
 We would like to add more functionality to it (e.g: interoperability)
+
+**@canergen on `src/scvi/model/base/_training_mixin.py`:** have you tried it? does it take forever?
+
+**@ori-kron-wis on `src/scvi/model/base/_training_mixin.py`:** I guess I need to also check for large dataset (well have this in a tutorial).
+IG works fast , shap is dependent on the number of classes
+
+**@canergen on `src/scvi/model/base/_training_mixin.py`:** Yes shap is known to be slow. I'm not sure we need it. IG is fine. Is this function argument exposed?
+
+**@canergen on `src/scvi/model/base/_training_mixin.py`:** Can we link to https://www.nature.com/articles/s41592-024-02511-3 for why this is useful and validation of this approach?
+
+**@canergen (review, approved):** I'm not sure that we need shap. If it works, we can keep it. Add citation of https://www.nature.com/articles/s41592-024-02511-3.
+
+**@ori-kron-wis on `src/scvi/model/base/_training_mixin.py`:** yes
 
 ## #3067: fix: CUDA Minified Tests following refactoring
 **PR:** #3067 | **Last activity:** 2025-08-18T08:31:46Z
@@ -4660,11 +5551,15 @@ Backport PR #3336: add missing descriptions and tags to new tutorials
 
 ## #2939: In 1.1.5 autotune change in RunConfig parameter from local_dir to storage_path
 **PR:** #2939 | **Last activity:** 2025-08-18T08:28:43Z
-**State:** closed | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2024-08-18 | **URL:** https://github.com/scverse/scvi-tools/pull/2939
+**State:** closed | **Author:** @ori-kron-wis | **Comments:** 3 | **Created:** 2024-08-18 | **URL:** https://github.com/scverse/scvi-tools/pull/2939
 
 close https://github.com/scverse/scvi-tools/issues/2908
 
 This patch fix is intended to be released as 1.1.6 to meet users request
+
+**@canergen on `docs/release_notes/index.md`:** Remote the not part of 1.2.x please. CHANGELOG is a chronological document and shouldn't refer forward.
+
+**@canergen on `docs/release_notes/index.md`:** Please add a reference to the issue so it becomes clear why we did it.
 
 **@canergen:** Have you removed the file changes?
 
@@ -4680,9 +5575,13 @@ added the extra_payload_autotune flag for the vae, scanvae modules so that only 
 
 ## #3294: feat: Linear SCVI adata minifiction
 **PR:** #3294 | **Last activity:** 2025-08-18T08:25:15Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2025-04-23 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3294
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2025-04-23 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3294
 
 added adata minification for linear scvi
+
+**@canergen on `src/scvi/model/_linear_scvi.py`:** maybe ldvae_latent_qzm? Not critical though.
+
+**@ori-kron-wis on `src/scvi/model/_linear_scvi.py`:** correct
 
 ## #3255: fix: sysVI get normalzied expression fix
 **PR:** #3255 | **Last activity:** 2025-08-18T08:24:22Z
@@ -4698,7 +5597,7 @@ added adata minification for linear scvi
 
 ## #3159: fix: nan failure during training
 **PR:** #3159 | **Last activity:** 2025-08-18T08:22:27Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2025-01-21 | **Labels:** Still Needs Manual Backport | **URL:** https://github.com/scverse/scvi-tools/pull/3159
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 10 | **Created:** 2025-01-21 | **Labels:** Still Needs Manual Backport | **URL:** https://github.com/scverse/scvi-tools/pull/3159
 
 Using SaveCheckpoint callback with on_exception can save the best optimal model up to the point it crashed due to Nan's in loss or gradients.
 See an example (using Michal's data):
@@ -4742,6 +5641,32 @@ lvae.train(batch_size=1024,n_samples_per_label=100, max_epochs=500, gradient_cli
 
 #WE now want to laod this model and continue to train it
 model = SCANVI.load( …
+
+**@canergen on `src/scvi/train/_callbacks.py`:** what's this \033[31m string?
+
+**@canergen on `src/scvi/train/_callbacks.py`:** what's this comment here?
+
+**@canergen on `src/scvi/train/_callbacks.py`:** can we refine the printing here instead of two prints statements.
+
+**@canergen on `src/scvi/train/_trainer.py`:** does it do anything?
+
+**@canergen on `tests/train/test_callbacks.py`:** does this give a NaN?
+
+**@ori-kron-wis on `src/scvi/train/_callbacks.py`:** it prints the reason in red to screen
+
+**@ori-kron-wis on `src/scvi/train/_callbacks.py`:** you tell me :-). it came from resolvi merge
+
+**@ori-kron-wis on `src/scvi/train/_callbacks.py`:** we can do it in one line of course.
+
+**@ori-kron-wis on `src/scvi/train/_trainer.py`:** its working, but does it help in avoiding gradients nan exception? in my test case, no.
+it just changed the epoch it failed. Basically, its a common practice to use it when such a thing happens.
+
+But, we can still use it via the trainer kwargs and not explicitly with the train function signature. Ill revert.
+
+See velovi model, its part of it.
+
+**@ori-kron-wis on `tests/train/test_callbacks.py`:** of course not. its a placeholder for now.
+I was hoping that we could come up with a unit test data that causes the on exception to work in a pytest env. If we do we can use it here and check we get what we expect.
 
 ## #3262: feat: early stopping with kl warm up wait steps
 **PR:** #3262 | **Last activity:** 2025-08-18T08:21:59Z
@@ -4904,7 +5829,109 @@ Update index_use_cases.md
 
 ## #2932: feat(dataloaders): Custom dataloader registry support
 **PR:** #2932 | **Last activity:** 2025-08-11T13:30:50Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 18 | **Created:** 2024-08-07 | **Labels:** custom_dataloader, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/2932
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 69 | **Created:** 2024-08-07 | **Labels:** custom_dataloader, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/2932
+
+**@canergen on `.github/workflows/test_linux.yml`:** what's this?
+
+**@canergen on `src/scvi/model/_scanvi.py`:** We should include the case that CAT_COVS_KEY is in registry.
+
+**@canergen on `src/scvi/model/_scanvi.py`:** Can you create a seperate PR and merge it that changes the if statement to use_observed_lib_size=False (see vae code).
+
+**@canergen on `src/scvi/model/_scanvi.py`:** Is it supported to have both adata and registry?
+
+**@canergen on `src/scvi/model/_scvi.py`:** Wouldn't this also work if adata exists?
+
+**@canergen on `src/scvi/model/_scvi.py`:** I don't think we need the if statement.
+
+**@canergen on `src/scvi/model/_scvi.py`:** See above, change this check. For customdataloader we should assert that it's not computing library_log_means and vars this is not supported. Currently it would give an error if use_observed_lib_size=False
+
+**@canergen on `src/scvi/model/_scvi.py`:** This should be in base or somewhere else. It doesn't make sense in scVI.
+
+**@canergen on `src/scvi/model/_scvi.py`:** This needs to be defined for each model. Can we reduce the amount of duplicate code by adding something similar to setup_anndata?
+
+**@canergen on `src/scvi/model/_scvi.py`:** It should be pytorch.DataLoader right? Martin has done typing for it in the current code.
+
+**@canergen on `src/scvi/model/_scvi.py`:** Not following?
+
+**@canergen on `src/scvi/model/base/_archesmixin.py`:** We need to verify for dataloaders that the gene names are matching.
+
+**@canergen on `src/scvi/model/base/_archesmixin.py`:** And the order.
+
+**@canergen on `src/scvi/model/base/_archesmixin.py`:** This check and the ones below are independent of datamodule or AnnData, right? Remove the indent.
+
+**@canergen on `src/scvi/model/base/_archesmixin.py`:** I am not sure why every code here is displayed as modified?
+
+**@canergen on `src/scvi/model/base/_archesmixin.py`:** Does this work with a dataloader?
+
+**@canergen on `src/scvi/model/base/_archesmixin.py`:** Why do we need adata here?
+
+**@canergen on `src/scvi/model/base/_base_model.py`:** I'm not following this one. What is the exception with GIMVI?
+
+**@canergen on `src/scvi/model/base/_base_model.py`:** what's this?
+
+**@canergen on `src/scvi/model/base/_base_model.py`:** where do we need transfer_fields? can we make it work with datamodule?
+
+**@canergen on `src/scvi/model/base/_base_model.py`:** do we need two get_var_names function?
+
+**@canergen on `src/scvi/model/base/_base_model.py`:** should be validated also for a dataloader.
+
+**@canergen on `src/scvi/model/base/_base_model.py`:** Does this work with dataloader. Documentation should be updated then.
+
+**@canergen on `src/scvi/model/base/_save_load.py`:** Is adata false here? Do we need a default value for registry?
+
+**@canergen on `src/scvi/model/base/_training_mixin.py`:** We should take here n_obs from summary stats to make it compatible with a dataloader.
+
+**@canergen on `src/scvi/model/base/_training_mixin.py`:** See below we don't need the if statement.
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** Remove this block, we don't need it.
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** no need to.
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** not getting it.
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** test this with a second model trained using dataloader
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** I like this part. It's nice.
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** does batch size have an effect. I thought it's defined by the datamodule?
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** just download 10 cells - see below with obs_value_filter.
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** I assume we need to make it.
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** We should have more tests that actually fail - using different genes without prepare_query_anndata and different batch categories. Assert that it fails.
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** checking that an AnnData model can be trained using datamodule. Do we really want it?
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** uses AnnData for inference?
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** check here that using different genes and different batches fails. You can take much fewer cells here, like 1000.
+
+**@canergen on `tests/dataloaders/test_custom_dataloader.py`:** What's this?
+
+**@canergen on `tests/model/test_scvi.py`:** Does model._make_data_loader exist for all models? We should then add the test to the other models as well?
+
+**@canergen on `tests/model/test_scvi.py`:** Is the dataloader sufficient to also setup the model and does setup_datamodule work for it?
+
+**@ori-kron-wis on `tests/dataloaders/test_custom_dataloader.py`:** yes it is redundant
+
+**@ori-kron-wis on `src/scvi/model/_scvi.py`:** I guess you mean using data fields. Let's remember this once everything works.
+
+**@canergen on `src/scvi/dataloaders/_custom_dataloders.py`:** does this create a requirement for lamindb? Can we make MappedCollectionDataModule a lazy load?
+
+**@canergen on `src/scvi/dataloaders/_custom_dataloders.py`:** expose "unlabeled"?
+
+**@canergen on `src/scvi/model/_scanvi.py`:** print warning.
+
+**@canergen on `src/scvi/model/_scvi.py`:** remove module_init_on_train. This is deprecated code with the new dataloader implementation.
+
+**@canergen on `src/scvi/model/_scvi.py`:** does this work for AnnData? Can we remove the if statement here?
+
+**@canergen on `src/scvi/model/base/_base_model.py`:** Remove if adata statement in 791.
+
+**@canergen on `src/scvi/model/base/_training_mixin.py`:** Should be fixed.
+
+**@ori-kron-wis on `src/scvi/model/base/_archesmixin.py`:** beucase of "if adata:" in line 108 all is indented.
 
 **@marianogabitto:** Hi Ori,
       I gave it a try to this branch. First, I needed to install psutil. Second, when I ran the tutorial, I found an error:
@@ -5110,7 +6137,7 @@ Backport PR #3305: [pre-commit.ci] pre-commit autoupdate
 
 ## #2695: Fixes to pyro model initialisation & sampling [WIP]
 **PR:** #2695 | **Last activity:** 2025-08-04T12:20:00Z
-**State:** open | **Author:** @vitkl | **Comments:** 7 | **Created:** 2024-04-07 | **Labels:** P1 | **URL:** https://github.com/scverse/scvi-tools/pull/2695
+**State:** open | **Author:** @vitkl | **Comments:** 9 | **Created:** 2024-04-07 | **Labels:** P1 | **URL:** https://github.com/scverse/scvi-tools/pull/2695
 
 Addresses https://github.com/scverse/scvi-tools/issues/2616
 
@@ -5147,6 +6174,10 @@ However, it looks like both `PyroJitGuideWarmup` and `PyroModelGuideWarmup` are 
 Pyro automatic variational distribution (Guide) doesn’t have any parameters until you do a first pass through the model and guide. When moving my code to multi-GPU training I found that this needs to be done in setup step of the Lightning workflow - otherwise parameters created on GPU don’t get moved between devices correctly - so it’s it would not in on_train_start. However, in the latest version the setup step also doesn’t work - as reported in the original issue. Moving the code to this function and calling it before using any Lightning workflow steps seems to solve the problem for cell2location and my other project.
 
 Actually the reason for the errors might be resolved if you call both the model and guide with one batch (it’s p …
+
+**@canergen on `scvi/model/base/_pyromixin.py`:** Better to do next(iter(dataloader)) to get a single batch. I think still having the class makes sense. Within this class, there can be a manual_start function.
+
+**@canergen on `scvi/model/base/_pyromixin.py`:** Why do those two classes exist in the first place?
 
 **@canergen:** Please split into two PRs. One for the warmup changes and one for the inference changes. This makes it easier to follow changes.
 
@@ -5248,7 +6279,13 @@ Backport PR #3246: feat: TQDM to transform_batch for loop & Update to WIS AWS S3
 
 ## #3246: feat: TQDM to transform_batch for loop & Update to WIS AWS S3
 **PR:** #3246 | **Last activity:** 2025-06-22T14:30:35Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2025-03-11 | **Labels:** private tests, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3246
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 3 | **Created:** 2025-03-11 | **Labels:** private tests, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3246
+
+**@canergen on `src/scvi/external/contrastivevi/_model.py`:** @ori-kron-wis: Michal was complaining about this, as it prints quite a lot. Revert?
+
+**@ori-kron-wis on `src/scvi/external/contrastivevi/_model.py`:** It was here at first place cause she didn't know how long it will take, however since it prints a lot, I added a follow up PR that has a silence parameter which is True by default.
+
+**@ori-kron-wis on `src/scvi/external/contrastivevi/_model.py`:** https://github.com/scverse/scvi-tools/pull/3280
 
 ## #3271: Backport PR #3264 on branch 1.3.x (fix: update IG for multimodal)
 **PR:** #3271 | **Last activity:** 2025-06-22T13:30:32Z
@@ -5391,7 +6428,7 @@ Backport PR #3066: feat(external): implement METHLYANVI for scBS-seq data
 
 ## #3066: feat(external): implement METHYLANVI for scBS-seq data
 **PR:** #3066 | **Last activity:** 2025-06-01T13:00:15Z
-**State:** merged | **Author:** @ethanweinberger | **Comments:** 7 | **Created:** 2024-12-03 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3066
+**State:** merged | **Author:** @ethanweinberger | **Comments:** 27 | **Created:** 2024-12-03 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3066
 
 @canergen per our email exchange, this PR adds my MethylANVI model implementation within `scvi.external.methylvi`.
 
@@ -5400,6 +6437,26 @@ Backport PR #3066: feat(external): implement METHLYANVI for scBS-seq data
 I'm removing the draft label here for now to get your feedback before proceeding further on this PR. In short, the goal of this PR is to add an implementation of the MethylANVI (MethylVI + scANVI) model from the MethylVI manuscript. Beyond just the code necessary for MethylANVI, I've also created some new mixin's to capture shared functions between models and avoid too much code duplication; if it's easier for you I'm happy to move these to separate PRs. I provide more details below:
 
 * MethylANVI model and module classes can be found in `scvi/external/methylvi`. To avoid duplicating shared functions between MethylVI/MethylANVI (e.g. `get_normalized_methylation`) I added a `BSSeqMixin` class in `external/methylvi/_base_components.py`. The `BSSeqMixin` essen …
+
+**@canergen on `src/scvi/external/methylvi/_base_components.py`:** Why this limitation? It's anyhow only accessible with MuData?
+
+**@canergen on `src/scvi/external/methylvi/_base_components.py`:** Other file?
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** Addition to scANVI? Makes sense.
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** Do we need it here? This was for backward compatibility in scANVI.
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** It should be always legit.
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** Do list comprehension?
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** I thought we deviced for MuData?
+
+**@canergen on `src/scvi/external/methylvi/_module.py`:** Put it in two files?
+
+**@canergen on `src/scvi/external/methylvi/_module.py`:** Methyl should be in here. Currently it's the acronym for scANVI
+
+**@canergen on `src/scvi/external/methylvi/_module.py`:** Could we inherit the classifier from scANVI?
 
 **@canergen:** I like the idea of a SemisupervisedMixin class especially as we'll add more semisupervised models soon'ish. Predict should best case be part of it. However, the input to the classifier is slightly different for both scANVI and methylANVI. I'm also thinking about whether we should also abstract the module code for semisupervised models.
 @ori-kron-wis can you also review this code? And provide your ideas on it?
@@ -5413,13 +6470,37 @@ It will have some code duplications for now until all other models will move als
 
 I also validated the scnavi changes here, and it looks the same as before.
 
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** Fixed
+
+**@ethanweinberger on `src/scvi/external/methylvi/_module.py`:** Done! The two modules can now be found in `_methylvi_module.py` and `_methylanvi_module.py`. For consistency I also split the two models into separate files (`_methylvi_model.py` and `_methylanvi_model.py`).
+
+**@ethanweinberger on `src/scvi/external/methylvi/_module.py`:** Thanks for the catch! Fixed.
+
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** What do you mean here? The `use_posterior_mean` parameter is already present in scANVI.
+
+**@ethanweinberger on `src/scvi/external/methylvi/_module.py`:** Ideally we would reuse the function from scANVI. Per @ori-kron-wis's comments I believe for now we should leave this as-is and clean it up in a subsequent PR with the SemisupervisedMixin.
+
+**@ethanweinberger on `src/scvi/external/methylvi/_base_components.py`:** Fair enough. I've removed this comment in the latest version.
+
 **@ethanweinberger:** Hi @canergen @ori-kron-wis. Happy new year! I just finished modifying this PR to address your comments (including reverting the previous changes to scANVI). Tests are currently failing, but the failures appear unrelated to this PR (the tests are related to general data loading functions).
 
 @canergen per your suggestion I added a `predict` function to the `SemisupervisedMixin` class. I tried to make the function flexible to handle different numbers of inputs without requiring too many changes in other classes (see my comments). Let me know what you think! I'd also be happy to add a corresponding semisupervised module mixin to this PR, or I can open another PR after to avoid putting too much in one PR.
 
+**@ethanweinberger on `src/scvi/model/base/_training_mixin.py`:** @canergen This line is the main change to allow the `predict` function to be reused across models with different numbers of "data inputs" (e.g. mc + cov for BS-seq vs just RNA counts for RNA-seq).
+
+It comes at the cost of requiring that a new field (`data_input_keys`) be specified in the module class, but this would enable more code re-use for semisupervised models.
+
 **@ori-kron-wis:** @ethanweinberger thanks!
 The fail tests are a result of scipy version update integration issue with anndata. I noticed them.
 https://github.com/scverse/anndata/issues/1811. Tests will fail until they will release their fix.
+
+**@ori-kron-wis on `src/scvi/model/base/_training_mixin.py`:** wouldn't something more generic such as:
+data_inputs = {key: inference_inputs[key] for key in inference_inputs.keys() if key not in ['batch_index', 'cont_covs', 'cat_covs']}
+will cover any model case in this mixin
+
+**@canergen on `src/scvi/external/methylvi/_methylanvi_module.py`:** I thought we wanted to have one global class for these functions?
+
+**@ori-kron-wis on `src/scvi/external/methylvi/_methylanvi_module.py`:** we will add it in another PR once this is merged
 
 **@ori-kron-wis:** @ethanweinberger, we are merging this branch. If you can add a tutorial on this/extension to the already existing tutorial, it will be awesome. Thanks!
 
@@ -5480,11 +6561,55 @@ Backport PR #3168: feat: scib-autotune
 
 ## #3168: feat: scib-autotune
 **PR:** #3168 | **Last activity:** 2025-05-28T14:00:51Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2025-01-28 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3168
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 21 | **Created:** 2025-01-28 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3168
 
 re open the scib-autotune branch
 see: https://github.com/scverse/scvi-tools/pull/2593
 https://github.com/scverse/scvi-tools/pull/2517
+
+**@canergen on `src/scvi/train/_callbacks.py`:** Needs to go into the CallBack. Don’t make it default.
+
+**@canergen on `src/scvi/train/_callbacks.py`:** Doesn’t need X. We should be able to run it on some custom indices. It’s otherwise to expensive quickly.
+
+**@ori-kron-wis on `src/scvi/train/_callbacks.py`:** This is just an initial draft. No need to review yet.
+
+**@canergen on `src/scvi/autotune/_experiment.py`:** Complete function documentation. What's num rows to select?
+
+**@canergen on `src/scvi/autotune/_experiment.py`:** I don't get this line?
+
+**@canergen on `src/scvi/autotune/_experiment.py`:** Does it return a single metric? How are different metrics executed?
+
+**@canergen on `src/scvi/autotune/_experiment.py`:** would be nice to change this directly in scib-metric. New argument for single metric.
+
+**@canergen on `src/scvi/autotune/_experiment.py`:** 100 should be to few. Should be 5k? Have you benchmarked it on real data
+
+**@canergen on `src/scvi/autotune/_experiment.py`:** What's the difference between metrics and metric?
+
+**@canergen on `src/scvi/autotune/_experiment.py`:** remove comment. fine like this.
+
+**@canergen on `src/scvi/train/_trainingplans.py`:** this can be very memory intensive.
+
+**@canergen on `src/scvi/train/_trainingplans.py`:** subsampling should be to the same cells in a ray tune run. Maybe expose the indices instead? It would also make it more flexible to e.g. set one single dataset as scib cells.
+
+**@ori-kron-wis on `src/scvi/autotune/_experiment.py`:** See what is the metric_name_cleaner dict in scib_metrics/benchmark/_core.py.
+The idea is that the user tells which metric to optimize the tuning by.
+It can be any metric in the scib-metrics list. Here Im just checking that the metric exists in the list and according to this decide which metrics to calculate (selecting the flags in BioConservation and BatchCorrection) and if we are to optimize and aggregated metric, than the whole vector will be turned on (this is the default of course).
+
+**@ori-kron-wis on `src/scvi/autotune/_experiment.py`:** no. but of course 100 is low, Ill change that, for tests purpose will keep it small.
+
+**@ori-kron-wis on `src/scvi/autotune/_experiment.py`:** its the number of random rows we want to perform the scib metric calculation based on
+
+**@ori-kron-wis on `src/scvi/autotune/_experiment.py`:** actually we dont have to even do that and just stick to the metric name
+
+**@ori-kron-wis on `src/scvi/autotune/_experiment.py`:** no difference. will change how its looks.
+
+**@ori-kron-wis on `src/scvi/train/_trainingplans.py`:** We dont really need X. Ill change that and Ill add the option to input specific indices
+
+**@ori-kron-wis on `src/scvi/autotune/_experiment.py`:** waiting with this for now
+
+**@ori-kron-wis on `src/scvi/train/_trainingplans.py`:** also remember that this while mechanism works only if we set to scib tune
+
+**@canergen (review, approved):** We should allow for custom indices to evaluate scib on (expose index argument and only  use random indices if it is None).
 
 ## #3218: Backport PR #3200 on branch 1.3.x (docs: Adding common use cases)
 **PR:** #3218 | **Last activity:** 2025-05-28T12:30:30Z
@@ -5494,7 +6619,40 @@ Backport PR #3200: docs: Adding common use cases
 
 ## #3200: docs: Adding common use cases
 **PR:** #3200 | **Last activity:** 2025-05-28T12:30:23Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2025-02-23 | **Labels:** Still Needs Manual Backport, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3200
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 15 | **Created:** 2025-02-23 | **Labels:** Still Needs Manual Backport, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3200
+
+**@canergen on `docs/user_guide/use_case/custom_dataloaders.md`:** able=enable
+RAM=memory
+
+**@canergen on `docs/user_guide/use_case/custom_dataloaders.md`:** would like = offer custom dataloaders (MappedCollection exists).
+also without dataloader data can be on disk but inefficient. We increase efficiency for data on disk and enable data on cloud storage
+
+**@canergen on `docs/faq.md`:** Add something to the callback description to say it requires extra scrutiny and folks should check when it failed (first few epochs=likely bad model).
+
+**@canergen on `docs/user_guide/use_case/custom_dataloaders.md`:** change:
+thus enable us to expand the sizes of dataset that we can train our models based on while not being limited by the amount of memory that we have -> which enables training on a group of AnnData datasets and allows training on datasets that are to large for the amount of memory.
+
+**@canergen on `docs/user_guide/use_case/downstream_analysis_tasks.md`:** Add citation to https://decoupler-py.readthedocs.io/en/latest/notebooks/bulk.html#Differential-expression-analysis.
+
+**@canergen on `docs/user_guide/use_case/downstream_analysis_tasks.md`:** add reference.
+
+**@canergen on `docs/user_guide/use_case/downstream_analysis_tasks.md`:** scvi-hub citation.
+
+**@canergen on `docs/user_guide/use_case/downstream_analysis_tasks.md`:** refer to class LDVAE.
+
+**@canergen on `docs/user_guide/use_case/downstream_analysis_tasks.md`:** citation.
+
+**@canergen on `docs/user_guide/use_case/downstream_analysis_tasks.md`:** cite MrVI
+
+**@canergen on `docs/user_guide/use_case/multi_gpu_training.md`:** can you explain the x-axis.
+
+**@canergen on `docs/user_guide/use_case/multi_gpu_training.md`:** we should likely fix this behavior in the near future and note it as a to-do (after custom dataloader).
+
+**@ori-kron-wis on `docs/user_guide/use_case/downstream_analysis_tasks.md`:** not sure how related here
+
+**@canergen on `docs/user_guide/use_case/downstream_analysis_tasks.md`:** Use cases of scVI DE are not totally obvious as pseudobulk performs better. The use cases in scVI-hub are still convincing (reference powered DE and DE without data access).
+
+**@ori-kron-wis on `docs/user_guide/use_case/downstream_analysis_tasks.md`:** will add in another PR
 
 ## #3217: Backport PR #3203 on branch 1.3.x (feat: Add generic support for Vamp and MoG prior)
 **PR:** #3217 | **Last activity:** 2025-05-27T19:30:11Z
@@ -5514,9 +6672,13 @@ Backport PR #3193: Support of dask arrays in AnnTorchDataset.
 
 ## #3193: Support of dask arrays in AnnTorchDataset.
 **PR:** #3193 | **Last activity:** 2025-05-27T17:00:27Z
-**State:** merged | **Author:** @LArnoldt | **Comments:** 0 | **Created:** 2025-02-18 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3193
+**State:** merged | **Author:** @LArnoldt | **Comments:** 2 | **Created:** 2025-02-18 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3193
 
 Dask Array Support has been added to AnnData in the recent years (see e.g. https://anndata.readthedocs.io/en/latest/tutorials/notebooks/anndata_dask_array.html). The commit adds dask array support for the AnnTorchDataset.
+
+**@canergen on `src/scvi/data/_anntorchdataset.py`:** Why do we compute for sparse data? Rest LGTM.
+
+**@LArnoldt on `src/scvi/data/_anntorchdataset.py`:** You are right. This is not needed. Also added dask to the requirements.
 
 ## #3215: Backport PR #3214 on branch 1.3.x (docs: general updates to docs and tests)
 **PR:** #3215 | **Last activity:** 2025-05-27T13:00:23Z
@@ -5591,7 +6753,7 @@ Backport PR #3189: fix: MrVI MixtureSameFamily log probability fixed
 
 ## #3189: fix: MrVI MixtureSameFamily log probability fixed
 **PR:** #3189 | **Last activity:** 2025-05-24T20:30:06Z
-**State:** merged | **Author:** @justjhong | **Comments:** 1 | **Created:** 2025-02-13 | **Labels:** optional tests | **URL:** https://github.com/scverse/scvi-tools/pull/3189
+**State:** merged | **Author:** @justjhong | **Comments:** 9 | **Created:** 2025-02-13 | **Labels:** optional tests | **URL:** https://github.com/scverse/scvi-tools/pull/3189
 
 Fixes https://github.com/scverse/scvi-tools/issues/3188.
 
@@ -5601,6 +6763,43 @@ Tested on tutorial: integration remains the same, differential abundance results
 
 CC @rastogiruchir
 
+**@PierreBoyeau on `src/scvi/external/mrvi/_module.py`:** snippet to double-check it works in `loss` (it works):
+
+```
+        pu = generative_outputs["pu"]
+
+        # approach 1: below is the reference implementation of the log_prob of the mixture distribution
+        log_pu = generative_outputs["pu"].log_prob(inference_outputs["u"])
+
+        # approach 2: manual computation of the log_prob of the mixture distribution
+        mixing_distribution = pu._mixing_distribution
+        component_distribution = pu._component_distribution
+        pk = mixing_distribution.probs
+        mus = component_distribution.base_dist.loc
+        stds = component_distribution.base_dist.scale
+
+        pu_k = dist.Normal(mus, stds)
+        log_pu_k = pu_k.log_prob(inference_outputs["u"][:, None, :]).sum(-1)
+        log_pk = jnp. …
+
+**@PierreBoyeau on `src/scvi/external/mrvi/_model.py`:** Add inline comments to clarify shapes
+
+**@PierreBoyeau (review, approved):** LGTM
+
+**@PierreBoyeau on `src/scvi/external/mrvi/_model.py`:** I would be more precise. "If true, each cell' sample-of-origin is discarded to compute aggregate posteriors."
+
+**@PierreBoyeau on `src/scvi/external/mrvi/_model.py`:** ```suggestion
+                sel_log_probs = log_probs_arr.log_probs.loc[{"sample": cov_samples}].values  # shape (n_cells, n_samples_in_group)
+```
+
+**@PierreBoyeau on `src/scvi/external/mrvi/_model.py`:** ```suggestion
+                    )  # virtually discards samples-of-origin from aggregate posteriors
+```
+
+**@PierreBoyeau on `src/scvi/external/mrvi/_model.py`:** If this is exact duplicate from above, should we create a private function to mask these out?
+
+**@PierreBoyeau (review, approved):** Looks good to me, see comments!
+
 **@PierreBoyeau:** Quick observations:
 
 - These changes do not seem to affect the performed analyses conducted in the paper. Here are the log ratios (COVID vs  healthy) from the **complete** Haniffa dataset, showing a similar behavior as in the MrVI manuscript.
@@ -5609,11 +6808,35 @@ CC @rastogiruchir
 
 ## #3195: feat: SysVI for cycle consistency loss and VampPrior.
 **PR:** #3195 | **Last activity:** 2025-05-24T09:30:06Z
-**State:** merged | **Author:** @canergen | **Comments:** 3 | **Created:** 2025-02-19 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3195
+**State:** merged | **Author:** @canergen | **Comments:** 5 | **Created:** 2025-02-19 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3195
 
 @Hrovatin @moinfar superseding #2421. I harmonized the code more to other scvi-tools models. I don't think it should change anything in terms of output but happy if you run a small test case once. This is ready to be merged otherwise and I'll go ahead and merge it next week.
 
 **@Hrovatin:** Thank you very much. I will re-run [the tutorial](https://github.com/Hrovatin/scvi-tutorials/blob/main/scrna/sysVI.ipynb) on this branch in the next few days.
+
+**@Hrovatin on `src/scvi/external/sysvi/_base_components.py`:** This line is causing err in tutorial. This did not happen before these latest changes and not in any of our numerous benchmarks.
+
+
+
+However, would expect that something else is causing this
+
+Please try running https://github.com/Hrovatin/scvi-tutorials/blob/stable/scrna/sysVI.ipynb as it has non-synthetic data.
+
+```
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+Cell In[5], line 5
+      3 # Train
+      4 max_epochs = 200
+----> 5 model.train(
+      6     max_epochs=max_epochs,
+      7     check_val_every_n_epoch=1,
+      8 )
+
+File ~/Documents/GitHub/scvi-tools-Hrovatin/src/scvi/external/sysvi/_model.py:145, in SysVI.train(self, plan_kwargs, **train_kwargs)
+    143 tra …
+
+**@Hrovatin (review, changes requested):** It seems like the changes broke something numerically. Any ideas why?
 
 **@canergen:** @Hrovatin merging the encoder dictionaries was wrong after changing it (see commit) the performance looks fine in the tutorial.
 <img width="549" alt="Screenshot 2025-02-22 at 9 56 01 PM" src="https://github.com/user-attachments/assets/da93561c-8b54-401f-9875-5e733a28f5e3" />
@@ -5624,15 +6847,23 @@ I also updated tutorial (see https://github.com/scverse/scvi-tutorials/pull/212)
 
 ## #3146: fix: vmap False by default
 **PR:** #3146 | **Last activity:** 2025-05-21T16:00:26Z
-**State:** merged | **Author:** @PierreBoyeau | **Comments:** 2 | **Created:** 2025-01-14 | **Labels:** Still Needs Manual Backport | **URL:** https://github.com/scverse/scvi-tools/pull/3146
+**State:** merged | **Author:** @PierreBoyeau | **Comments:** 6 | **Created:** 2025-01-14 | **Labels:** Still Needs Manual Backport | **URL:** https://github.com/scverse/scvi-tools/pull/3146
 
 Fixes #3145, #3166
 
 **@canergen:** @PierreBoyeau please provide an update about the use case with 1k samples?
 
+**@justjhong on `.gitmodules`:** why is this deleted?
+
+**@justjhong on `src/scvi/external/mrvi/_model.py`:** great idea. can you expand on the docstring with the Adata parameter? since it relies on _scvi_sample, it requires it have setup anndata called on it. Maybe, we can just call validate_anndata in the first line of this function.
+
+**@justjhong (review, commented):** Looks great, thanks for addressing the numpy issue as well. One important comment on why the notebook submodule is deleted, and one minor comment. let me know when i can look again for approval
+
 **@PierreBoyeau:** > Looks great, thanks for addressing the numpy issue as well. One important comment on why the notebook submodule is deleted, and one minor comment. let me know when i can look again for approval
 
 Hi Justin, I have no idea how I managed to delete `.gitmodules`, I reverted the change. I also improved the docstring, including adding a comment, to `update_sample_info`, thanks!
+
+**@justjhong (review, approved):** LGTM
 
 ## #3196: fix: Sample observed variables in pyro
 **PR:** #3196 | **Last activity:** 2025-05-21T13:00:24Z
@@ -5661,17 +6892,242 @@ The resampling works. the change was not in its callback itself or its sub-funct
 
 ## #2421: Adding model with cycle consistency and VampPrior
 **PR:** #2421 | **Last activity:** 2025-05-20T14:30:11Z
-**State:** closed | **Author:** @Hrovatin | **Comments:** 18 | **Created:** 2024-01-19 | **Labels:** cuda tests, P1 | **URL:** https://github.com/scverse/scvi-tools/pull/2421
+**State:** closed | **Author:** @Hrovatin | **Comments:** 108 | **Created:** 2024-01-19 | **Labels:** cuda tests, P1 | **URL:** https://github.com/scverse/scvi-tools/pull/2421
 
 Closes https://github.com/scverse/scvi-tools/issues/2383
+
+**@martinkim0 (review, commented):** Hey, thanks for putting in this PR! A couple of high-level comments for now.
+
+Could you restructure the files as follows?
+- `csi/model/_model.py` -> `csi/_model.py`
+- `csi/model/_utils.py` -> `csi/_utils.py`
+- `csi/module/_module.py` -> `csi/_module.py`
+- `csi/module/_priors.py` -> `csi/_priors.py`
+- `csi/nn/_base_components.py` -> `csi/_components.py`
+- `csi/train/_trainingplans.py` -> `csi/_trainingplans.py`
+- Refactor `csi/module/_module.py` to use `scvi.module.base.LossOutput` instead of our previous `LossRecorder` and remove `csi/module/_loss_recoder.py`
+- If the plan is to directly inherit from `UnsupervisedTrainingMixin` without any major changes except setting `_training_plan_cls`, this can be done within `_model.py` by directly subclassing `UnsupervisedTrainingMixin` an …
+
+**@martinkim0 on `scvi/external/csi/model/_training.py`:** This can be achieved by passing in `num_sanity_val_steps` to our `Trainer`
+
+**@martinkim0 on `scvi/external/csi/model/_model.py`:** Needs docstring
+
+**@martinkim0 on `scvi/external/csi/model/_model.py`:** We typically put the docstring for `__init__` below `class Model(...`
+
+**@martinkim0 on `scvi/external/csi/model/_model.py`:** ```suggestion
+            AnnData object that has been registered via :meth:`~scvi.external.SysVI.setup_anndata`.
+```
+
+**@martinkim0 on `scvi/external/csi/model/_model.py`:** Rename to `get_latent_representation` for consistency with our other models
+
+**@martinkim0 on `scvi/external/csi/model/_model.py`:** Would it be possible to rename this to `batch_key` for consistency with our other models, but explain in the docstring what should be expected in this field?
+
+**@martinkim0 on `scvi/external/csi/module/_module.py`:** This docstring also needs to be directly below `class Module(...`
+
+**@martinkim0 on `scvi/external/csi/module/_module.py`:** Needs to use `scvi.module.base.LossOutput`, should be a small change
+
+**@martinkim0 on `scvi/external/csi/model/_model.py`:** Needs a more descriptive name, _e.g._, SysVI
+
+**@martinkim0 on `scvi/external/csi/module/_module.py`:** Needs a more descriptive name, _e.g._, `SysVAE`
 
 **@Hrovatin:** I added changes and adapted tutorial accrordingly
 
 **@martinkim0:** Thanks for addressing the comments! I'll take another pass at it soon.
 
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** Need documentation
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** Will not render correctly in the documentation - `VarEncoder` needs to be added to `__init__.py`
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** Same here
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** Same here
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** ```suggestion
+        var_mode: Literal["sample_feature", "feature", "linear"] = "feature",
+```
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** Since this class is similar to the existing implementation of `FCLayers`, could you refactor `Layers` so that it subclasses `FCLayers` and overrides methods as needed? This will make it clearer what's different about this implementation as well as remove duplicate code in `inject_into_layer` and `set_online_update_hooks`, as it looks like these methods are identical to the original
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** Needs documentation
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** Could you format this similar to how it is done [here](https://github.com/scverse/scvi-tools/blob/main/scvi/model/_scvi.py#L65-L70)?
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** Probably a good idea to make this an adjustable parameter as we've experienced numerical stability issues with the exponential.
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** ```suggestion
+from typing import Literal
+```
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** Is it still necessary to have this part of the code? One way around this would be to make `SysVI` inherit from `UnsupervisedTrainingMixin` and then set `_training_plan_cls = TrainingPlanCustom` directly in it.
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** ```suggestion
+        n_prior_components: int = 5,
+```
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** Preferable to access this via the `AnnDataManager` API
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** Same here
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** ```suggestion
+```
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** =
+```suggestion
+```
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** nit:
+```suggestion
+    @torch.inference_mode()
+```
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** ```suggestion
+```
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** ```suggestion
+```
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** ```suggestion
+```
+
+**@martinkim0 on `scvi/external/sysvi/_module.py`:** Needs typing
+
+**@martinkim0 on `scvi/external/sysvi/_module.py`:** Needs typing
+
+**@martinkim0 on `scvi/external/sysvi/_priors.py`:** Need typing
+
+**@martinkim0 on `scvi/external/sysvi/_priors.py`:** ```suggestion
+        trainable_priors: bool = True,
+```
+
+**@martinkim0 on `scvi/external/sysvi/_priors.py`:** ```suggestion
+    def kl(self, m_q: torch.Tensor, v_q: torch.Tensor, z: torch.Tensor = None):
+```
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** ```suggestion
+    def __init__(self, size: int, cov_embed_dims: int = 10, normalize: bool = True):
+```
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** ```suggestion
+    def forward(self, x: torch.Tensor, cov: torch.Tensor | None = None):
+```
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** Have there been edge case values other than NaNs?
+
+**@martinkim0 on `scvi/external/sysvi/_base_components.py`:** ```suggestion
+```
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** ```suggestion
+        AnnData object that has been registered via :meth:`~scvi.external.SysVI.setup_anndata`.
+```
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** ```suggestion
+        Keyword args for :class:`~scvi.external.sysvi.SysVAE`
+```
+Also need to add `SysVAE` to `__init__.py`
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** What other checks would you like to implement here?
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** ```suggestion
+        predicted = torch.cat(predicted).cpu()
+
+        if as_numpy:
+            predicted = predicted.numpy()
+```
+So that the tensor is on CPU if `as_numpy=False`
+
+**@martinkim0 on `scvi/external/sysvi/_model.py`:** ```suggestion
+```
+
+**@martinkim0 on `scvi/external/sysvi/_module.py`:** ```suggestion
+```
+
+**@martinkim0 on `scvi/external/sysvi/_priors.py`:** I'm getting an error that this link does not exist
+
+**@martinkim0 (review, commented):** Some minor typing/style comments as well as implementation ones. I still don't understand all parts of the implementation so I will take another pass at this
+
+**@Hrovatin on `scvi/external/sysvi/_model.py`:** I will re-implement _validate_anndata to do the checks that SysVI requires
+
+**@Hrovatin on `scvi/external/sysvi/_priors.py`:** updated
+
 **@Hrovatin:** @martinkim0 thank you for looking at it again - I added the changes as requested
 
 **@martinkim0:** Sorry for the delay in reviewing this - hopefully taking a last pass this week and we get this merged!
+
+**@canergen on `scvi/external/sysvi/_base_components.py`:** Can you switch this to use the Embedding class within scvi-tools. Should perform similarly and otherwise we can add options there.
+
+**@canergen on `scvi/external/sysvi/_base_components.py`:** Can you provide in the documentation more insights than cross-reference?
+
+**@canergen on `scvi/external/sysvi/_base_components.py`:** I dislike nan_to_num. It's numerically unstable but gives the user no good insight of this issue. Can you describe the type of None errors that you are getting.
+
+**@canergen on `scvi/external/sysvi/_base_components.py`:** Inheriting this will make it also easier for us to add new functionality to sysVI. Are there issues with the FClayers class?
+
+**@canergen on `scvi/external/sysvi/_base_components.py`:** Reformat documentation. This provides a better formatting in sphynx.
+
+**@canergen on `scvi/external/sysvi/_base_components.py`:** Up.
+
+**@canergen on `scvi/external/sysvi/_base_components.py`:** Can you define feature better (it is latent dimensions right?)
+
+**@canergen on `scvi/external/sysvi/_base_components.py`:** Please try to avoid nan_to_num
+
+**@canergen on `scvi/external/sysvi/_model.py`:** Up.
+
+**@canergen on `scvi/external/sysvi/_model.py`:** Not sure I get this one. The length of this array would be n_prior_components?
+
+**@canergen on `scvi/external/sysvi/_model.py`:** Does this require an assert statement about the shape if it is not None.
+
+**@canergen on `scvi/external/sysvi/_model.py`:** See our other models.
+
+**@canergen on `scvi/external/sysvi/_model.py`:** What's the purpose of getting latent codes from the cycle pass?
+
+**@canergen on `scvi/external/sysvi/_model.py`:** Should this always be random and not with projection to one system?
+
+**@canergen on `scvi/external/sysvi/_model.py`:** We don't output torch values. We try to return_dist in get_latent (mean and variances). Could you add it here?
+
+**@canergen on `scvi/external/sysvi/_model.py`:** Are all of these things not checked by the parent class?
+
+**@canergen on `scvi/external/sysvi/_model.py`:** Can you explain this to us?
+
+**@canergen on `scvi/external/sysvi/_model.py`:** Why is this necessary? Registry should handle it anyhow?
+
+**@canergen on `scvi/external/sysvi/_model.py`:** We should remove these parts. They are handled by the registry and by setting up query data for new AnnData objects.
+
+**@canergen on `scvi/external/sysvi/_module.py`:** Import from scvi Embedding class (see current scVI)
+
+**@canergen on `scvi/external/sysvi/_model.py`:** Why do you call batch_key system?
+
+**@canergen on `scvi/external/sysvi/_module.py`:** Why do we need the new Encoder and Decoder?
+
+**@canergen on `scvi/external/sysvi/_module.py`:** Why not take random values? Is this inspired from literature. Please cite here.
+
+**@canergen on `scvi/external/sysvi/_module.py`:** Why select from tensors['system'] and not all systems?
+
+**@canergen on `scvi/external/sysvi/_module.py`:** Why does it need to be combined.
+
+**@canergen on `scvi/external/sysvi/_module.py`:** What is this line converting?
+
+**@canergen on `scvi/external/sysvi/_module.py`:** why new function?
+
+**@canergen on `scvi/external/sysvi/_module.py`:** Does this diverge? Adding clamping here or an offset to stds might be more stable.
+
+**@canergen on `scvi/external/sysvi/_module.py`:** Requires some thinking to rewrite this function. It's currently quite clunky and likely slow for the performed task.
+
+**@canergen on `scvi/external/sysvi/_module.py`:** Why? It should be implemented here so more downstream functions work with sysVI.
+
+**@canergen on `scvi/external/sysvi/_module.py`:** Why is the dictionary sometimes none?
+
+**@canergen on `scvi/external/sysvi/_priors.py`:** Why compare single Gaussian and not Mixture-of-Gaussian likelihood? Cite the work you are using here.
+
+**@canergen on `scvi/external/sysvi/_trainingplans.py`:** Can we use kl_warmup from scvi-tools for this?
+
+**@canergen on `scvi/external/sysvi/_trainingplans.py`:** Increase inheritance. Some of the new functions are duplicates of TrainingPlan functions.
+
+**@canergen on `scvi/external/sysvi/_utils.py`:** Remove this function. Otherwise argue why necessary.
+
+**@Hrovatin on `scvi/external/sysvi/_base_components.py`:** what would you suggest?
+
+**@canergen on `scvi/external/sysvi/_base_components.py`:** Using softplus activation will be much more stable than exp. Do you need exp here for specific reasons? Clamping v would otherwise be safe (something like 20).
+
+**@canergen on `scvi/external/sysvi/_base_components.py`:** Is this every producing Nan errors. Printing a warning if v is Nan would at least be helpful.
 
 **@Hrovatin:** @canergen I added changes now where it was straightforward how to fix, but there are some larger design choices that would require support from someone from your side before I decide to make them - could we maybe organise a call sometime? I could meet outside work hours (so not weekdays 9am-5pm CEST).
 
@@ -5689,6 +7145,10 @@ LMK if you need help.
 **@Hrovatin:** @canergen @ori-kron-wis The PR is now ready for review.
 
 @ori-kron-wis Can you help me fix the cuda test err? For some reason, it can not import SysVI, although for me, it works locally. I also was not able to test on GPU since I only have MacOS access and I get the err where mps is detected but not used. - If you have any solutions for that also please let me know.
+
+**@canergen on `src/scvi/external/sysvi/_base_components.py`:** Do you still need nan_to_num if you use here a softplus activation? You should consider changing it. It's just for backward compatibility still exp in scvi.
+
+**@canergen on `src/scvi/external/sysvi/_model.py`:** Does it need it's own get_latent_representation or can it inherit from VAEMIXIN class?
 
 **@canergen:** First look, looks good. Two comments. Should we wait for FClayers to be compatible and then use FClayers? Or do you think it will anyhow not work?
 
@@ -5722,13 +7182,17 @@ Let me know if there is something on my side you still need wrt code or if we ar
 
 ## #2826: compute DE+ and DE- separately
 **PR:** #2826 | **Last activity:** 2025-05-20T08:00:28Z
-**State:** closed | **Author:** @LevyNat | **Comments:** 7 | **Created:** 2024-06-03 | **Labels:** P0 | **URL:** https://github.com/scverse/scvi-tools/pull/2826
+**State:** closed | **Author:** @LevyNat | **Comments:** 9 | **Created:** 2024-06-03 | **Labels:** P0 | **URL:** https://github.com/scverse/scvi-tools/pull/2826
 
 **@canergen:** Fixed the wrong behavior that we have seen in different models (high significance despite low mean LFC but high standard deviation). It still requires a release note and it would be good to check in our DE tutorial whether things are changing there. I’m not sure that the Bayes factor computation is correct @PierreBoyeau?
 
 **@PierreBoyeau:** Hi, LGTM. I am unsure about the Bayes factor here, since we don't have two, but three competing models now(equally expressed, upreg, and downreg). I would be in favor of not computing BFs in this case.
 
 **@canergen:** I guess it's fine to remove. I would assume we do two tests: upregulated vs rest and downregulated vs rest. We output only the winner of the test for upregulated/downregulated. I guess the corresponding Bayes factor for the returned FDR is then: `upregulated/(equally+downregulated)` or `downregulated/(equally+upregulated)`.
+
+**@canergen on `src/scvi/model/base/_differential.py`:** Why not return probe_de?
+
+**@LevyNat on `src/scvi/model/base/_differential.py`:** updated
 
 **@LevyNat:** @canergen @PierreBoyeau can we merge to main?
 
@@ -5808,9 +7272,121 @@ remove ray tune version affected the installation using google colab
 
 ## #3144: (feat) Release resolVI
 **PR:** #3144 | **Last activity:** 2025-04-21T21:01:19Z
-**State:** merged | **Author:** @canergen | **Comments:** 1 | **Created:** 2025-01-14 | **Labels:** Still Needs Manual Backport, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3144
+**State:** merged | **Author:** @canergen | **Comments:** 53 | **Created:** 2025-01-14 | **Labels:** Still Needs Manual Backport, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3144
 
 **@canergen:** Failing tests due to genomepy.
+
+**@ori-kron-wis on `docs/tutorials/notebooks`:** we should remove this tutorial link commit before the merge to main. it is a very old link.
+
+**@ori-kron-wis on `CHANGELOG.md`:** change to 3144
+
+**@ori-kron-wis on `docs/tutorials/notebooks`:** also not to forget to add tutorial, references, user guide etc'.. here.
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_model.py`:** I think it makes sense to move PyroPredictiveMixin to the _mode/base/_pyromixin
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_model.py`:** Did you meant to cite Lopez18?
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_utils.py`:** weights is not used
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_utils.py`:** mc_sample - no such input to this function
+
+**@ori-kron-wis on `tests/external/resolvi/test_resolvi.py`:** I think we will also want to have a load/save unit test for pyro based resolvi, in the same principle of test_lda_model_save_load
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_model.py`:** dont we want a special _validate_anndata for resolvi , just like totalvi has something of its own?
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_utils.py`:** redundant
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_model.py`:** missing from docstring
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_model.py`:** not exists
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_model.py`:** missing %(param_adata)s from docstring
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_model.py`:** missing from docstring
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_model.py`:** missing from docstring
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_module.py`:** what is this input?. its repeated for all functions...
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_module.py`:** this function is deprecated and its probably a legacy.
+we mentioned one_hot to be removed from scvi tools v1.3 and suggest to replace it with the `one_hot` function in PyTorch instead
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_module.py`:** dont see it being used
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_module.py`:** n_hidden_encoder?
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_module.py`:** please go over this class docstring, there are many discrepancies
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_module.py`:** one-hot deprecated issue again
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_module.py`:** x_n,y, library are not used. Are they needed for pyro backend? Im not sure
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_module.py`:** also need to go over docstring
+
+**@ori-kron-wis on `src/scvi/module/base/_base_module.py`:** are we generally sure this desing of adding **kwargs to all base modules is something that we need?
+this was developed a while back, do we still need this for pyro?
+
+**@ori-kron-wis on `src/scvi/model/base/_pyromixin.py`:** general comment: we need to make sure decipher and amorizedlda didnt get affected from those pyro mixin changes. From what I see they didnt, but we need to keep this in mind
+
+**@ori-kron-wis on `src/scvi/model/base/_archesmixin.py`:** general remark: I would be careful in merging old stuff back after they were already removed (resolvi was developed a while back). need to keep in mind
+
+**@ori-kron-wis on `src/scvi/model/base/_archesmixin.py`:** are we sure we wont get affected in other models? many use this part...
+
+**@ori-kron-wis on `src/scvi/model/base/_differential.py`:** It make sense that if we are pleased with this, merge the DE branch first, then update this branch (safer to do smaller merges to main)
+
+**@ori-kron-wis on `src/scvi/model/base/_archesmixin.py`:** im less familiar with pyro code
+
+**@canergen on `src/scvi/external/resolvi/_model.py`:** Fixed can you check our DE calls and add more arguments to de_dsp.
+
+**@canergen on `src/scvi/external/resolvi/_module.py`:** Removed it. See scvi for it. It's the default in all our models.
+
+**@canergen on `src/scvi/external/resolvi/_module.py`:** Yes you always have to have the same set of inputs (with name)
+
+**@canergen on `src/scvi/external/resolvi/_module.py`:** dispersion is used throughout the function
+
+**@canergen on `src/scvi/external/resolvi/_module.py`:** Dropout rate removed. Sorry for the confusion.
+
+**@canergen on `src/scvi/model/base/_archesmixin.py`:** The old code is a special part. This is a more flexible Arches function (if people use additional n_batch dimensions.
+
+**@canergen on `src/scvi/model/base/_archesmixin.py`:** Essentially pyro manages it's own parameters. Loading torch parameters does not guarantee that the model behaves the same. One could write a model that only relies on torch but with major downsides. Loading a model requires loading the param_store.
+
+**@canergen on `src/scvi/model/base/_differential.py`:** Good with me.
+
+**@canergen on `src/scvi/model/base/_pyromixin.py`:** I'm still not sure about Cell2location and other models that use scvi-tools. We should merge it and have a release candidate. Maybe ping Vitalii about it, who wrote most of the pyro code and is the author of Cell2location.
+
+**@canergen on `src/scvi/model/base/_pyromixin.py`:** Large parts of the code come from him though (but were not merged and he didn't respond to requests to amend).
+
+**@canergen on `src/scvi/module/base/_base_module.py`:** on_load now needs pyro_param_store. The models were never loading correctly.
+
+**@canergen on `src/scvi/module/base/_base_module.py`:** To make it consistent it needs kwargs.
+
+**@canergen on `src/scvi/external/resolvi/_model.py`:** Not sure about it. Can you explain more about the benefits?
+
+**@canergen on `src/scvi/model/base/_archesmixin.py`:** Can you help identify these locations? This would be unwanted side effects.
+
+**@canergen on `src/scvi/external/resolvi/_model.py`:** It's very ResolVI specific function. We can call it ResolVIPredictiveMixin now.
+
+**@canergen on `docs/tutorials/notebooks`:** Can you elaborate etc?
+
+**@ori-kron-wis on `docs/tutorials/notebooks`:** I added the required things for the tutorial to be linked correctly to RTD mainly. also references/ cites, but need to be validated
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_model.py`:** its not a different structure, but maybe we will want to validate that we actually have what it takes to setup the object with this adata, namely having the spatial data and/or coordinates as part of the check, and if spatial data missing issue an error.
+
+on other hand, other spatial models don't have it (but they inherit the base model class)
+its just a suggestion.
+
+**@ori-kron-wis on `src/scvi/external/resolvi/_model.py`:** done
+
+**@ori-kron-wis on `src/scvi/model/base/_pyromixin.py`:** will keep this in mind
+
+**@ori-kron-wis on `src/scvi/model/base/_archesmixin.py`:** yeah thats a hard one.
+I went over _archesmixin, looks ok .
+for pyromixin, perhaps you can have another look.
+
+**@ori-kron-wis on `src/scvi/model/base/_differential.py`:** yes except that we added now more stuff to DE docstring.
+Lets keep this in mind (in such case the other branches will be update from this addition)
+
+**@ori-kron-wis on `src/scvi/model/base/_archesmixin.py`:** good. so a load/save test is essential.
 
 ## #3158: Backport PR #3157 on branch 1.2.x ([pre-commit.ci] pre-commit autoupdate)
 **PR:** #3158 | **Last activity:** 2025-04-21T13:30:42Z
@@ -5881,7 +7457,7 @@ pop get bug fix data splitter backport 1.2.x
 
 ## #3100: feat: Support MPS during training and inference
 **PR:** #3100 | **Last activity:** 2025-03-31T08:00:07Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2024-12-17 | **Labels:** cuda tests | **URL:** https://github.com/scverse/scvi-tools/pull/3100
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 5 | **Created:** 2024-12-17 | **Labels:** cuda tests | **URL:** https://github.com/scverse/scvi-tools/pull/3100
 
 add support for Mac GPU (m1,m2,m3) for scvi and revert it to be default option when running from Mac (if available)
 
@@ -5897,6 +7473,12 @@ https://discourse.scverse.org/t/macbook-m1-m2-mps-acceleration-with-scvi/2075/7
 
 **@canergen:** The difference was much bigger in my hands when increasing batch size (larger batch size creates larger matrix multiplications where MPS is more efficient than CPU) and compilation. It was actually faster than an A100 on Google Colab then. We should optimize this a bit.
 
+**@canergen on `src/scvi/data/_preprocessing.py`:** We could also do it for other devices. Float32 is sufficient for all computations.
+
+**@canergen on `tests/model/test_destvi.py`:** Remove this.
+
+**@canergen (review, approved):** See two minor comments. One tensor should be float32 independent of MPS second printing during test. Add warning that MPS can be enabled now. Afterwards merge.
+
 ## #3275: Backport PR #3274 on branch 1.3.x ([pre-commit.ci] pre-commit autoupdate)
 **PR:** #3275 | **Last activity:** 2025-03-25T19:51:54Z
 **State:** merged | **Author:** @meeseeksmachine | **Comments:** 0 | **Created:** 2025-03-25 | **Labels:** on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3275
@@ -5911,11 +7493,13 @@ Re: [scverse/scvi-tools] feat: Change template for HuggingFace. (PR #3078)
 
 ## #3110: bug: CUDA fix in decipher
 **PR:** #3110 | **Last activity:** 2025-03-24T22:00:22Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 3 | **Created:** 2024-12-23 | **Labels:** Still Needs Manual Backport, cuda tests, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3110
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 4 | **Created:** 2024-12-23 | **Labels:** Still Needs Manual Backport, cuda tests, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3110
 
 @justjhong  I already fixed one of the tests (but you should review it)
 
 close https://github.com/scverse/scvi-tools/issues/3109
+
+**@justjhong (review, approved):** Sorry about this and thanks for squashing the bug! Is the other test fixed as well or should I take a stab at it?
 
 **@canergen:** Hi, I don't think so the test reports where off here, so I restarted them. It's pretty much the same thing with device handling.
 
@@ -5949,7 +7533,7 @@ It reduces 8 minutes from the default test which now takes just 3 min on local d
 
 ## #2379: Can hub paper
 **PR:** #2379 | **Last activity:** 2025-03-23T05:00:07Z
-**State:** closed | **Author:** @canergen | **Comments:** 1 | **Created:** 2024-01-05 | **Labels:** P0 | **URL:** https://github.com/scverse/scvi-tools/pull/2379
+**State:** closed | **Author:** @canergen | **Comments:** 8 | **Created:** 2024-01-05 | **Labels:** P0 | **URL:** https://github.com/scverse/scvi-tools/pull/2379
 
 Adds minified mode to CondSCVI. Simplifies minification for new models. Adds add_latent_posterior mode which keeps count data. Fixes glitches in DE function.
 -   [X] Tests added and passed if fixing a bug or adding a new feature
@@ -5965,6 +7549,24 @@ Adds minified mode to CondSCVI. Simplifies minification for new models. Adds add
 - Fixes in differential expression
 
 Thanks
+
+**@martinkim0 on `scvi/model/base/_base_model.py`:** From my understanding, the only difference between `"latent_posterior_parameters"` and `"add_posterior_parameters"` is that the count data is preserved in the latter.
+
+I'm thinking it might be less confusing for the end user if, instead of specifying a `minified_data_type`, we can directly let them pass in `keep_count_data` to distinguish between these two modes. What do you think?
+
+**@martinkim0 on `scvi/model/base/_base_model.py`:** What's the reason this part uses `__contains__` instead of a `minified_data_type in ADATA_MINIFY_TYPE`? I think the latter is more readable and should work with the `NamedTuple`.
+
+**@martinkim0 on `scvi/model/base/_base_model.py`:** If the plan is to put this method under `BaseModelClass`, we should also move over the other methods under `BaseMinifiedModeModelClass` and then delete it. What do you think?
+
+**@martinkim0 on `scvi/model/utils/_minification.py`:** Thoughts on checking whether `adata.X` is a sparse matrix and if not, sparsify it (in the spirit of minification)?
+
+**@martinkim0 on `scvi/model/utils/_minification.py`:** It may also make sense to only copy the count layer registered with the manager so we don't have to carry around the unused layers as part of the minified data.
+
+**@martinkim0 (review, commented):** Thanks, LGTM overall! Just one major comment about switching the new minified mode to a new argument and some minor comments about performance/storage.
+
+Since there's a lot of conflicts w/ the main branch, I can take care of transferring this to another PR and tagging you as co-author.
+
+**@canergen on `scvi/model/base/_base_model.py`:** Sounds good. Will be cleaner. Inititally the idea was to have more modes. However, I can't imagine a different mode.
 
 ## #3108: ci: backport: numpy2 branch 1.2.x manual backport
 **PR:** #3108 | **Last activity:** 2025-03-22T22:30:06Z
@@ -6052,13 +7654,19 @@ Also, those loompy tests took time , so now they are all under the --internet fl
 
 ## #3092: Add Decipher Trajectory methods
 **PR:** #3092 | **Last activity:** 2025-03-21T04:00:09Z
-**State:** merged | **Author:** @justjhong | **Comments:** 1 | **Created:** 2024-12-13 | **URL:** https://github.com/scverse/scvi-tools/pull/3092
+**State:** merged | **Author:** @justjhong | **Comments:** 4 | **Created:** 2024-12-13 | **URL:** https://github.com/scverse/scvi-tools/pull/3092
 
 Implements the methods that require a pre-computed trajectory onto the Decipher model class.
 
 cc @ANazaret
 
+**@canergen on `src/scvi/external/decipher/_model.py`:** We don't have a dependency of sklearn? Please use lazy import.
+
+**@canergen on `src/scvi/external/decipher/utils/__init__.py`:** Im confused about the rotate file? It doesn't exist right?
+
 **@canergen:** LGTM. See two point above, fix pre-commit missing empty line and add CHANGELOG.
+
+**@justjhong on `src/scvi/external/decipher/utils/__init__.py`:** it exists within the utils folder
 
 ## #3099: Backport PR #3098 on branch 1.2.x ([pre-commit.ci] pre-commit autoupdate)
 **PR:** #3099 | **Last activity:** 2025-03-16T21:30:48Z
@@ -6074,11 +7682,13 @@ Backport PR #3095: fix: Explicity use weights_only=False in torch.load functions
 
 ## #3095: fix: Explicity use weights_only=False in torch.load functions
 **PR:** #3095 | **Last activity:** 2025-03-16T09:30:08Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2024-12-16 | **URL:** https://github.com/scverse/scvi-tools/pull/3095
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2024-12-16 | **URL:** https://github.com/scverse/scvi-tools/pull/3095
 
 Added weights_only=False for torch load functions for future proof of error message from torch
 
 close https://github.com/scverse/scvi-tools/issues/3093
+
+**@canergen (review, approved):** LGTM
 
 ## #3090: ci: Remove daily run of multiGPU test
 **PR:** #3090 | **Last activity:** 2025-03-12T12:30:28Z
@@ -6086,16 +7696,87 @@ close https://github.com/scverse/scvi-tools/issues/3093
 
 ## #2982: test: Fix hugging face create repo test which was failing
 **PR:** #2982 | **Last activity:** 2025-03-12T07:12:41Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2024-09-19 | **Labels:** private tests | **URL:** https://github.com/scverse/scvi-tools/pull/2982
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2024-09-19 | **Labels:** private tests | **URL:** https://github.com/scverse/scvi-tools/pull/2982
 
 Added a check on whether repo exists before creating it, which failed …previous test
 
+**@canergen on `tests/hub/test_hub_model.py`:** We should do it repo_exists delete_repo and then execute the real test.
+
 ## #3036: fix(train): in case of last batch <=2, move to validation if possible
 **PR:** #3036 | **Last activity:** 2025-03-12T07:11:45Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2024-10-31 | **URL:** https://github.com/scverse/scvi-tools/pull/3036
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 31 | **Created:** 2024-10-31 | **URL:** https://github.com/scverse/scvi-tools/pull/3036
 
 In case that train_size is None and the size of the last batch during training is <=2 , we adaptively move those samples from training to validation if possible. If train_size is set by user we do no fix this error and let the user change its train_size, selected indices or use drop last batch option.
 close https://github.com/scverse/scvi-tools/issues/3035
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** No need to. If the user provides indices it should just break.
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** .get is preferable over pop as it keeps the dictionary unchanged.
+
+**@canergen on `tests/model/test_scvi.py`:** train_size=1.0 should lead to exactly this train size. There needs to be an option to fix train_size. None could lead to train_size 0.9 if possible and otherwise adjust it.
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** yeah, for some reason get didnt work here
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** I.e. 0.9 and potentially adding small last batch to validation cells
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** explicit (train_size is None)
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** Do we need this if drop_last is true?
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** I'm not sure how drop_last is handled now?
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** The warning should still be there.
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** typo and I think the comment is not very clear.
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** Warning should still be printed, if train size is not None.
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** Best case you change the prodecure here. Keep batch_size and add another argument, adapt_train_size to highlight this use case.
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** Change documentation as above.
+
+**@canergen on `src/scvi/external/contrastivevi/_contrastive_data_splitting.py`:** Are we sure that the pop is ok and it still uses the correct batch size afterward?
+
+**@ori-kron-wis on `src/scvi/external/contrastivevi/_contrastive_data_splitting.py`:** pop is what we have now in the main branch. tests are ok.
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** so warning yes, but with no adaptive moving of cells
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** I reverted the current logic. check again
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** This one if confusing if drop_last it will drop the last batch no matter how many cells it contains.
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** to avoid error during training. Set train_size to a fixed size to avoid this.
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** this one is wrong
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** this one to
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** it is 0.9 if given as None during init.
+but as we discussed, we adapt the last batch only if it was in fact None, this is why we have the flag train_size_is_none
+
+did you mean something else?
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** True. this part is not about the drop_last logic.
+
+this part of code is about when to show the warning. and a warning will be shown if we do have 1-2 cells in last batch but also when user didnt select drop_last with cell==1. whoever did it, doesnt need to see this warning, because it will not fail for him
+
+only if also train_size_is_none there will be adaptive cell transferring to the validation set, if exists
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** whats wrong?
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** Again the check doesn't need to be num_of_cells == 1 and drop_last is True. It should be: (num_of_cells < 3 and num_of_cells > 0) and drop_last is False
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** I think we want a message how to avound moving cells from training to validation. The user avoids it when stating train_size=0.9
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** This is confusing. See comment above - line 179 should be gone.
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** ok
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** ok
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** yes
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** Update drop_last here.
 
 ## #3128: bug: Batch Size is not utilised properly with the use of external indices following last batch fix.
 **PR:** #3128 | **Last activity:** 2025-03-12T07:10:33Z
@@ -6119,9 +7800,19 @@ Backport PR #3085: misc: Address AnnData >= 0.11 deprecation warnings
 
 ## #3085: misc: Address AnnData >= 0.11 deprecation warnings
 **PR:** #3085 | **Last activity:** 2025-03-11T19:00:42Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2024-12-09 | **URL:** https://github.com/scverse/scvi-tools/pull/3085
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 5 | **Created:** 2024-12-09 | **URL:** https://github.com/scverse/scvi-tools/pull/3085
 
 close https://github.com/scverse/scvi-tools/issues/3083
+
+**@canergen on `src/scvi/data/__init__.py`:** This one requires anndata>0.11
+
+**@canergen on `src/scvi/data/_anntorchdataset.py`:** This one breaks code for anndata 0.10
+
+**@canergen on `src/scvi/data/_anntorchdataset.py`:** Here is legacy code. That we should remove
+
+**@canergen on `src/scvi/data/_anntorchdataset.py`:** This one breaks code for anndata 0.10
+
+**@canergen (review, approved):** Remove the anndata legacy ImportError blocks.
 
 ## #3087: Backport PR #3086 on branch 1.2.x ([pre-commit.ci] pre-commit autoupdate)
 **PR:** #3087 | **Last activity:** 2025-03-10T10:30:48Z
@@ -6169,9 +7860,33 @@ Backport PR #3061: feat: Support for minification in totalVI
 
 ## #3061: feat: Support for minification in totalVI
 **PR:** #3061 | **Last activity:** 2025-03-04T19:00:16Z
-**State:** merged | **Author:** @canergen | **Comments:** 0 | **Created:** 2024-11-30 | **Labels:** cuda tests | **URL:** https://github.com/scverse/scvi-tools/pull/3061
+**State:** merged | **Author:** @canergen | **Comments:** 12 | **Created:** 2024-11-30 | **Labels:** cuda tests | **URL:** https://github.com/scverse/scvi-tools/pull/3061
 
 Add support of minification in totalVI
+
+**@ori-kron-wis on `eval-multivi/output.png`:** do we need this into the main repo top-level hierarchy?
+
+**@ori-kron-wis on `src/scvi/model/_totalvi.py`:** didnt we want to have a warning for setup_anndata: "TOTALVI is supposed to work with MuData"
+
+**@ori-kron-wis on `src/scvi/model/_scanvi.py`:** Why do we also need use_minified? isnt it just the opposite of (adata_minify_type not None). if so , why not also in scvi?
+
+**@ori-kron-wis on `src/scvi/model/_totalvi.py`:** maybe better to change docstring adata to be Ann or Mu Data
+
+**@ori-kron-wis on `src/scvi/model/_totalvi.py`:** is it used somewhere?
+
+**@ori-kron-wis on `src/scvi/model/base/_base_model.py`:** We previously had it as an abstract methods/class. Will this implementation always work for our different models?
+
+**@ori-kron-wis on `src/scvi/model/utils/_minification.py`:** I understand now we dont create a copy of the mdata object, is there a place to update the tutorial(s)? or add a part for the totalvi minification?
+
+**@ori-kron-wis on `src/scvi/module/_totalvae.py`:** why?
+
+**@canergen on `src/scvi/model/_scanvi.py`:** There is no field scanvi_latent_qzm when making a scVI model with counts and latent parameters a scanvi model. It fails if these fields don’t exist, that’s why I added the use_minified option
+
+**@canergen on `src/scvi/model/base/_base_model.py`:** That was the change in simplifying minifying. If we inherit from this method than it is supported.
+
+**@canergen on `src/scvi/model/utils/_minification.py`:** I don't get this one? It's still creating a copy.
+
+**@canergen on `src/scvi/module/_totalvae.py`:** It's not used. Not storing it is more efficient.
 
 ## #3076: Backport PR #3075 on branch 1.2.x (Docs: Update YosefLab link)
 **PR:** #3076 | **Last activity:** 2025-03-04T14:30:18Z
@@ -6239,9 +7954,15 @@ Backport PR #2883: refactor(model): refactor out common minified mode methods
 
 ## #2883: refactor(model): refactor out common minified mode methods
 **PR:** #2883 | **Last activity:** 2025-02-27T07:30:16Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 1 | **Created:** 2024-07-03 | **URL:** https://github.com/scverse/scvi-tools/pull/2883
+**State:** merged | **Author:** @martinkim0 | **Comments:** 4 | **Created:** 2024-07-03 | **URL:** https://github.com/scverse/scvi-tools/pull/2883
+
+**@canergen on `src/scvi/model/base/_base_model.py`:** Why do we need this? Was it creating issues otherwise?
 
 **@canergen:** @martinkim0 Was this one ready to merge or are things missing?
+
+**@canergen on `src/scvi/model/utils/_minification.py`:** Change back to keep all layers
+
+**@canergen on `tests/model/test_models_with_minified_data.py`:** Those two lines should be removed.
 
 ## #3059: Backport PR #3058 on branch 1.2.x (fix: gimVI mini batch append on CPU first)
 **PR:** #3059 | **Last activity:** 2025-02-27T07:30:13Z
@@ -6336,9 +8057,19 @@ Backport PR #3045: feat(external): adding batch_key and labels_key
 
 ## #3045: feat(external): adding batch_key and labels_key
 **PR:** #3045 | **Last activity:** 2025-02-17T10:00:10Z
-**State:** merged | **Author:** @mys721tx | **Comments:** 0 | **Created:** 2024-11-18 | **URL:** https://github.com/scverse/scvi-tools/pull/3045
+**State:** merged | **Author:** @mys721tx | **Comments:** 5 | **Created:** 2024-11-18 | **URL:** https://github.com/scverse/scvi-tools/pull/3045
 
 Adds batch_key and labels_key per documentation. Also corrected the reference to scvi.external.
+
+**@canergen (review, changes requested):** Thanks for the contribution. LGTM. Please add a release note and a test for both fields.
+
+**@mys721tx (review, commented):** @canergen Let me know if the test case is good enough. I haven't find an example for the labels_key in the existing codes.
+
+**@canergen on `tests/external/scar/test_scar.py`:** Please add label_key="batch". It's good to verify that handling label_key is not broken in the future.
+
+**@mys721tx on `tests/external/scar/test_scar.py`:** Looks like some other test cases the renaming is not strictly necessary. Should we keep that?
+
+**@mys721tx (review, commented):** Both `batch_key` and `labels_key` are added to the test case.
 
 ## #3048: Backport PR #3036 on branch 1.2.x (fix(train): in case of last batch <=2, move to validation if possible)
 **PR:** #3048 | **Last activity:** 2025-02-17T08:30:22Z
@@ -6348,7 +8079,7 @@ Backport PR #3036: fix(train): in case of last batch <=2, move to validation if 
 
 ## #3015: feat: implement Decipher model in external
 **PR:** #3015 | **Last activity:** 2025-02-11T22:30:21Z
-**State:** merged | **Author:** @justjhong | **Comments:** 11 | **Created:** 2024-10-15 | **Labels:** cuda tests, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3015
+**State:** merged | **Author:** @justjhong | **Comments:** 44 | **Created:** 2024-10-15 | **Labels:** cuda tests, on-merge: backport to 1.3.x | **URL:** https://github.com/scverse/scvi-tools/pull/3015
 
 CC @ANazaret
 
@@ -6394,6 +8125,74 @@ Aside: do you think there should be a simple PR checklist for the standard thing
 **@justjhong:** Thanks @ori-kron-wis ! if everything looks can you approve the PR? @canergen
 
 **@justjhong:** @ori-kron-wis @canergen bump on this PR
+
+**@canergen on `.github/workflows/test_linux_cuda.yml`:** What's this?
+
+**@canergen on `src/scvi/external/decipher/_components.py`:** Can you explain?
+
+**@canergen on `src/scvi/external/decipher/_components.py`:** Please call it self.activation_fn
+
+**@canergen on `src/scvi/external/decipher/_components.py`:** Comment this line.
+
+**@canergen on `src/scvi/external/decipher/_model.py`:** better word than interpretable?
+
+**@canergen on `src/scvi/external/decipher/_model.py`:** Do you feel strong about this default?
+
+**@canergen on `src/scvi/external/decipher/_model.py`:** This is not a remark to fix but just curiosity.
+
+**@canergen on `src/scvi/external/decipher/_components.py`:** Is there any advantage here from ModuleList over just the list?
+
+**@canergen on `src/scvi/external/decipher/_module.py`:** Can you expand on this?
+
+**@canergen on `src/scvi/external/decipher/_module.py`:** It's likely because you don't have a single parameter?
+
+**@canergen on `src/scvi/external/decipher/_module.py`:** You could set your dummy to be this one.
+
+**@canergen on `src/scvi/external/decipher/_module.py`:** No warm up?
+
+**@canergen on `src/scvi/external/decipher/_module.py`:** why not make beta an optional argument to model and guide and overwrite it then. This is cleaner.
+
+**@canergen on `src/scvi/external/decipher/_module.py`:** Why do you need a try block here?
+
+**@canergen on `src/scvi/external/decipher/_trainingplan.py`:** LayerNorm also has this problem? Any literature that does something similar?
+
+**@canergen on `src/scvi/external/decipher/_trainingplan.py`:** Are these missing from LowLevelPyroTrainingPlan? Should we add them there?
+
+**@canergen on `src/scvi/external/decipher/_module.py`:** 2 * [dim_v]
+
+**@canergen on `src/scvi/external/decipher/_module.py`:** Is dim_v fixed or do you use other values than 2?
+
+**@justjhong on `.github/workflows/test_linux_cuda.yml`:** Not sure, I believe @ori-kron-wis made this change while debugging the tests. Could you explain Ori?
+
+**@justjhong on `src/scvi/external/decipher/_components.py`:** this produces slices along the output, which will just be a concatenated version of all outputs needed, so that the output can be separated by the provided input_dims. It's a bit tricky, but I think the comment above serves the purpose
+
+**@justjhong on `src/scvi/external/decipher/_model.py`:** Unfortunately not, since it captures the same info as z, just meant to be more directly interpretable
+
+**@justjhong on `src/scvi/external/decipher/_model.py`:** I believe there were bugs with batch norm when thiswasn't there and the final batch was of size 1
+
+**@justjhong on `src/scvi/external/decipher/_components.py`:** Module list ensures the element parameters are properly registered. If they are just in a list and the modules arent direct parameters of the nn.Module class I think it doesnt get picked up by the optimizer
+
+**@justjhong on `src/scvi/external/decipher/_module.py`:** I think it's a relatively clean way to make automove work for pyro modules. The pyro params don't get stored in the same way as normal torch parameters, which is why auto_move_breaks if there are no actual parameters on the class. We do the same thing for the other pyro modules in the repo (e.g., https://github.com/scverse/scvi-tools/blob/main/src/scvi/module/_amortizedlda.py#L95)
+
+**@justjhong on `src/scvi/external/decipher/_module.py`:** pyro.param doesn't actually create a torch parameter logged in module.parameters()
+
+**@justjhong on `src/scvi/external/decipher/_module.py`:** great idea, implemented this
+
+**@justjhong on `src/scvi/external/decipher/_trainingplan.py`:** not actually sure, this was copied over from original impl, will ask
+
+**@justjhong on `src/scvi/external/decipher/_trainingplan.py`:** these are only in the PyroTrainingPlan, not the LowLevelPyroTrainingPlan. Whether we want to push it back into the low-level class is up to you
+
+**@justjhong on `src/scvi/external/decipher/_module.py`:** It can be changed, but in practice it is always set to 2 for the sake of visualization. I think we can leave it as a hyperparameter here since dim_v > 2 is potentially useful.
+
+**@canergen on `src/scvi/external/decipher/_module.py`:** Please change to [dim_v] * 2 for consistency.
+
+**@ori-kron-wis on `.github/workflows/test_linux_cuda.yml`:** yeah I wanted to see if the cuda test error we had was somehow related to the commit history depth, so I tried it in the branch. But eventually it was about cleaning local caches + updating packages on the linux machine.
+I think it only happens once this get done from a forked repo.
+we can revert this
+
+**@justjhong on `src/scvi/external/decipher/_module.py`:** this was addressed in the latest commit
+
+**@canergen (review, approved):** Please provide more information on what context means and how to use it in the user guide.
 
 ## #3043: Backport PR #3042 on branch 1.2.x (docs: fix RTD source links)
 **PR:** #3043 | **Last activity:** 2025-02-11T12:30:28Z
@@ -6547,7 +8346,7 @@ Backport PR #3005: docs: automated update of tutorials
 
 ## #2834: feat(external): implement METHLYVI for scBS-seq data
 **PR:** #2834 | **Last activity:** 2025-01-04T10:30:22Z
-**State:** merged | **Author:** @ethanweinberger | **Comments:** 14 | **Created:** 2024-06-10 | **Labels:** cuda tests | **URL:** https://github.com/scverse/scvi-tools/pull/2834
+**State:** merged | **Author:** @ethanweinberger | **Comments:** 67 | **Created:** 2024-06-10 | **Labels:** cuda tests | **URL:** https://github.com/scverse/scvi-tools/pull/2834
 
 This PR implements methylation variational inference (methylVI) for modeling methylation data from single-cell bisulfite sequencing (scBS-seq) experiments, described originally in [Weinberger and Lee (2024).](https://openreview.net/forum?id=Mg2DM0F3AY). In short, methylVI assumes that counts of methylated cytosines across pre-defined genomic region features follow a [Beta-Binomial distribution](https://docs.scvi-tools.org/en/latest/api/reference/scvi.distributions.BetaBinomial.html). As a placeholder citation I put in a reference to the workshop paper with the intention of swapping in a citation to the full paper once we upload it to bioRxiv.
 
@@ -6555,15 +8354,126 @@ All implementation code can be found in `scvi/external/methylvi`. Of note, as pa
 
 I structured my implementation of methylVI so that the model could be used with a single methylation modality an AnnData object (e.g. CpG gene body features) or multiple modalities in a MuData object (e.g. both CpG and non-CpG gene body features as separate modalities). To avoid repeating too much code, under the hood I tried to treat models trained with …
 
+**@ethanweinberger on `docs/references.bib`:** I put this in as an initial placeholder for the reference. This will be replaced with the full preprint once it's on bioRxiv.
+
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** This (and a similar line in `setup_anndata`) was a hack so that I could access modality names later when instantiating the class. Is there a smarter way to do this?
+
+**@ethanweinberger on `docs/user_guide/models/methylvi.md`:** As soon as the model is merged into scvi-tools I can add tutorial notebooks from [our original repository](https://github.com/suinleelab/methylVI) to the scvi-tools repo.
+
+**@martinkim0 on `src/scvi/external/methylvi/_model.py`:** Thoughts on changing this to `METHYLVI` for consistency with `METHYLVAE`?
+
+**@martinkim0 on `src/scvi/external/methylvi/_model.py`:** ```suggestion
+        AnnData object that has been registered via :meth:`~scvi.external.MethylVI.setup_anndata`.
+```
+
+**@martinkim0 on `src/scvi/external/methylvi/_model.py`:** ```suggestion
+        Keyword args for :class:`~scvi.external.methylvi.METHYLVAE`
+```
+
+**@martinkim0 on `src/scvi/external/methylvi/_model.py`:** ```suggestion
+```
+
+**@martinkim0 on `src/scvi/external/methylvi/_model.py`:** Feel free to add a citation here by adding :cite:p:\`Weinberger2023a\`
+
+**@martinkim0 on `src/scvi/model/_scvi.py`:** revert this?
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** Sounds good!
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+```python
+```
+for syntax highlighting
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+```python
+```
+for syntax highlighting
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+In {meth}`~scvi.external.MethylVI.get_normalized_methylation` MethylVI returns the expected value of $\mu_i$ under the approximate posterior. For one cell $i$, this can be written as:
+```
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+Differential methylation analysis is achieved with {meth}`~scvi.external.MethylVI.differential_methylation`.
+```
+
+**@martinkim0 on `CHANGELOG.md`:** ```suggestion
+- Add {class}`scvi.external.methylVI` for modeling methylation data
+    from single-cell bisulfite sequencing (scBS-seq) experiments {pr}`2834`.
+```
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+For each context, methylVI accepts two count matrices as input $Y^{C}_{mc}$ and $Y^{C}_{cov}$. Here $C$ refers to
+```
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+categorical covariates $S$, representing batch, donor, etc, is an optional input to the model.
+```
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+$y^{C}_{ij}$, is generated by the following process:
+```
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+parameters that depend on a cell-specific latent variable $z_i$ that captures underlying methylation state as well
+```
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+with a diagonal covariance matrix. Here $y_i$ ($n_i$) is used as a shorthand to denote the concatenation of the numbers
+```
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+Here we provide an overview of some of the tasks that MethylVI can perform. Please see {class}`scvi.external.MethylVI`
+```
+
+**@martinkim0 on `docs/user_guide/models/methylvi.md`:** ```suggestion
+A MethylVI model can be pre-trained on reference data and updated with query data using {meth}`~scvi.external.MethylVI.load_query_data`, which then facilitates transfer of metadata like cell type annotations. See the {doc}`/user_guide/background/transfer_learning` guide for more information.
+```
+
+**@martinkim0 on `src/scvi/external/methylvi/_base_components.py`:** ```suggestion
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+```
+
+**@martinkim0 on `src/scvi/external/methylvi/_module.py`:** ```suggestion
+    """PyTorch module for methylVI.
+```
+
+**@martinkim0 on `src/scvi/external/methylvi/_module.py`:** ```suggestion
+```
+
 **@ethanweinberger:** Hi @martinkim0 @canergen. Just wanted to check in to see if you had any feedback on this. Thanks!
+
+**@martinkim0 (review, commented):** Hey, sorry for the delay in reviewing this. Left some minor comments about code style. One major comment: how would you feel about removing the `setup_anndata` method in favor of just having `setup_mudata`? This way we don't have to rely on the current modality placeholder code.
+
+**@ethanweinberger on `src/scvi/model/_scvi.py`:** Thanks for the catch- fixed!
+
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** Makes sense to me. Done!
+
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** Done. Thanks for the tip!
 
 **@ethanweinberger:** Hi @martinkim0 @canergen. Apologies for the delay in responding to the feedback.
 
 @martinkim0 I accepted all of your style-related suggestions. Regarding your major comment on the placeholder modality code, I went ahead with your suggestion to have the model only support MuData objects (which allowed me to remove the placeholder stuff). Please let me know if you have more feedback or if I missed anything on my end!
 
+**@ethanweinberger on `docs/user_guide/models/methylvi.md`:** When I attempted to implement this change, I ran into issues with precommit complaining about not being able to parse the subsequent code block. Is there anything else I need to do here?
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** Can you add support for categorical covariates? We will deprecate batch_key soon'ish as it's confusing for users (difference between batch_key and categorical_covariate_key).
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** We are currently adding this to the full DE code (three ways - smaller, larger, equal). I assume it's different here as you only test for larger and not for smaller?
+
+**@canergen on `src/scvi/external/methylvi/_module.py`:** I assumed they can have different nu,ber of features. Why does it work here?
+
+**@canergen on `src/scvi/external/methylvi/_module.py`:** If they all have the same shape, and there is only one modality per cell. Shouldn't we ask the user to concatenate before inputing to methylVI. I assume those things are clear but I'm struggling with the meaning of modality.
+
+**@canergen on `src/scvi/external/methylvi/_utils.py`:** Do we still need this one, if we require MuData input?
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** Are qz_store and px_store for all reasonable cases of modalities?
+
 **@canergen:** Hi Ethan, taking over from Martin here. Can you help me with the definition of modalities. See my comments above. The rest LGTM.
 
 **@canergen:** My suggestion is that we will merge it with the biorxiv version and the tutorials?
+
+**@ethanweinberger on `src/scvi/external/methylvi/_utils.py`:** Thanks for the catch. Fixed!
 
 **@ethanweinberger:** > Hi Ethan, taking over from Martin here. Can you help me with the definition of modalities. See my comments above. The rest LGTM.
 
@@ -6573,19 +8483,51 @@ To clarify, a modality here represents a combination of cytosine context (e.g. C
 
 While the Beta-Binomial likelihood is used for all of these contexts, I think it makes more sense to orga …
 
+**@ethanweinberger on `src/scvi/external/methylvi/_module.py`:** See my reply to your top-level comment for details here. Modalities aren't guaranteed to have the same shape and we often will have more than one methylation modality/context per cell.
+
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** I think testing for both hyper/hypo-methylation (i.e., larger/smaller) would both be useful.
+
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** Done!
+
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** Thanks for the catch! As methylVI doesn't inherit from `RNASeqMixin` (and thus doesn't have access to the importance sampling weight calculation methods anyway), I removed this code.
+
 **@ethanweinberger:** > My suggestion is that we will merge it with the biorxiv version and the tutorials?
 
 Fine with me! It'll probably take a couple of months before we're ready to put the full preprint on biorxiv. That said, if you're planning on releasing scvi-tools 1.2 soon and want to have methylVI ready for that release, I'm happy to merge before the preprint is ready. Whatever works for you is fine with me :)
 
 In the meantime, please let me know what you think of my responses to your latest round of comments.
 
+**@canergen on `src/scvi/external/methylvi/_model.py`:** I'm missing it?
+
+**@canergen on `src/scvi/external/methylvi/_module.py`:** Oh, you concatenate along the feature axis (not the cell axis). Makes sense now and thanks for the explaination.
+
+**@canergen on `docs/user_guide/models/methylvi.md`:** @ori-kron-wis Can you provide some insight?
+
+**@canergen on `docs/user_guide/models/methylvi.md`:** Missed this one. In that case we can merge as soon as the open threads are solved. Looks like all else is fixed.
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** I guess the correct way would be to iterate over the layer fields and split the "mod" from above. I don't like treating adata_manager as a bucket of additional entries. You can have a small helper function that takes care of this before setting up the model and stores it under model.modalities.
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** I'll ping you when we have added it there.
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** You could do MethylVIModel -> METHYLVI (would be more inline with other models).
+
 **@canergen:** Can yiu rebase to main? The tests should work now.
 
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** If you check one line below here in the code (line 139 in `_model.py`)  I've added the `categorical_covariate_keys` parameter as requested. I've also made the necessary changes to the module class to accommodate categorical covs.
+
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** In the latest version of the PR the class has been renamed to METHYLVI as requested
+
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** I agree that this initial solution wasn't great. To resolve this, I accessed the anndata manager within the model's `__init__` function and then retrieved the setup method args to get the modality/context names (see line 84 in the newest version of `_model.py`). Let me know what you think of this solution.
+
 **@ethanweinberger:** @canergen just responded to your latest round of comments + rebased as requested. Let me know if you have any more feedback!
+
+**@canergen on `src/scvi/external/methylvi/_model.py`:** self.get_anndata_manager(mdata, **required=True**)
 
 **@canergen:** Hi @ethanweinberger thanks for the ping. One tiny comment. What's the status of the tutorial? We would release it with 1.3 but could merge it to main. @ori-kron-wis any blockers from your side?
 
 **@ori-kron-wis:** We need to fix this pre-commit ruff errors and then we can merge to v1.3
+
+**@ethanweinberger on `src/scvi/external/methylvi/_model.py`:** Done!
 
 **@ethanweinberger:** @canergen @ori-kron-wis Thanks for the quick responses :)! I made your suggested change @canergen and fixed the ruff errors @ori-kron-wis.
 
@@ -6611,11 +8553,20 @@ Backport PR #3007: Change outlier detection for MRVI to ball admissibility calcu
 
 ## #3007: Change outlier detection for MRVI to ball admissibility calculation
 **PR:** #3007 | **Last activity:** 2024-12-31T22:30:22Z
-**State:** merged | **Author:** @justjhong | **Comments:** 2 | **Created:** 2024-10-02 | **URL:** https://github.com/scverse/scvi-tools/pull/3007
+**State:** merged | **Author:** @justjhong | **Comments:** 6 | **Created:** 2024-10-02 | **URL:** https://github.com/scverse/scvi-tools/pull/3007
 
 The outlier detection was mistakenly set to the "ap" (aggregated posterior) thresholding setting when it should have been the "ball" thresholding calculation.
 
 The only changes in this pr are in the `get_outlier_cell_sample_pairs`, everything else is auto-linted.
+
+**@PierreBoyeau on `src/scvi/external/mrvi/_model.py`:** Could you add a comment to describe the shape of the tensor of probs (inside the `device_get`)? It would make it easier to double check what we are summing/taking the max of.
+
+**@PierreBoyeau on `src/scvi/external/mrvi/_model.py`:** Could you quickly update the docstring for this method?
+Also, could you remind me what is the purpose of `threshs` again?
+
+**@PierreBoyeau (review, approved):** LGTM, the two comments I have is to 1. maybe add an inline command to keep track of the object shape 2. update the doc!
+
+**@justjhong on `src/scvi/external/mrvi/_model.py`:** its a threshold that determines if a cell-sample pair is admissible or not
 
 **@canergen:** Can you also backport to 1.2.x otherwise the fox only becomes active in 1.3.x
 
@@ -6665,7 +8616,11 @@ Backport PR #2991: release: updated v1.2.0 and RTD for py312
 
 ## #2991: release: updated v1.2.0 and RTD for py312
 **PR:** #2991 | **Last activity:** 2024-12-25T09:30:20Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2024-09-23 | **URL:** https://github.com/scverse/scvi-tools/pull/2991
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2024-09-23 | **URL:** https://github.com/scverse/scvi-tools/pull/2991
+
+**@canergen on `src/scvi/module/_totalvae.py`:** This is wrong. Pre 1.2 we want this activation function. I assume the assert statement was wrong.
+
+**@ori-kron-wis on `src/scvi/module/_totalvae.py`:** this is a patch. please suggest a fix.
 
 ## #2989: Update pyproject.toml
 **PR:** #2989 | **Last activity:** 2024-12-21T11:30:20Z
@@ -6709,9 +8664,13 @@ Backport PR #2960: docs: Counterfactual prediction user guide
 
 ## #2960: docs: Counterfactual prediction user guide
 **PR:** #2960 | **Last activity:** 2024-12-20T05:00:17Z
-**State:** merged | **Author:** @justjhong | **Comments:** 3 | **Created:** 2024-09-05 | **URL:** https://github.com/scverse/scvi-tools/pull/2960
+**State:** merged | **Author:** @justjhong | **Comments:** 5 | **Created:** 2024-09-05 | **URL:** https://github.com/scverse/scvi-tools/pull/2960
 
 Addresses #1176
+
+**@canergen on `docs/user_guide/background/counterfactual_prediction.md`:** be careful
+
+**@canergen on `docs/user_guide/background/counterfactual_prediction.md`:** and our model is reasonable well in generating y
 
 **@canergen:** Two small comments. Do you have a suggestion how to review md files after rendering?
 
@@ -6733,7 +8692,37 @@ Implemented assignment's content for batch-effect correction in the single-cell 
 
 ## #2973: update ruff rules
 **PR:** #2973 | **Last activity:** 2024-12-19T10:04:12Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2024-09-16 | **URL:** https://github.com/scverse/scvi-tools/pull/2973
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 15 | **Created:** 2024-09-16 | **URL:** https://github.com/scverse/scvi-tools/pull/2973
+
+**@canergen on `tests/model/test_scvi.py`:** Why is this removed?
+
+**@canergen on `tests/model/test_scvi.py`:** ?
+
+**@ori-kron-wis on `tests/model/test_scvi.py`:** one of the new constraints does not allow more than 1 line under pytest raises error (only allow the line that casues the error which is the 1st line... so we never reach that 2nd one ).
+
+**@canergen on `pyproject.toml`:** I meant to activate this. Any issues with it? We should otherwise leave the RUF100 active.
+
+**@canergen on `pyproject.toml`:** Let’s leave it out. So uncomment again. It has currently no effect but it’s also style in scanpy and AnnData.
+
+**@canergen on `pyproject.toml`:** Should we uncomment again? It has no effect in the code
+
+**@canergen on `pyproject.toml`:** Add this again? I don’t have preference here.
+
+**@canergen (review, approved):** See comments. Otherwise LGTM.
+
+**@canergen on `tests/model/test_scvi.py`:** We should set adata and then run get_latent. So copy the first line out of the raise and add the second line.
+
+**@canergen on `tests/model/test_scvi.py`:** It’s at least my take of what we are testing here. Does setting model.adata fail? Then we should refine the comment on this test.
+
+**@ori-kron-wis on `tests/model/test_scvi.py`:** No, because model.adata = adata3 is what failing, We never reach the 2nd line.
+
+**@ori-kron-wis on `pyproject.toml`:** Please suggest a fix on top and lets see tests finish again
+
+**@canergen on `tests/model/test_scvi.py`:** Got it thanks.
+
+**@canergen on `pyproject.toml`:** Remove those lines, we don't want to have it.
+
+**@canergen on `pyproject.toml`:** Remove RUF line and activate RUF100 again.
 
 ## #2974: update docker to py3.12
 **PR:** #2974 | **Last activity:** 2024-12-19T10:00:12Z
@@ -6745,11 +8734,35 @@ Implemented assignment's content for batch-effect correction in the single-cell 
 
 ## #2959: docs: fix progress bar interactive style in RTD
 **PR:** #2959 | **Last activity:** 2024-12-19T09:58:31Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2024-09-04 | **Labels:** enhancement | **URL:** https://github.com/scverse/scvi-tools/pull/2959
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 13 | **Created:** 2024-09-04 | **Labels:** enhancement | **URL:** https://github.com/scverse/scvi-tools/pull/2959
 
 close https://github.com/scverse/scvi-tools/issues/2958
 
+**@canergen on `src/scvi/data/_download.py`:** We have no requirement on scanpy in scvi-tools and would like to keep it (the one that have are optional imports). You are using a private (_XXX) function from scanpy, see the Zulip discussion from last week why this is a bad idea.
+
+**@canergen on `src/scvi/utils/_track.py`:** Could we deprecate track all together and only use the lightning track?
+
+**@ori-kron-wis on `src/scvi/data/_download.py`:** Yes of course. This will be removed once we figure out what works and what doesn't
+
+**@ori-kron-wis on `src/scvi/utils/_track.py`:** I think we can, but it takes a bit more effort, and I would separate it from this PR to keep it small, the same as if we decide to remove the rich progress bar altogether
+
+**@canergen on `src/scvi/data/_download.py`:** What’s this test about? To support old versions can we just bump the requirement?
+
+**@canergen on `src/scvi/data/_download.py`:** Does this remove the file?
+
+**@canergen on `src/scvi/utils/_track.py`:** This fixes the progress bar for training?
+
+**@canergen (review, commented):** LGTM. See minor comments.
+
 **@canergen:** Is the download copied from scanpy? Should we raise with them that having a developer API for this would be preferred?
+
+**@ori-kron-wis on `src/scvi/utils/_track.py`:** yep
+
+**@canergen on `src/scvi/data/_download.py`:** We should remove it as in the other function below we just import from auto. Can you check that the requirement is correct and we always install a tqdm version that has auto?
+
+**@canergen on `src/scvi/data/_download.py`:** ipywidget is not used. Copy the import to line 4.
+
+**@canergen on `src/scvi/data/_download.py`:** Is this a part of our requirements? Do we test this part of the code? Is this part necessary to download files in scvi.data?
 
 ## #2985: Update pyproject.toml
 **PR:** #2985 | **Last activity:** 2024-12-19T09:01:02Z
@@ -6820,9 +8833,31 @@ Backport PR #2970: Drop Python 3.9
 
 ## #2970: Drop Python 3.9
 **PR:** #2970 | **Last activity:** 2024-12-15T10:00:15Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2024-09-15 | **URL:** https://github.com/scverse/scvi-tools/pull/2970
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 12 | **Created:** 2024-09-15 | **URL:** https://github.com/scverse/scvi-tools/pull/2970
 
 close https://github.com/scverse/scvi-tools/issues/2966
+
+**@canergen on `src/scvi/data/_built_in_data/_pbmc.py`:** why that change?
+
+**@canergen on `src/scvi/data/_preprocessing.py`:** I don't get this strict=False thing.
+
+**@canergen on `src/scvi/dataloaders/_concat_dataloader.py`:** same.
+
+**@canergen on `src/scvi/external/cellassign/_module.py`:** again
+
+**@canergen on `src/scvi/external/gimvi/_model.py`:** ...
+
+**@canergen on `src/scvi/external/gimvi/_module.py`:** is this one correct? Does it expect a list with None
+
+**@canergen on `src/scvi/nn/_base_components.py`:** again
+
+**@canergen on `src/scvi/nn/_base_components.py`:** ...
+
+**@ori-kron-wis on `src/scvi/external/gimvi/_module.py`:** This is what was written before. I think that because optional is inside the list it turned it into an option of a list of Nones to a list of np.ndarray
+
+**@canergen (review, approved):** LGTM. Let's see strict=True.
+
+**@ori-kron-wis on `src/scvi/nn/_base_components.py`:** Apparently strict=False required for base_component, otherwise tests not pass
 
 **@ori-kron-wis:** integration (ubuntu-latest, 3.9)  is the legacy before the change and did not run; we expect this test to not appear once we merge this PR to main
 
@@ -6939,19 +8974,23 @@ v1.2 manual merge with main before release
 
 ## #2951: fix(model) check duplicated gene in celltype marker table
 **PR:** #2951 | **Last activity:** 2024-12-05T11:34:02Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2024-08-28 | **Labels:** P0 | **URL:** https://github.com/scverse/scvi-tools/pull/2951
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2024-08-28 | **Labels:** P0 | **URL:** https://github.com/scverse/scvi-tools/pull/2951
 
 close https://github.com/scverse/scvi-tools/issues/2837
 
 added assertion error in cellAssign for checking duplicates in celltype markers
 
+**@canergen (review, approved):** We only need the first check (ll 84-86). The second one is handled by AnnData.
+
 **@canergen:** I think index.has_duplicates is a slightly better check for pandas to exclude duplicated indices. Can you add a test and CHANGELOG?
 
 ## #2940: Added PoissonVI Region Factors
 **PR:** #2940 | **Last activity:** 2024-12-05T11:32:51Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 4 | **Created:** 2024-08-18 | **URL:** https://github.com/scverse/scvi-tools/pull/2940
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 5 | **Created:** 2024-08-18 | **URL:** https://github.com/scverse/scvi-tools/pull/2940
 
 This will close Issue [2529](https://github.com/scverse/scvi-tools/issues/2529)
+
+**@canergen (review, commented):** Is the bias optional? Please add changes to CHANGELOG.
 
 **@canergen:** @ori-kron-wis Can you do manual backport.
 
@@ -6965,13 +9004,25 @@ why isn't the auto back porting not working for us (not just this PR)?
 
 ## #2938: Error in scanvi_ref multiclass accuracy calculation
 **PR:** #2938 | **Last activity:** 2024-12-05T11:32:50Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2024-08-18 | **URL:** https://github.com/scverse/scvi-tools/pull/2938
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 5 | **Created:** 2024-08-18 | **URL:** https://github.com/scverse/scvi-tools/pull/2938
 
 added -1 to the squeeze in order to deal with the case of dim==1 in a multiclass batch where there is 1 sample for the usage of scvi-> scanvi transfer learning
 
 close https://github.com/scverse/scvi-tools/issues/2934
 
 **@canergen:** As far as I understand it. It's not really for the case dim==1 but for the case .shape =(1,1). It doesn't require a comment and needs a CHANGELOG entry.
+
+**@canergen on `CHANGELOG.md`:** Please refer to the class for the DataSplitter. And the message should be: 'Fix logging of accuracy for cases with 1 sample per class in scANVI'. I assume the transfer actually doesn't matter.
+
+**@ori-kron-wis on `CHANGELOG.md`:** changed
+
+**@canergen on `CHANGELOG.md`:** Feels like even Datasplitter is to much info. If you want to keep Dataspliter you should refer to the class correctly.
+```suggestion
+- Fix logging of accuracy for cases with 1 sample per class in scANVI {pr}`2938`.
+```
+
+**@canergen on `CHANGELOG.md`:** ```suggestion
+```
 
 ## #2961: Remove dependency anndata 0.10.8
 **PR:** #2961 | **Last activity:** 2024-12-04T18:30:38Z
@@ -7090,7 +9141,19 @@ Backport PR #2948: added the future annotations import for many models functions
 
 ## #2948: added the future annotations import for many models functions
 **PR:** #2948 | **Last activity:** 2024-11-26T12:30:52Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2024-08-26 | **URL:** https://github.com/scverse/scvi-tools/pull/2948
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 6 | **Created:** 2024-08-26 | **URL:** https://github.com/scverse/scvi-tools/pull/2948
+
+**@canergen on `src/scvi/external/stereoscope/_model.py`:** Does it work when setting it up with None?
+
+**@canergen on `src/scvi/model/_condscvi.py`:** Same here. I think it will fail with None
+
+**@canergen on `src/scvi/model/_jaxscvi.py`:** DataLoader for JAX will fail?
+
+**@canergen (review, approved):** Please check all uses of AnnData | None or remove them from now. You can merge afterwards.
+
+**@canergen on `src/scvi/model/_amortizedlda.py`:** Has to be float | Sequence[float] | **None**
+
+**@canergen on `src/scvi/model/_amortizedlda.py`:** Same.
 
 ## #2946: test for pytorch lightning v2.4
 **PR:** #2946 | **Last activity:** 2024-11-25T21:00:31Z
@@ -7118,9 +9181,11 @@ Backport PR #2938: Error in scanvi_ref multiclass accuracy calculation
 
 ## #2923: fix[train] flag to make jax deterministic if seed is manually set
 **PR:** #2923 | **Last activity:** 2024-11-12T19:22:50Z
-**State:** merged | **Author:** @justjhong | **Comments:** 2 | **Created:** 2024-07-31 | **URL:** https://github.com/scverse/scvi-tools/pull/2923
+**State:** merged | **Author:** @justjhong | **Comments:** 3 | **Created:** 2024-07-31 | **URL:** https://github.com/scverse/scvi-tools/pull/2923
 
 Addresses #2911
+
+**@canergen (review, commented):** Thanks. LGTM. Can you add a release note as fix?
 
 **@canergen:** @MeeseeksDev backport to 1.2.x
 
@@ -7201,9 +9266,32 @@ Backport PR #2867: fix(module): address shape mismatch for scanvae loss n_sample
 
 ## #2867: fix(module): address shape mismatch for scanvae loss n_samples
 **PR:** #2867 | **Last activity:** 2024-10-28T17:02:40Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 0 | **Created:** 2024-06-28 | **URL:** https://github.com/scverse/scvi-tools/pull/2867
+**State:** merged | **Author:** @martinkim0 | **Comments:** 11 | **Created:** 2024-06-28 | **URL:** https://github.com/scverse/scvi-tools/pull/2867
 
 closes #2429
+
+**@canergen on `src/scvi/module/_utils.py`:** o.size(-2) should work for both.
+
+**@canergen on `src/scvi/module/_scanvae.py`:** .sum(dim=-1)
+
+**@canergen on `src/scvi/module/_scanvae.py`:** this line requires a more complex transpose (preferred like torch.transpose(values, -1, -2) ) or requires using torch.einsum.
+
+**@canergen on `src/scvi/module/_scanvae.py`:** Remove this check with self.n_labels>1 again.
+
+**@canergen on `src/scvi/module/_utils.py`:** Have you removed this function? Is it not in use at other locations?
+
+**@ori-kron-wis on `src/scvi/module/_utils.py`:** not so sure what you meant. o.size(-2) gave me 128 which is like o.size(1). This is from Martin's solution.
+
+**@canergen on `src/scvi/module/_utils.py`:** You call here batch_size = o.size(1) and for ndim=2 batch_size = o.size(0). It's nicer to call o.size(-2) and do it outside of the if statement.
+
+**@ori-kron-wis on `src/scvi/module/_scanvae.py`:** This comes from the previous solution, which was fine (or was it), for the case of n_labels>1 and n_samples==1. But I can say it also work with your solution
+
+**@ori-kron-wis on `src/scvi/module/_scanvae.py`:** This comes from the previous solution, which was fine, for the case of n_labels>1 and n_samples==1
+
+**@ori-kron-wis on `src/scvi/module/_utils.py`:** This is from Martin's solution. Not seem to be used anywhere now.
+There are more functions with the name iterate, but not for this module.
+
+**@ori-kron-wis on `src/scvi/module/_utils.py`:** got it.
 
 ## #2915: fix(model) get_normalized_expression support
 **PR:** #2915 | **Last activity:** 2024-10-28T17:02:31Z
@@ -7221,9 +9309,11 @@ Warning if last batch contains less than 3 cells. Asking to change the batch siz
 
 ## #2632: Update _trainingplans.py
 **PR:** #2632 | **Last activity:** 2024-10-24T09:00:41Z
-**State:** closed | **Author:** @canergen | **Comments:** 0 | **Created:** 2024-03-26 | **Labels:** P0 | **URL:** https://github.com/scverse/scvi-tools/pull/2632
+**State:** closed | **Author:** @canergen | **Comments:** 1 | **Created:** 2024-03-26 | **Labels:** P0 | **URL:** https://github.com/scverse/scvi-tools/pull/2632
 
 Disable adversarial training when using a single batch.
+
+**@martinkim0 (review, commented):** LGTM! A test + release note would be nice
 
 ## #2914: fix(train) disable adversarial classifier for a single batch
 **PR:** #2914 | **Last activity:** 2024-10-24T08:30:27Z
@@ -7293,24 +9383,129 @@ Fixes tests.
 
 ## #2902: feat(dataloaders): add argument for custom data split indexes
 **PR:** #2902 | **Last activity:** 2024-10-23T04:30:25Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2024-07-16 | **URL:** https://github.com/scverse/scvi-tools/pull/2902
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 39 | **Created:** 2024-07-16 | **URL:** https://github.com/scverse/scvi-tools/pull/2902
 
 a branch to handle several data splitting issues
 
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** I like the use of `external_indexing` to contain all data split indices instead of having separate arguments for training and validation. To make it more concise, we could remove `use_external_indexing` and assume that `external_indexing` will be used when it is not `None`
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** ```suggestion
+        A list of data split indexes in the order of training, validation, and test sets.
+```
+nit: Since our docs will render type annotations directly, we can remove type references in argument docstrings for less redundancy.
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** We should also mention that validation and test are not required
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** nit: For our code style it's preferable to use `not isinstance(external_indexing, list))`
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** Applicable to other lines in this function as well.
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** This will fail if `len(external_indexing) < 2)`, same for the `external_indexing[2] is None` check below.
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** For the sake of not repeating these checks explicitly for each element, you can do something like:
+```
+if not all(isinstance(elem, np.ndarray) for elem in external_indexing)):
+   # raise error here
+```
+No need to specify which element is not the correct type - I think the users can figure that out.
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** I think this scenario OK to have - some users may wish to leave out some observations. We can still raise a warning here though.
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** We can also make the typing more explicit here with `Optional[list[npt.ArrayLike]]`
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** Since `validate_data_split` is now trying to handle two sets of arguments (one for `train_size` and the other for `external_indexing`), maybe we can refactor this out into two functions instead. What do you think?
+
+**@martinkim0 on `tests/dataloaders/test_datasplitter.py`:** Ideally we should also be testing for error cases (overlapping indexes, missing input arguments, etc). You can do this with `with pytest.raises`.
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** An edge case for this check is if any of the indexes contains duplicate elements, e.g., the train split having `[1, 2, 3, 1]`.
+
+**@martinkim0 on `src/scvi/dataloaders/_data_splitting.py`:** One way to address this would be to convert each element in the input list to a numpy set. This will also make the `np.intersect1d` checks below faster.
+
+**@martinkim0 (review, dismissed):** Great start! One major comment regarding refactoring the logic here into two separate functions, and some minor comments about code style, error checks, and testing.
+
+Could you also add a release note under `CHANGELOG.md` in the same format as the other entries? This can go under the `1.2.0` release.
+
+Also, if you have time, feel free to use the newer Python 3.10+ type annotations in `src/scvi/dataloaders/_data_splitting.py` by adding a `from __future__ import annotations` at the top of the file.
+
 **@martinkim0:** I'm also going to go ahead and change the title of the PR to match our [commit convention](https://docs.scvi-tools.org/en/latest/developer/maintenance.html#conventional-commits).
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** Make sense
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** gotcha. done.
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** OK I see.
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** Sure, I actually added here handling for the case where the 2nd or 3rd arrays are even not given to us, and imputed that . But made it now more compact.
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** it is now different
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** alright
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** I would keep only the intersection part and add np.unique(s)
+
+I didn't think about duplicates.
+The problem is not only here, the user can insert duplicate indexes per set (not overlapping) and its train/test/valid will hold duplicate rows. I don't think it makes sense. but maybe he will want to up/down sample for some reason.
+
+I added to raise a warning for duplicates per set
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** Can you elaborate? Wouldn't this be much more challenging to implement and manage?
+
+**@ori-kron-wis on `tests/dataloaders/test_datasplitter.py`:** Of course
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** change to sets in the beginning of validation and use that further on code.
+refactor only the validation function  to 2 functions
+We want to implement it in the semi-supervised class as well (divide to labeld/unlabled)
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** indexing = indices
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** and not = are not.
+Left empty = setting it to None or not using it?
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** what's tp?
+
+**@canergen on `src/scvi/dataloaders/_data_splitting.py`:** Should be n_unlabeled_train?
+
+**@canergen on `src/scvi/external/gimvi/_model.py`:** and =are
+indexes = indices
+
+**@canergen on `tests/dataloaders/test_datasplitter.py`:** We should test here also all modules with specific exceptions. I.e. pyro, contrastive, scanvi, scvi. Those tests should go in the respective module tests. The error with n_unlabelled above should throw an error in the scANVI test but not in the tests here.
+
+**@canergen (review, commented):** Please add the requested tests and fix the typos in the documentation and explain how to set indices to empty in the docstring. Afterwards fine and can be merged.
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** done
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** Both will work actually:
+external_indexing=[train_ind,None,None]
+external_indexing=[train_ind]
+In both cases, valid and test indices will be imputed with empty np.arrays
+But it must be a list of list beforehand
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** type - need to be to
+
+**@ori-kron-wis on `src/scvi/external/gimvi/_model.py`:** fixed
+
+**@ori-kron-wis on `src/scvi/dataloaders/_data_splitting.py`:** yes missed that
+
+**@ori-kron-wis on `tests/dataloaders/test_datasplitter.py`:** Yes you are correct.
+I added those tests, but LMK if I missed some cases.
+I wasn't sure about pyro tough. Can we discuss as well?
 
 **@canergen:** Hi @martinkim0 and @ori-kron-wis does it have to be merged again(?) after adding on-merge: backport to 1.2.X?
 
 ## #1591: DestVI changed l1 loss. Expected proportions
 **PR:** #1591 | **Last activity:** 2024-10-20T07:00:45Z
-**State:** closed | **Author:** @canergen | **Comments:** 2 | **Created:** 2022-07-03 | **URL:** https://github.com/scverse/scvi-tools/pull/1591
+**State:** closed | **Author:** @canergen | **Comments:** 4 | **Created:** 2022-07-03 | **URL:** https://github.com/scverse/scvi-tools/pull/1591
 
 Uses proportions computed in other deconvolution method to infer cell activation state of those cells. Application activation for e.g. Cell2Location results. L1 loss changed. Still in discussion.
 Optional obsm field.
 
+**@justjhong (review, commented):** Optional Obsm field implementation looks good to me
+
 **@adamgayoso:** @cane11 any reason to keep this open?
 
 **@canergen:** @martinkim0 It's the version of destVI we are using for Curio data (other sparsity regularization). Can you have a pass?
+
+**@martinkim0 on `scvi/model/_destvi.py`:** I feel like this argument would be clearer if we separate it out into two arguments: `celltype_regularization: Literal["l1", "entropy"] | None = None` and `celltype_regularization_weight: float | None = None`
 
 ## #2903: ci: change cuda test to ghcr image
 **PR:** #2903 | **Last activity:** 2024-10-15T17:31:38Z
@@ -7406,9 +9601,11 @@ closes #2869.
 
 ## #2865: docs: add faq
 **PR:** #2865 | **Last activity:** 2024-09-25T18:30:40Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 0 | **Created:** 2024-06-27 | **URL:** https://github.com/scverse/scvi-tools/pull/2865
+**State:** merged | **Author:** @martinkim0 | **Comments:** 1 | **Created:** 2024-06-27 | **URL:** https://github.com/scverse/scvi-tools/pull/2865
 
 closes #2288
+
+**@martinkim0 on `docs/conf.py`:** This line ensures that left and right TOCs are not expanded by default
 
 ## #2863: docs: add release entry for 1.1.4
 **PR:** #2863 | **Last activity:** 2024-09-24T23:30:44Z
@@ -7554,9 +9751,11 @@ Backport PR #2828: fix(external): add save load mrvi tests and fix pickling
 
 ## #2828: fix(external): add save load mrvi tests and fix pickling
 **PR:** #2828 | **Last activity:** 2024-09-03T17:30:24Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 0 | **Created:** 2024-06-05 | **URL:** https://github.com/scverse/scvi-tools/pull/2828
+**State:** merged | **Author:** @martinkim0 | **Comments:** 1 | **Created:** 2024-06-05 | **URL:** https://github.com/scverse/scvi-tools/pull/2828
 
 closes #2813
+
+**@justjhong (review, approved):** Nice find, thats a weird bug
 
 ## #2827: Backport PR #2578 on branch 1.2.x (Reference mapping with MuData-based models)
 **PR:** #2827 | **Last activity:** 2024-09-02T00:30:35Z
@@ -7566,13 +9765,23 @@ Backport PR #2578: Reference mapping with MuData-based models
 
 ## #2578: Reference mapping with MuData-based models
 **PR:** #2578 | **Last activity:** 2024-09-01T23:30:41Z
-**State:** merged | **Author:** @ethanweinberger | **Comments:** 3 | **Created:** 2024-02-29 | **URL:** https://github.com/scverse/scvi-tools/pull/2578
+**State:** merged | **Author:** @ethanweinberger | **Comments:** 13 | **Created:** 2024-02-29 | **URL:** https://github.com/scverse/scvi-tools/pull/2578
 
 (Addresses #2393) While certain multimodal models (e.g. totalVI) can be used with either `AnnData` or `MuData` objects, currently the `ArchesMixin` class only supports `AnnData`-based models and so reference mapping cannot be performed with `MuData`-based models. This PR thus extends `ArchesMixin` class to handle MuData-based models by making appropriate changes to the `load_query_data` function and adding a new `prepare_query_mudata` function.
 
 @martinkim0 my initial PR is still a work-in-progress (e.g. no unit tests yet), but I thought it would be helpful to get some initial feedback from you. To avoid duplicating code, my instinct for the `prepare_query_mudata` function was to essentially be a lightweight wrapper that calls `prepare_query_anndata` for each modality in the `MuData` object. However, when attempting to do this naively I quickly ran into issues with `var_names` for `MuData` objects being saved as a single list for all modalities. In particular, because variable names don't have identifiers for their modality of origin, I ran into issues where e.g. a protein-modality-`AnnData` would erroneously be padded with zeros for "missing" RNA-modality features. To work around this, I modified the base `save` function such that variable names are saved as a dictionary (with modalities as keys) for `MuData` objects.
 
 This worked (as in, my code ran without errors and current tests still pass), but I imagine this would lead to backwards incompatibility issues for previo …
+
+**@martinkim0 (review, commented):** Thanks for taking a stab at this! You're right - it looks like we should save var_names separately for each modality, so it's unfortunate that we don't already do this.
+
+This would actually be a great feature to include in our v2 release, since our plan is to rework large parts of the codebase. So there would be no issue with backwards compatibility.
+
+The other alternative is to use this new save method from now on, with the caveat that we'd have to implement a method to convert "legacy" MuData saves (similar to [`convert_legacy_save`](https://docs.scvi-tools.org/en/stable/api/reference/scvi.model.base.BaseModelClass.html#scvi.model.base.BaseModelClass.convert_legacy_save)).
+
+I'm personally leaning more towards the first option since there would be less room for user confusion and …
+
+**@martinkim0 on `scvi/model/base/_archesmixin.py`:** nit: need to import from `mudata` since we don't directly depend on `muon`
 
 **@ethanweinberger:** @martinkim0 with the closing of #2769, I've gone ahead and taken another stab at this PR.
 
@@ -7582,11 +9791,34 @@ Let me know what you think/if there's anything else you'd like in this PR in ter
 
 **@ethanweinberger:** Hi @martinkim0. Just wanted to check in to see if you had any feedback for the latest version of this PR. Thanks!
 
+**@martinkim0 on `src/scvi/model/base/_archesmixin.py`:** typing here would be great!
+
+**@martinkim0 on `src/scvi/model/base/_archesmixin.py`:** this could be replaced by a call to `scvi.model.base._save_load._get_var_names`
+
+**@martinkim0 (review, commented):** Thanks a lot! This looks great - I think refactoring out `_pad_and_sort_query_anndata` makes a lot of sense. Just left some minor comments regarding typing and getting var names.
+
+One last thing: could you add a test for `prepare_query_mudata` as well as a release note in `CHANGELOG.md` (this can go under the v1.2 release).
+
+**@ethanweinberger on `src/scvi/model/base/_archesmixin.py`:** Done. Thanks for the pointer!
+
+**@ethanweinberger on `src/scvi/model/base/_archesmixin.py`:** Done
+
 **@ethanweinberger:** > Thanks a lot! This looks great - I think refactoring out `_pad_and_sort_query_anndata` makes a lot of sense. Just left some minor comments regarding typing and getting var names.
 >
 > One last thing: could you add a test for `prepare_query_mudata` as well as a release note in `CHANGELOG.md` (this can go under the v1.2 release).
 
 Added the requested typing + incorporated your suggestion on `._get_var_names`. For testing I added a new test `test_scarches_mudata_prep_layer` in `test_totalvi.py` analogous to `test_scarches_data_prep_layer` in `test_scvi.py`.
+
+**@martinkim0 (review, approved):** LGTM! thanks a lot for addressing the comments
+
+**@martinkim0 on `CHANGELOG.md`:** ```suggestion
+- Add support for reference mapping with {class}`mudata.MuData` models to {class}`scvi.model.base.ArchesMixin` {pr}`2578`.
+```
+
+**@martinkim0 on `CHANGELOG.md`:** ```suggestion
+- Add support for reference mapping with {class}`mudata.MuData` models to
+    {class}`scvi.model.base.ArchesMixin` {pr}`2578`.
+```
 
 ## #2825: Backport PR #2824 on branch 1.2.x (docs: remove left nav icons)
 **PR:** #2825 | **Last activity:** 2024-09-01T22:30:30Z
@@ -7640,7 +9872,7 @@ This PR introduces latent batch-effect correction variables in RNADeconv Module 
 
 ## #1059: Adding mixin classes for pyro training and posterior sampling
 **PR:** #1059 | **Last activity:** 2024-08-27T18:31:18Z
-**State:** merged | **Author:** @vitkl | **Comments:** 4 | **Created:** 2021-05-12 | **URL:** https://github.com/scverse/scvi-tools/pull/1059
+**State:** merged | **Author:** @vitkl | **Comments:** 79 | **Created:** 2021-05-12 | **URL:** https://github.com/scverse/scvi-tools/pull/1059
 
 This PR adds mixin classes for
 
@@ -7651,34 +9883,273 @@ It also fixes an issue where pyro model history was erased on load
 
 Fixes #1031
 
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** this is a relic of the older versions and can be removed
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** we have a custom wrapper for tqdm. See here:
+
+https://github.com/YosefLab/scvi-tools/blob/6dae6482efa2d235182bf4ad10dbd9483b7d57cd/scvi/data/_built_in_data/_download.py#L43-L45
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** torch no grad decorator so you can remove all detach calls.
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** eval should be called in the training procedure. So I'd remove this
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** `next(iter(train_dl))`
+
+**@adamgayoso on `tests/models/test_pyro.py`:** why comment this out?
+
+**@adamgayoso on `tests/models/test_pyro.py`:** the training plan actually sets n_obs automatically (see https://github.com/YosefLab/scvi-tools/blob/6dae6482efa2d235182bf4ad10dbd9483b7d57cd/scvi/train/_trainingplans.py#L602-L606)
+
+**@adamgayoso on `tests/models/test_pyro.py`:** we should comment that this isn't strictly necessary for this particular test case model as it only has global latent variables. In other words the old code worked too.
+
+**@adamgayoso on `tests/models/test_pyro.py`:** will no longer be necessary (see data splitter PR)
+
+**@adamgayoso on `tests/models/test_pyro.py`:** what's the purpose of this in the pyro model as opposed to one level up (as before)?
+
+**@vitkl on `scvi/model/base/_pyromixin.py`:** @adamgayoso do you mean at the very end of training? e.i. after this line? https://github.com/YosefLab/scvi-tools/pull/1059/files#diff-cb30789d40b9630e34b2067718c7d61aba3238123aa1a7ae8852c80846031b6fR272 (272)
+
+**@vitkl on `tests/models/test_pyro.py`:** @adamgayoso AutoNormal guide does not have a single parameter - it has one locs and one scales parameter per variable (and I think AutoNormal not AutoDiagonalNormal has to be used when the model has plates). What are you trying to test with this?
+
+**@adamgayoso on `tests/models/test_pyro.py`:** right there should be 102 variables (for each of loc and scale), 100 for the weight vector, 1 for the sigma from the sample statement and one for the liner bias
+
+**@vitkl on `tests/models/test_pyro.py`:** I extended this model to (optionally) have cell-specific latent variables - that feature needs to be tested, right? See:
+```python
+def test_pyro_bayesian_train_sample_mixin_with_local():
+```
+
+**@vitkl on `tests/models/test_pyro.py`:** This test fails with AutoNormal guide probably because these are 3 separate parameters/tensors
+
+**@vitkl on `scvi/model/base/_pyromixin.py`:** what do you mean?
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** I think you can use that to get the output of the data loader without having to have this for loop and then the break statement.
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** if batch size is none, use the device backed splitter
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** ```suggestion
+        training_plan = PyroTrainingPlan(
+            pyro_module=self.module, **plan_kwargs
+        )
+```
+
+The train runner now sets the property for this automatically
+
+**@adamgayoso on `tests/models/test_pyro.py`:** I think what this test was doing was to ensure the guide was properly initialized, otherwise you don't get latent var params for each latent var
+
+**@vitkl on `scvi/model/base/_pyromixin.py`:** `tensor_dict  = next(iter(train_dl))` like this?
+
+**@vitkl on `tests/models/test_pyro.py`:** Not sure I understand what you mean. Do you mean it tests that the number and shape of all latent variable corresponds to the number and shape of guide param? If yes, the code I added in replacement tests that for weight vector: https://github.com/YosefLab/scvi-tools/pull/1059/files#diff-663073fe4ef3cfa8f3fad68a502f760ee33dbb94c3c803c50635f0d63f67ee30R278-R280
+
+**@vitkl on `tests/models/test_pyro.py`:** You mean what is the difference between `list_obs_plate_vars(self)` and `create_plates(self, x, y, ind_x)`?
+
+The latter creates a pyro plate, the former records the name of the minibatch plate such that posterior sampling knows which is the minibatch plate (`"name": "obs_plate"`). Posterior sampling also needs to know which variables belong to that plate (keys of `"sites"` dictionary). The dimensions in `"sites"` dictionary and `"in"` are needed for the automatic autoencoding guide - but not strictly necessary for this PR.
+
+WDYT?
+
+**@vitkl on `scvi/train/_trainingplans.py`:** @adamgayoso I added an option to change lr. It would be inconvenient to write a custom training method just to change lr. WDYT?
+
 **@vitkl:** Interestingly, the last test works but cell2location with full data and non-amortised inference gives an error which I do not quite understand. See HTML attached (can be reproduced by taking this notebook to colab).
 [cell2location_analysis_3_scvi_ln_full_data.html.zip](https://github.com/YosefLab/scvi-tools/files/6490759/cell2location_analysis_3_scvi_ln_full_data.html.zip)
 
 UPD: Problem solved (https://github.com/YosefLab/scvi-tools/pull/930/commits/a48d8ff7c1d0280f15bcc835f0f1722dcda6fbd3).
 
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** we should be able to detect if JIT trace elbo is being used here through the plan kwargs and add the callback accordingly.
+
+I think if you look at the peakvi train method some callbacks are added as an example
+
+https://github.com/YosefLab/scvi-tools/blob/a9da914764d311ff18b4b557b78d9550a3b940af/scvi/model/_peakvi.py#L216-L221
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** ```suggestion
+            Minibatch size to use during training. If `None`, no minibatching occurs and all data is copied to device (e.g., GPU).
+```
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** we should automatically add `early_stopping_monitor="train_loss_epoch"` (or whatever it gets logged as) to the trainer kwargs, so the early stopping will work by default if user selects True.
+
+Also, should we change the logged name to elbo?
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** why False? it could be None and then we automatically infer it
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** for these docstrings there should be one line description with period and then a line break and an empty line and then you can have a paragraph
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** use same language as other functions.
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** not sure this is proper formatting (you can see numpydoc to check)
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** not sure this is proper formatting. You can see the docs build as one of the PR checks; though, you need to add these classes to the docs.
+
+**@adamgayoso on `scvi/train/_trainingplans.py`:** ```suggestion
+            optim_kwargs["lr"] if "lr" in optim_kwargs.keys() else 1e-3
+```
+
+do you need to make a list?
+
+**@adamgayoso on `scvi/train/_trainingplans.py`:** seems reasonable to me.
+
+**@adamgayoso on `scvi/train/_trainingplans.py`:** also I think you can just do `optim_kwargs.update({"lr": 1e-3})`
+
+**@adamgayoso on `scvi/train/_trainingplans.py`:** same use of `.update()` here.
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** it seems like user can supply a dict in the form `{"means": np.mean, "std": np.std}` so users can get different summary stats? and if none is supplied you give this?
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** needs to be empty line above this one
+```suggestion
+
+        Also device agnostic.
+```
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** use_gpu should be `None` everywhere
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** use common use_gpu language
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** not fully documented, will be helpful to have
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** numpydoc has a notes section that I believe goes after Returns
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** for full batch, this will copy yet again to GPU, can't you `tensor_dict` without redfining it because it's defined in the previous loop?
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** (and subsequently, the already defined args and kwargs in scope)
+
+**@vitkl on `scvi/model/base/_pyromixin.py`:** @adamgayoso where is validation loss logged?
+
+Yes, I think would be good to rename that to "train_elbo_epoch"/"validation_elbo_epoch"
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** well we don't actually do any validation loop with Pyro, I wasn't sure how to exactly in a universal way. Is it just `evaulate_loss`? And how does that work for regular black box VI? if there are no variational parameters for the val set?
+
+**@vitkl on `scvi/model/base/_pyromixin.py`:** I think you can just save ELBO loss like this:
+```python
+validation_elbo = svi.evaluate_loss(*validation_args, **validation_kwargs)
+```
+
+**@adamgayoso on `tests/models/test_pyro.py`:** no I mean like why do you need this specific static method where the comment is?
+
+**@adamgayoso on `tests/models/test_pyro.py`:** going back to previous point... why is this necessary?, why not define the static method here instead?
+
+**@adamgayoso on `tests/models/test_pyro.py`:** on a different note, should `list_obs_plate_vars(self)` be one level up in the `PyroBaseModuleClass` and just do like
+
+```
+def list_obs_plate_vars(self):
+    pass
+```
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** wrote in a different comment, but this could very well be in self.module
+
+**@vitkl on `scvi/model/base/_pyromixin.py`:** I think it is easier to keep track of plate-related things in pyro model class. `self.module` can often be general for many similar models.
+
+**@vitkl on `scvi/model/base/_pyromixin.py`:** @adamgayoso Would it hurt to always do this callback? (see what I added in https://github.com/YosefLab/scvi-tools/pull/1059/commits/cb3cae91fc6bab18b67b193520decbc8f526aeb6)
+
+**@vitkl on `scvi/model/base/_pyromixin.py`:** Actually the callback does not work. I probably do not understand how to get dataloader from DataSplitter.
+
+```python
+========================================================================= short test summary info ==========================================================================
+FAILED tests/models/test_pyro.py::test_pyro_bayesian_train_sample_mixin - AttributeError: 'DataSplitter' object has no attribute 'train_idx'
+FAILED tests/models/test_pyro.py::test_pyro_bayesian_train_sample_mixin_full_data - AttributeError: 'DeviceBackedDataSplitter' object has no attribute 'train_tensor_dict'
+FAILED tests/models/test_pyro.py::test_pyro_bayesian_train_sample_mixin_with_local - AttributeError: 'DataSplitter' object has no attribute 'train_idx'
+FAILED tests/models/test_pyro.py::test …
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** yeah this is fine, just need to add `datasplitter.setup()` before trying to get the train data loadeer. Subsequent calls to setup are a no-op so this is fine.
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** uncomment, run `data_splitter.setup()` before this block of code
+
+**@vitkl on `tests/models/test_pyro.py`:** @adamgayoso what do you think about this solution?
+https://github.com/YosefLab/scvi-tools/pull/1059/commits/08dbe1f8c27073838343c79e70635ac3048f3f38
+
 **@vitkl:** Accidentally merged pyro-cell2location and reverted that.
+
+**@vitkl on `tests/models/test_pyro.py`:** This is necessary to add even in those tests because the model now has ind_x argument
+
+**@vitkl on `tests/models/test_pyro.py`:** We discussed this on slack - because it is easier to keep model-specific code in pyro model class - that way scVI module class can be reused for multiple similar models.
+
+**@vitkl on `scvi/model/base/_pyromixin.py`:** @adamgayoso could you please point where these classes should be added to docs? I don't seem to be able to find it.
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** ```suggestion
+        See :func:`~scvi.module.base.PyroBaseModuleClass.list_obs_plate_vars` for details of the variables it should contain.
+```
+
+**@adamgayoso on `scvi/train/_trainingplans.py`:** ```suggestion
+        Keyword arguments for default optimiser :class:`pyro.optim.ClippedAdam`.
+```
+
+**@adamgayoso on `scvi/train/_trainingplans.py`:** what if user passes in an optim that doesn't take clip norm? shouldn't this check first if lr and clip norm are in the signature of the optim init?
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** ```suggestion
+        Note for developers: requires overwritten :func:`~scvi.module.base.PyroBaseModuleClass.list_obs_plate_vars` method.
+```
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** ```suggestion
+        This dictionary can be returned by model class method `self.module.model.list_obs_plate_vars()`
+```
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** ```suggestion
+```
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** let's use batch_size like here:
+
+https://github.com/YosefLab/scvi-tools/blob/9fcda8f8c3bea9007e06403fa066607d41c6aad6/scvi/model/base/_vaemixin.py#L22
+
+Default is None, and pulls from our global settings config.
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** let's add the return type here
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** instead of sample_kwargs, can we just enumerate the parameters here? Users won't go looking at a private method and it doesn't seem like many params?
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** ```suggestion
+        summary_fun: Optional[Dict[str, Callable]] = None,
+```
+you might need to import Dict and Callable from typing
+
+**@adamgayoso on `scvi/module/base/_base_module.py`:** I think this should be fine
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** ```suggestion
+```
+No empty space in all docstrings
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** ```suggestion
+```
+Same here, no empty lines
+
+**@adamgayoso on `scvi/model/base/_pyromixin.py`:** no empty lines again
 
 **@vitkl:** Sorry for the accidental merge again, I don't get why this merge happened. I am trying to merge pyro-mixin into pyro-cell2location branch using GitHub pull request web interface. For some reason, that seems to create a merge commit from pyro-cell2location into pyro-mixin.
 
 UPD: fixed now
 
+**@vitkl on `scvi/train/_trainingplans.py`:** optim_kwargs are only used for default optimiser - I modified the docs
+
 **@vitkl:** @adamgayoso after talking to @martinjankowiak I think the default optimiser should be Adam, not ClippedAdam. I can change that. Should I modify this branch/PR or create a new one?
 
 ## #1064: ignore configure_optimizers warning
 **PR:** #1064 | **Last activity:** 2024-08-27T17:33:04Z
-**State:** merged | **Author:** @mjayasur | **Comments:** 0 | **Created:** 2021-05-15 | **URL:** https://github.com/scverse/scvi-tools/pull/1064
+**State:** merged | **Author:** @mjayasur | **Comments:** 3 | **Created:** 2021-05-15 | **URL:** https://github.com/scverse/scvi-tools/pull/1064
 
 closes #1057
 
+**@wukathy (review, approved):** lgtm
+
+**@adamgayoso on `scvi/train/_trainer.py`:** let's only filter it if the model passed to fit is an instance of:
+
+https://github.com/YosefLab/scvi-tools/blob/a9da914764d311ff18b4b557b78d9550a3b940af/scvi/train/_trainingplans.py#L581
+
+See the pylit API here, model should be the first arg.
+
+https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#fit
+
+**@adamgayoso on `scvi/train/_trainer.py`:** import needs to be fixed :)
+
 ## #1066: Adding ability to change doublet ratios
 **PR:** #1066 | **Last activity:** 2024-08-27T17:32:47Z
-**State:** merged | **Author:** @njbernstein | **Comments:** 0 | **Created:** 2021-05-18 | **URL:** https://github.com/scverse/scvi-tools/pull/1066
+**State:** merged | **Author:** @njbernstein | **Comments:** 3 | **Created:** 2021-05-18 | **URL:** https://github.com/scverse/scvi-tools/pull/1066
 
 Also changing soft argument to have correct functionality
 
+**@adamgayoso on `scvi/external/solo/_model.py`:** need documentation for this parameter
+
+**@adamgayoso (review, changes requested):** thanks! small change needed. Also could you add a note to the release notes?
+
+https://github.com/YosefLab/scvi-tools/blob/master/docs/release_notes/v0.11.0.rst
+
+**@njbernstein on `scvi/external/solo/_model.py`:** Done
+
 ## #1061: use data modules for splitters
 **PR:** #1061 | **Last activity:** 2024-08-27T17:32:34Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 0 | **Created:** 2021-05-12 | **URL:** https://github.com/scverse/scvi-tools/pull/1061
+**State:** merged | **Author:** @adamgayoso | **Comments:** 3 | **Created:** 2021-05-12 | **URL:** https://github.com/scverse/scvi-tools/pull/1061
 
 Fixes #1050
 Fixes #1058
@@ -7690,37 +10161,96 @@ However, it creates breaking changes for devs
 1. No need to call the data splitter anymore (though I assume most have been using our mixin)
 2. No need to give the training plans the number of training observations, now we can set it using the property.
 
+**@galenxing on `scvi/model/_scanvi.py`:** Do we need to have these calls if setup() is already called in TrainRunner?
+
+**@adamgayoso on `scvi/model/_scanvi.py`:** It doesn't do anything after the first time it's called (is passed over), and it's more necessary to call here as it sets the `train_idx` attribute.
+
+**@galenxing (review, approved):** lgtm!
+
 ## #1060: Add DestVI to references
 **PR:** #1060 | **Last activity:** 2024-08-27T17:32:34Z
 **State:** merged | **Author:** @romain-lopez | **Comments:** 0 | **Created:** 2021-05-12 | **URL:** https://github.com/scverse/scvi-tools/pull/1060
 
 ## #1045: Faster NB LL computation if data is known to be sparse
 **PR:** #1045 | **Last activity:** 2024-08-27T17:32:18Z
-**State:** merged | **Author:** @wukathy | **Comments:** 0 | **Created:** 2021-05-01 | **URL:** https://github.com/scverse/scvi-tools/pull/1045
+**State:** merged | **Author:** @wukathy | **Comments:** 4 | **Created:** 2021-05-01 | **URL:** https://github.com/scverse/scvi-tools/pull/1045
 
 first try
 
+**@adamgayoso on `scvi/distributions/_negative_binomial.py`:** compute the mask once, store in a variable
+
+**@adamgayoso on `scvi/distributions/_negative_binomial.py`:** ```suggestion
+```
+
+**@adamgayoso on `scvi/distributions/_negative_binomial.py`:** this is shared for zero and nonzero
+
+**@adamgayoso on `scvi/distributions/_negative_binomial.py`:** need to mask `mu`, `log_theta_mu_eps` with the nonzero mask.
+
+the term `torch.lgamma(nonzero_x + theta)` might be trickier because theta has not been previously broadcast. Right here its shape is [1, n_genes], and the shape of nonzero_x will be a 1d tensor with all nonzero terms. So maybe theta should be initially broadcast (see Pyro code)
+
 ## #1053: add warning if current device and train device mismatch
 **PR:** #1053 | **Last activity:** 2024-08-27T17:32:08Z
-**State:** merged | **Author:** @galenxing | **Comments:** 0 | **Created:** 2021-05-07 | **URL:** https://github.com/scverse/scvi-tools/pull/1053
+**State:** merged | **Author:** @galenxing | **Comments:** 1 | **Created:** 2021-05-07 | **URL:** https://github.com/scverse/scvi-tools/pull/1053
 
 fixes #1048
 
+**@adamgayoso (review, approved):** LGTM!
+
 ## #1054: Pytorch lightning 1.3 fixes
 **PR:** #1054 | **Last activity:** 2024-08-27T17:32:07Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 0 | **Created:** 2021-05-07 | **URL:** https://github.com/scverse/scvi-tools/pull/1054
+**State:** merged | **Author:** @adamgayoso | **Comments:** 1 | **Created:** 2021-05-07 | **URL:** https://github.com/scverse/scvi-tools/pull/1054
 
 Fixes #1049
 Fixes #994
 
+**@galenxing (review, commented):** LGTM
+
 ## #1043: De delta eps
 **PR:** #1043 | **Last activity:** 2024-08-27T17:01:17Z
-**State:** merged | **Author:** @PierreBoyeau | **Comments:** 1 | **Created:** 2021-04-26 | **URL:** https://github.com/scverse/scvi-tools/pull/1043
+**State:** merged | **Author:** @PierreBoyeau | **Comments:** 14 | **Created:** 2021-04-26 | **URL:** https://github.com/scverse/scvi-tools/pull/1043
 
 Fixes #1042
 
+**@adamgayoso on `scvi/utils/_differential.py`:** Typing should be a Union of float and None
+
+**@adamgayoso on `scvi/utils/_differential.py`:** can delta and epsilon be added to the dataframe users see?
+
+**@adamgayoso on `scvi/utils/_differential.py`:** maybe should make this percentile an argument with default value
+
+**@PierreBoyeau on `scvi/utils/_differential.py`:** Do you think this should be a parameter in `get_bayes_factors`? I replaced this default value in `estimate_pseudocounts_offset` but not in get_bayes_factors yet
+
 **@PierreBoyeau:** I renamed `eps` to `pseudocounts`, because I think that the `eps`  function for BF computation is different from the one would use as pseudocounts.
 In the latter case, the objective is to zero out gene expression differences that come from softmax artifacts.
+
+**@adamgayoso on `scvi/utils/_differential.py`:** ```suggestion
+            (LFC case). If the provided value is `None`, then a proper threshold is determined
+            from the distribution of LFCs accross genes.
+```
+
+**@adamgayoso on `scvi/utils/_differential.py`:** ```suggestion
+    """
+    Determines pseudocount offset.
+
+    This shrinks LFCs asssociated with non-expressed genes to zero.
+```
+
+**@adamgayoso on `scvi/utils/_differential.py`:** raise errors
+
+**@adamgayoso on `tests/core/test_differential.py`:** raise error
+
+**@adamgayoso on `tests/core/test_differential.py`:** raise error
+
+**@adamgayoso on `scvi/utils/_differential.py`:** ```suggestion
+    """
+    Computes a threshold LFC value based on means of LFCs.
+```
+
+**@adamgayoso on `scvi/utils/_differential.py`:** ```suggestion
+```
+
+**@adamgayoso on `scvi/utils/_differential.py`:** this should use `get_from_registry` the "X" key because X can be in several places.
+
+**@adamgayoso on `tests/core/test_differential.py`:** typo
 
 ## #1046: Update README.md
 **PR:** #1046 | **Last activity:** 2024-08-27T17:01:00Z
@@ -7730,25 +10260,81 @@ update with link to PeakVI preprint
 
 ## #1041: De string queries
 **PR:** #1041 | **Last activity:** 2024-08-27T17:00:50Z
-**State:** merged | **Author:** @PierreBoyeau | **Comments:** 0 | **Created:** 2021-04-26 | **URL:** https://github.com/scverse/scvi-tools/pull/1041
+**State:** merged | **Author:** @PierreBoyeau | **Comments:** 10 | **Created:** 2021-04-26 | **URL:** https://github.com/scverse/scvi-tools/pull/1041
 
 Fixes #1040
 
+**@adamgayoso on `scvi/model/base/_utils.py`:** remove space
+
+**@adamgayoso (review, changes requested):** We need to change the docstring in rnamixin, totalvi de function and I think peakvi.
+
+**@adamgayoso on `scvi/_docs.py`:** ```suggestion
+    `idx1` and `idx2` can be used as an alternative to the AnnData keys.
+    Custom identifier for `group1` that can be of three sorts: (1) a boolean mask,
+    (2) indices, or (3) a string. If it is a string, then it will query indices that
+    verifies conditions on `adata.obs`, as described in :func:`~pandas.DataFrame.query`
+    If `idx1` is not `None`, this option overrides `group1`
+```
+
+**@adamgayoso on `scvi/_docs.py`:** ```suggestion
+    properties as `idx1`.
+```
+
+**@adamgayoso on `scvi/model/base/_utils.py`:** typing for anndata
+
+**@adamgayoso on `scvi/model/base/_utils.py`:** ```suggestion
+def _prepare_obs(
+```
+
+**@adamgayoso on `scvi/model/base/_utils.py`:** better description so we don't forget
+
+**@adamgayoso on `scvi/model/base/_utils.py`:** ```suggestion
+        obs_col, group1, group2 = _prepare_obs(idx1, idx2, adata)
+```
+
+**@adamgayoso on `tests/core/test_differential.py`:** ```suggestion
+from scvi.model.base._utils import _prepare_obs
+```
+
+**@adamgayoso on `tests/core/test_differential.py`:** ```suggestion
+    obs_col, group1, _, = _prepare_obs(
+```
+
 ## #1037: Custom activation functions for Encoder
 **PR:** #1037 | **Last activity:** 2024-08-27T17:00:45Z
-**State:** merged | **Author:** @PierreBoyeau | **Comments:** 0 | **Created:** 2021-04-25 | **URL:** https://github.com/scverse/scvi-tools/pull/1037
+**State:** merged | **Author:** @PierreBoyeau | **Comments:** 6 | **Created:** 2021-04-25 | **URL:** https://github.com/scverse/scvi-tools/pull/1037
 
 FIxes #1039
 
+**@adamgayoso on `scvi/nn/_base_components.py`:** ```suggestion
+        q_v = self.var_activation(self.var_encoder(q)) + self.var_eps
+```
+
+**@adamgayoso on `scvi/nn/_base_components.py`:** ```suggestion
+        var_activation: Optional[Callable] = torch.exp,
+```
+
+**@adamgayoso on `tests/models/test_models.py`:** the SCVI class would need this option which would get passed to the encoder
+
+**@adamgayoso on `scvi/module/_vae.py`:** need an entry in the docstring for this
+
+**@adamgayoso on `scvi/module/_vae.py`:** Actually let's make this None, and use torch.exp if None. Be sure to add in docstring, If `None`, defaults to :func:`~torch.exp`.
+
+**@PierreBoyeau on `scvi/module/_vae.py`:** Done!
+
 ## #1030: Fix bug missing items() call in loop for extending categorical covariates on transfer anndata setup
 **PR:** #1030 | **Last activity:** 2024-08-27T17:00:27Z
-**State:** merged | **Author:** @morris-frank | **Comments:** 1 | **Created:** 2021-04-16 | **URL:** https://github.com/scverse/scvi-tools/pull/1030
+**State:** merged | **Author:** @morris-frank | **Comments:** 2 | **Created:** 2021-04-16 | **URL:** https://github.com/scverse/scvi-tools/pull/1030
 
 Hey,
 
 There was a missing items call for Looping over the extra categories dictionary.
 
 **@adamgayoso:** Thank you for this! I suppose we aren't properly testing this. Would you be able to add a test? If not we'll get to it eventually.
+
+**@adamgayoso on `tests/dataset/test_anndata.py`:** ```suggestion
+    assert bdata.uns["_scvi"]["extra_categoricals"]["mappings"]["cat1"][-1] == 6
+```
 
 ## #1033: fix marginal computation
 **PR:** #1033 | **Last activity:** 2024-08-27T17:00:26Z
@@ -7782,13 +10368,17 @@ fixes #1010
 
 ## #1021: Change logger warnings to python warnings
 **PR:** #1021 | **Last activity:** 2024-08-27T16:33:53Z
-**State:** merged | **Author:** @wukathy | **Comments:** 0 | **Created:** 2021-04-07 | **URL:** https://github.com/scverse/scvi-tools/pull/1021
+**State:** merged | **Author:** @wukathy | **Comments:** 1 | **Created:** 2021-04-07 | **URL:** https://github.com/scverse/scvi-tools/pull/1021
+
+**@mjayasur (review, approved):** lgtm
 
 ## #1024: Fix SaveBestState warning on first epoch
 **PR:** #1024 | **Last activity:** 2024-08-27T16:33:51Z
-**State:** merged | **Author:** @talashuach | **Comments:** 0 | **Created:** 2021-04-12 | **URL:** https://github.com/scverse/scvi-tools/pull/1024
+**State:** merged | **Author:** @talashuach | **Comments:** 1 | **Created:** 2021-04-12 | **URL:** https://github.com/scverse/scvi-tools/pull/1024
 
 SaveBestState callback prints a warning on the first epoch since `current` is None at that point. Fixed to check only after the first epoch.
+
+**@adamgayoso (review, approved):** LGTM
 
 ## #1023: peakvi notebook
 **PR:** #1023 | **Last activity:** 2024-08-27T16:33:40Z
@@ -7796,9 +10386,15 @@ SaveBestState callback prints a warning on the first epoch since `current` is No
 
 ## #1009: solo enhancements
 **PR:** #1009 | **Last activity:** 2024-08-27T16:33:32Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 0 | **Created:** 2021-03-28 | **URL:** https://github.com/scverse/scvi-tools/pull/1009
+**State:** merged | **Author:** @adamgayoso | **Comments:** 3 | **Created:** 2021-03-28 | **URL:** https://github.com/scverse/scvi-tools/pull/1009
 
 Fixes #1008
+
+**@njbernstein on `scvi/external/solo/_model.py`:** @adamgayoso why did you remove this?
+
+**@njbernstein on `scvi/external/solo/_model.py`:** Finally getting back to work on things. So hopefully I can get that tutorial out soon
+
+**@njbernstein on `scvi/external/solo/_model.py`:** ahh I see. shouldn't this be `if not soft`?
 
 ## #1017: support for backed anndata
 **PR:** #1017 | **Last activity:** 2024-08-27T16:33:18Z
@@ -7806,15 +10402,19 @@ Fixes #1008
 
 ## #1019: Peakvi staging
 **PR:** #1019 | **Last activity:** 2024-08-27T16:33:16Z
-**State:** merged | **Author:** @talashuach | **Comments:** 0 | **Created:** 2021-04-07 | **URL:** https://github.com/scverse/scvi-tools/pull/1019
+**State:** merged | **Author:** @talashuach | **Comments:** 1 | **Created:** 2021-04-07 | **URL:** https://github.com/scverse/scvi-tools/pull/1019
 
 Some minor fixes and improvements to PeakVI
 
+**@adamgayoso (review, approved):** LGTM, but can you add a note to the release notes? In docs directory
+
 ## #1016: changes numpy.array() on tensors to .numpy()
 **PR:** #1016 | **Last activity:** 2024-08-27T16:33:04Z
-**State:** merged | **Author:** @mjayasur | **Comments:** 0 | **Created:** 2021-04-05 | **URL:** https://github.com/scverse/scvi-tools/pull/1016
+**State:** merged | **Author:** @mjayasur | **Comments:** 1 | **Created:** 2021-04-05 | **URL:** https://github.com/scverse/scvi-tools/pull/1016
 
 close #1015
+
+**@wukathy (review, approved):** lgtm
 
 ## #1005: Tutorial links
 **PR:** #1005 | **Last activity:** 2024-08-27T16:32:42Z
@@ -7826,22 +10426,150 @@ Closes #987
 
 ## #1011: add destVI to the codebase
 **PR:** #1011 | **Last activity:** 2024-08-27T16:32:35Z
-**State:** merged | **Author:** @romain-lopez | **Comments:** 3 | **Created:** 2021-03-31 | **URL:** https://github.com/scverse/scvi-tools/pull/1011
+**State:** merged | **Author:** @romain-lopez | **Comments:** 64 | **Created:** 2021-03-31 | **URL:** https://github.com/scverse/scvi-tools/pull/1011
 
 closes #1012
 
 **@romain-lopez:** @adamgayoso
 I'd like to merge this to master in the coming days and then make my reproducibility repo off of some master commit. Would you like to review this? Feedback is more than welcome!
 
+**@adamgayoso on `scvi/model/_condscvi.py`:** flagging because I think some are incorrect/out of order
+
+**@adamgayoso on `scvi/model/_condscvi.py`:** I'm not sure if `.numpy()` at end is cheaper than construction like this.
+
 **@romain-lopez:** Missing the readme change at least
+
+**@adamgayoso on `scvi/module/_vaec.py`:** just double checking that providing this weighting by cell type is necessary
+
+**@adamgayoso on `scvi/external/stereoscope/_model.py`:** shouldn't this take anndata as input?
+
+**@adamgayoso on `scvi/external/stereoscope/_module.py`:** why are we adding these functions to stereoscope?
+
+**@adamgayoso on `scvi/model/_destvi.py`:** anndata as input?
+
+**@adamgayoso on `scvi/external/stereoscope/_model.py`:** You can also just give it an `indices` argument, which would be indices to get from anndata (or argument to data loader)
+
+**@adamgayoso on `scvi/model/_condscvi.py`:** check docstring here again
+
+**@adamgayoso on `scvi/module/_mrdeconv.py`:** flag not stereoscope
+
+**@adamgayoso on `scvi/model/_condscvi.py`:** it would be nice if this allowed using the registered string labels
+
+**@adamgayoso on `scvi/model/_condscvi.py`:** you can use `self.scvi_setup_dict` here
+
+**@adamgayoso on `scvi/model/_destvi.py`:** this function should be more like `get_latent_representation`, it should make an anndataloader, get the outputs of inference, and take gamma from there.
+
+I know it's a bit wasteful because you're creating tensors you don't want in generative, but this code is a little hacky if `dataset` happens to be large and sparse.
+
+**@adamgayoso on `scvi/module/_mrdeconv.py`:** not documented
+
+**@adamgayoso on `scvi/model/_condscvi.py`:** batch size parameter is not being used here, should be
+
+`batch_size=batch_size if batch_size is not None else settings.batch_size`
+
+**@adamgayoso on `scvi/model/_destvi.py`:** it looks like the order of the state dict matters. I know most people won't use this init, but it should be better captured that the order matters.
+
+**@adamgayoso on `scvi/model/_destvi.py`:** a lot of these things aren't documented.
+
+**@adamgayoso on `scvi/model/_destvi.py`:** should again look more like `get_latent_representation()`, use anndata loader, batch size, validate anndata
+
+**@adamgayoso on `scvi/module/_mrdeconv.py`:** if not using both or proportion, then this could create upstream issues for the model function if you're pasing in a dataset object,
+
+**@adamgayoso on `scvi/model/_destvi.py`:** ah I see this now, if user passes in a dataset argument you should raise a warning here that it's not being used.
+
+**@adamgayoso on `scvi/model/_destvi.py`:** validate anndata, make anndata loader, extract tensors and call module function
+
+**@adamgayoso on `scvi/module/_mrdeconv.py`:** typo
+
+**@adamgayoso on `scvi/model/_destvi.py`:** or a different data structure
+
+**@adamgayoso on `scvi/model/_destvi.py`:** or just extract out of the data loader manually the tensors and call the module function.
+
+**@romain-lopez on `scvi/module/_vaec.py`:** yeah, I need this for rare cell types
+
+**@romain-lopez on `scvi/external/stereoscope/_module.py`:** I need those for the benchmarking in my paper. If it's too hacky I can just create another class in my reproducibility repo on top of scVI
+
+**@romain-lopez on `scvi/model/_destvi.py`:** that won't really work, because for a given spot you can ask what is the expression of several cell type. y is not in the anndata
+
+**@romain-lopez on `scvi/model/_destvi.py`:** I may be able to do something intermediate where x and ind_x is from the anndata, but y is numpy. Not sure yet how crucial it's to make the software easier to use
+
+**@romain-lopez on `scvi/model/_condscvi.py`:** yeah but the point somehow is to generate for different cell types from the same latent value. Not sure I actually use this anymore even in the paper
+
+**@romain-lopez on `scvi/model/_destvi.py`:** it's less hacky like this agreed
+
+**@romain-lopez on `scvi/model/_condscvi.py`:** deleted this
+
+**@romain-lopez on `scvi/external/stereoscope/_model.py`:** yes I did that, it's cleaner and should be enough!
+
+**@romain-lopez on `scvi/external/stereoscope/_module.py`:** simplified the function, and it's a very minor addition of code now
+
+**@romain-lopez on `scvi/model/_destvi.py`:** done, looks better thanks!
 
 **@romain-lopez:** Thanks @adamgayoso, took a pass on this! take your time. It shouldn't be far now!
 
+**@adamgayoso on `scvi/model/_destvi.py`:** we need to change this in the codebase... all cases of this should be user warning that model isn't trained.
+
+**@adamgayoso on `scvi/model/_destvi.py`:** flag
+
+**@adamgayoso on `scvi/model/_destvi.py`:** typing
+
+**@adamgayoso on `scvi/model/_destvi.py`:** y shouldn't be an int, it should be `cell_type: str` and you use the cell type mapping to get the correct int automatically, same for stereoscope
+
+**@adamgayoso on `scvi/model/_destvi.py`:** the module level function can take the int, however
+
+**@adamgayoso on `scvi/external/stereoscope/_model.py`:** see comment on destvi version of this function
+
+**@adamgayoso on `scvi/model/_destvi.py`:** docstring too
+
+**@adamgayoso on `scvi/model/_destvi.py`:** see other comment, this should be a user warning. Honestly it might even make sense to write a global util, but for now just a warning and we can correct later.
+
+**@adamgayoso on `scvi/model/_destvi.py`:** you should see if it's better to call .numpy() instead of this and correct everywhere,
+
+**@adamgayoso on `scvi/model/_destvi.py`:** 1.0, just for consistency.
+
+**@adamgayoso on `scvi/module/_mrdeconv.py`:** shouldn't this be None?
+
+**@adamgayoso on `scvi/model/_destvi.py`:** should this function even accept anndata input? What if you put a new anndata without the indices registered (held out data) it doesn't make sense right? Can it just use self.adata?
+
+**@adamgayoso on `scvi/model/_destvi.py`:** if it doesn't take anndata, it should take indices and batch size like `get_latent_representation` so you can get scale for ct for a subset of self.adata based on indices.
+
+**@adamgayoso on `scvi/model/_destvi.py`:** return type is incorrect
+
+**@adamgayoso on `scvi/model/_destvi.py`:** I also am not a fan of the return type of this function. I think it should by default return a dictionary of pandas dataframes, each key being a celltype. Optionally, you can have `return_numpy`
+
+**@adamgayoso on `scvi/model/_destvi.py`:** add a paragraph in the middle explaining that most users will initialize using from rna model (see stereoscope docstring)
+
+**@adamgayoso on `scvi/model/_destvi.py`:** couldn't the vamp prior be an option of from rna model to reduce that vamp prior liine of code?
+
+**@romain-lopez on `scvi/model/_destvi.py`:** This is done for the VAEMixin like this, should we change this as well?
+
+**@romain-lopez on `scvi/model/_destvi.py`:** yeah its a good point
+
+**@romain-lopez on `scvi/model/_destvi.py`:** yes good idea
+
+**@romain-lopez on `scvi/model/_destvi.py`:** this can probably be investigated later
+
+**@adamgayoso on `scvi/model/_destvi.py`:** `Union[np.ndarray, Dict[str, pd.DataFrame]`
+
+**@adamgayoso on `scvi/model/_destvi.py`:** use if else, don't create res dict if return numpy
+
+**@adamgayoso on `scvi/model/_destvi.py`:** label should be first positional argument, indices should have a None default
+
+**@adamgayoso on `scvi/external/stereoscope/_model.py`:** I'm not sure how to use this function from the docstring. An examples section in the docstring might help.
+
+**@adamgayoso on `scvi/model/_destvi.py`:** warnings warn, not logger warning here
+
+**@adamgayoso on `scvi/model/_destvi.py`:** you could expose the early stopping args here if it makes sense for this model
+
+**@romain-lopez on `scvi/model/_destvi.py`:** this doesn't here
+
 ## #1006: deprecate VAEC
 **PR:** #1006 | **Last activity:** 2024-08-27T16:32:06Z
-**State:** merged | **Author:** @mjayasur | **Comments:** 0 | **Created:** 2021-03-25 | **URL:** https://github.com/scverse/scvi-tools/pull/1006
+**State:** merged | **Author:** @mjayasur | **Comments:** 1 | **Created:** 2021-03-25 | **URL:** https://github.com/scverse/scvi-tools/pull/1006
 
 close #1003
+
+**@adamgayoso (review, approved):** LGTM
 
 ## #1004: cell assign tutorial
 **PR:** #1004 | **Last activity:** 2024-08-27T16:31:57Z
@@ -7849,13 +10577,19 @@ close #1003
 
 ## #1002: Test Python 3.9
 **PR:** #1002 | **Last activity:** 2024-08-27T16:04:49Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 0 | **Created:** 2021-03-17 | **URL:** https://github.com/scverse/scvi-tools/pull/1002
+**State:** merged | **Author:** @adamgayoso | **Comments:** 1 | **Created:** 2021-03-17 | **URL:** https://github.com/scverse/scvi-tools/pull/1002
+
+**@galenxing (review, approved):** LGTM
 
 ## #1001: convenience wrapper of torch.set_num_threads
 **PR:** #1001 | **Last activity:** 2024-08-27T16:04:06Z
-**State:** merged | **Author:** @mjayasur | **Comments:** 0 | **Created:** 2021-03-11 | **URL:** https://github.com/scverse/scvi-tools/pull/1001
+**State:** merged | **Author:** @mjayasur | **Comments:** 2 | **Created:** 2021-03-11 | **URL:** https://github.com/scverse/scvi-tools/pull/1001
 
 resolve #1000
+
+**@adamgayoso on `scvi/_settings.py`:** `num_threads` needs to be a property with a setter, the setter runs num threads, you can default the property to return None?
+
+**@adamgayoso (review, changes requested):** LGTM, but can you add an example to the docstring in the init?
 
 ## #2812: Backport PR #2809 on branch 1.2.x (docs: add census tutorial to index)
 **PR:** #2812 | **Last activity:** 2024-08-26T18:02:12Z
@@ -7869,9 +10603,11 @@ Backport PR #2809: docs: add census tutorial to index
 
 ## #1070: Revert "add warning if current device and train device mismatch"
 **PR:** #1070 | **Last activity:** 2024-08-24T00:01:23Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 0 | **Created:** 2021-05-19 | **URL:** https://github.com/scverse/scvi-tools/pull/1070
+**State:** merged | **Author:** @adamgayoso | **Comments:** 1 | **Created:** 2021-05-19 | **URL:** https://github.com/scverse/scvi-tools/pull/1070
 
 Reverts YosefLab/scvi-tools#1053
+
+**@galenxing (review, approved):** lgtm!
 
 ## #1071: Pyro logging elbo
 **PR:** #1071 | **Last activity:** 2024-08-23T15:01:14Z
@@ -7879,11 +10615,13 @@ Reverts YosefLab/scvi-tools#1053
 
 ## #1072: fix transform batch for models that encode covs
 **PR:** #1072 | **Last activity:** 2024-08-23T06:01:26Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 0 | **Created:** 2021-05-24 | **URL:** https://github.com/scverse/scvi-tools/pull/1072
+**State:** merged | **Author:** @adamgayoso | **Comments:** 1 | **Created:** 2021-05-24 | **URL:** https://github.com/scverse/scvi-tools/pull/1072
 
 The way it's implemented right now transforms the batch before it goes through the encoder, which affects totalVI by default.
 
 The desired behavior is to change only before decoding. This bug started with the 0.9 release (pytorch lightning move).
+
+**@galenxing (review, changes requested):** Just need to remove `transform_batch` as a param to inference in totalvae and vae, but otherwise lgtm!
 
 ## #2808: Backport PR #2807 on branch 1.2.x (build: remove torchmetrics upperbound)
 **PR:** #2808 | **Last activity:** 2024-08-22T21:02:50Z
@@ -7899,7 +10637,7 @@ closes #2803
 
 ## #1074: modify DE results dataframe to have columns "group1" and "group2" in addition to "comparison"
 **PR:** #1074 | **Last activity:** 2024-08-22T15:34:54Z
-**State:** merged | **Author:** @Munfred | **Comments:** 4 | **Created:** 2021-05-26 | **URL:** https://github.com/scverse/scvi-tools/pull/1074
+**State:** merged | **Author:** @Munfred | **Comments:** 5 | **Created:** 2021-05-26 | **URL:** https://github.com/scverse/scvi-tools/pull/1074
 
 I often work with big dataframes of concatenated DE results among arbitrary groups, and so I like to have the names of the group1 and group2 labels in separate columns, instead of joined by a " vs " string, eg `Endothelial vs Fibroblast`.
 
@@ -7931,6 +10669,11 @@ I implemented this as a breaking change, however if it is preferable I can inste
 
 **@adamgayoso:** We were actually meaning to do this. Can we maybe for now keep both? Then if we keep both we can add a deprecation message or just keep both because it's just one column
 
+**@adamgayoso on `scvi/model/base/_utils.py`:** ```suggestion
+            res["comparison"] = "{} vs {}".format(g1, g2)
+            res["group1"] = g1
+```
+
 **@Munfred:** Keeping both seems like a good idea for now, but shouldn't it be two new columns? `res["group1"] = g1` and `res["group2"] = g2`
 
 **@adamgayoso:** > Keeping both seems like a good idea for now, but shouldn't it be two new columns? res["group1"] = g1 and res["group2"] = g2
@@ -7941,7 +10684,34 @@ Yes! my change didn't affect your addition of g2, you don't have to accept my ch
 
 ## #1076: adding ability to get scores for simulated doublets
 **PR:** #1076 | **Last activity:** 2024-08-22T15:29:00Z
-**State:** merged | **Author:** @njbernstein | **Comments:** 0 | **Created:** 2021-05-26 | **URL:** https://github.com/scverse/scvi-tools/pull/1076
+**State:** merged | **Author:** @njbernstein | **Comments:** 9 | **Created:** 2021-05-26 | **URL:** https://github.com/scverse/scvi-tools/pull/1076
+
+**@adamgayoso on `scvi/external/solo/_model.py`:** ```suggestion
+        self, soft: bool = True, include_simulated_doublets: bool = False
+```
+
+**@adamgayoso on `scvi/external/solo/_model.py`:** ```suggestion
+        mask = label == "singlet" if not include_simulated_doublets else slice(None)
+```
+
+**@adamgayoso on `scvi/external/solo/_model.py`:** ```suggestion
+        preds = y_pred[mask]
+```
+
+**@adamgayoso on `scvi/external/solo/_model.py`:** also need to use mask and not singlet mask in line 373 in pandas df creation
+
+**@adamgayoso on `scvi/external/solo/_model.py`:** rename as above
+
+**@adamgayoso (review, changes requested):** Just a few chages, looks great though!
+
+**@adamgayoso on `scvi/external/solo/_model.py`:** ```suggestion
+        self, soft: bool = True, include_simulated_doublets: bool = False
+```
+Default should be false right? I don't think most users care to see the sim doubs?
+
+**@njbernstein on `scvi/external/solo/_model.py`:** yup!
+
+**@adamgayoso (review, approved):** LGTM!
 
 ## #1078: classifier kwargs and fix adata option for solo
 **PR:** #1078 | **Last activity:** 2024-08-22T15:25:26Z
@@ -7987,15 +10757,19 @@ Fixes #1081
 
 ## #1085: logging simulated doublets lib size
 **PR:** #1085 | **Last activity:** 2024-08-22T15:00:06Z
-**State:** merged | **Author:** @njbernstein | **Comments:** 1 | **Created:** 2021-06-01 | **URL:** https://github.com/scverse/scvi-tools/pull/1085
+**State:** merged | **Author:** @njbernstein | **Comments:** 2 | **Created:** 2021-06-01 | **URL:** https://github.com/scverse/scvi-tools/pull/1085
 
 **@njbernstein:** My attempt to fix what i see because of https://github.com/YosefLab/scvi-tools/pull/1078
 
+**@adamgayoso (review, approved):** Thanks for catching that!
+
 ## #1090: refactor place where indices are sampled for DE
 **PR:** #1090 | **Last activity:** 2024-08-17T09:01:09Z
-**State:** merged | **Author:** @PierreBoyeau | **Comments:** 1 | **Created:** 2021-06-15 | **URL:** https://github.com/scverse/scvi-tools/pull/1090
+**State:** merged | **Author:** @PierreBoyeau | **Comments:** 2 | **Created:** 2021-06-15 | **URL:** https://github.com/scverse/scvi-tools/pull/1090
 
 Fixes #1068
+
+**@talashuach (review, approved):** Looks good to me
 
 **@adamgayoso:** Thanks @talashuach
 
@@ -8003,13 +10777,26 @@ Feel free to merge @PierreBoyeau
 
 ## #1091: extend history when train method run multiple times
 **PR:** #1091 | **Last activity:** 2024-08-17T00:01:08Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 0 | **Created:** 2021-06-21 | **URL:** https://github.com/scverse/scvi-tools/pull/1091
+**State:** merged | **Author:** @adamgayoso | **Comments:** 3 | **Created:** 2021-06-21 | **URL:** https://github.com/scverse/scvi-tools/pull/1091
 
 Fixes #1065
 
+**@galenxing on `scvi/train/_trainrunner.py`:** Let's move the warning message into the if statement, so it only warns if it actually does replace the old history. Also, I'm pretty sure every model has a history_ attribute. It's in the init of BaseModelClass.
+
+**@adamgayoso on `scvi/train/_trainrunner.py`:** ```suggestion
+                warnings.warn(
+                    "Training history cannot be updated. Replacing old history with new history."
+                )
+                self.model.history_ = self.trainer.logger.history
+```
+
+**@adamgayoso on `scvi/train/_trainrunner.py`:** ```suggestion
+            self.model.history_ = self.trainer.logger.history
+```
+
 ## #2362: Fixes error in get losses functions
 **PR:** #2362 | **Last activity:** 2024-07-30T20:04:36Z
-**State:** merged | **Author:** @canergen | **Comments:** 2 | **Created:** 2023-12-08 | **URL:** https://github.com/scverse/scvi-tools/pull/2362
+**State:** merged | **Author:** @canergen | **Comments:** 7 | **Created:** 2023-12-08 | **URL:** https://github.com/scverse/scvi-tools/pull/2362
 
 -   [ ] Closes #xxxx (Replace xxxx with the GitHub issue number)
 -   [X] Tests added and passed if fixing a bug or adding a new feature
@@ -8017,6 +10804,17 @@ Fixes #1065
 -   [x] Added type annotations to new arguments/methods/functions
 -   [x] Added an entry in the latest `docs/release_notes/index.md` file if fixing a bug or adding a new feature
 -   [x] If the changes are patches for a version, I have added the `on-merge: backport to x.x.x` label
+
+**@martinkim0 on `scvi/module/_vae.py`:** Wait so does this mean that this method was not working properly before? Since the default is `n_mc_samples_per_pass=1`
+
+**@martinkim0 on `tests/model/test_scanvi.py`:** Uncomment this line?
+
+**@martinkim0 on `scvi/model/base/_log_likelihood.py`:** Probably best to also use torch operations here since `compute_reconstruction_error` doesn't use numpy. Let me know what you think
+
+**@canergen on `scvi/module/_vae.py`:** Yes but we only use it for DE genes where it's called with n_samples_per_mc of 100 (?). ScANVI wasn't supporting importance weighting in DE beforehand.
+ScANVI doesn't work with multiple samples (major work to fix this) and this might be an issue for multi-GPU support (see bug report). If you want to fix this, I have a fix for broadcast labels but then dropped it as also the encoder doesn't support it.
+
+**@canergen on `scvi/model/base/_log_likelihood.py`:** Fine with me. Can you puh those changes?
 
 **@martinkim0:** #2429 needs to be addressed before this
 
@@ -8048,7 +10846,7 @@ Backport PR #2692: Add Beta-Binomial distribution for modeling scBS-seq data
 
 ## #2692: Add Beta-Binomial distribution for modeling scBS-seq data
 **PR:** #2692 | **Last activity:** 2024-06-21T16:09:39Z
-**State:** merged | **Author:** @ethanweinberger | **Comments:** 6 | **Created:** 2024-04-05 | **URL:** https://github.com/scverse/scvi-tools/pull/2692
+**State:** merged | **Author:** @ethanweinberger | **Comments:** 52 | **Created:** 2024-04-05 | **URL:** https://github.com/scverse/scvi-tools/pull/2692
 
 New assays (e.g. snmC-seq) have emerged for measuring DNA methylation using bisulfite sequencing (BS-seq). Due to issues with coverage (i.e., different cytosines are measured for each cell), BS-seq measurements at individual cytosines are often aggregated across larger region features (e.g. gene bodies, enhancers, etc.) before performing computational analyses. Due to observed overdispersion, when modeling these sums of binary cytosine-level measurements, the Beta-Binomial distribution is commonly used ([1](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-021-02329-8), [2](https://openreview.net/forum?id=Mg2DM0F3AY)).
 
@@ -8056,7 +10854,13 @@ To facilitate prototyping future models of BS-seq data, this PR adds the Beta-Bi
 
 @martinkim0 @canergen As discussed previously I added the Beta-Binomial distribution to the main `scvi` folder (as opposed to external). Let me know what you'd like to see in terms of testing: because the class is just a thin wrapper around Pyro's Beta-Binomial distribution, I wasn't sure what would be appropriate here.
 
+**@canergen on `scvi/distributions/_constraints.py`:** Can we use here the pytorch distribution constraints.interval?
+
+**@canergen on `scvi/distributions/_beta_binomial.py`:** Alternative here that ensures gradients would be torch.nn.softplus(alpha) + self.eps
+
 **@canergen:** LGTM. Can you add tests for the function using both parametrizations? I left two comments.
+
+**@ethanweinberger on `scvi/distributions/_constraints.py`:** For the $\mu, \gamma$ Beta-Binomial parameterization both parameters lie within the open interval $(0, 1)$ (see https://rpubs.com/cakapourani/beta-binomial for reference). Unfortunately pytorch only provides constraints for closed intervals and half-open intervals, but not fully open intervals.
 
 **@ethanweinberger:** > LGTM. Can you add tests for the function using both parametrizations? I left two comments.
 
@@ -8071,9 +10875,141 @@ Added tests checking:
 1. log_prob of both parameterizations is close, and
 2. ValueError is raised if a parameterization is not specified
 
+**@ethanweinberger on `scvi/distributions/_beta_binomial.py`:** I tried out your suggestion here, but the distortion introduced by softplus can lead to pretty large differences in log_prob between the $(\alpha, \beta)$ vs an equivalent $(\mu, \gamma)$ parameterization. I thus chose to leave this as-is unless you have a strong opinion here.
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    r"""``BETA`` Beta binomial distribution.
+```
+Let's tag this as beta for now.
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    1. (`alpha`, `beta`, `total_counts`) where alpha and beta are the shape parameters of
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+
+    2. (`mu`, `gamma`, `total_counts`), which is the one used by methylVI. These
+```
+
+**@martinkim0 on `scvi/distributions/_constraints.py`:** Needs typing
+
+**@martinkim0 on `scvi/distributions/_constraints.py`:** Needs typing
+
+**@martinkim0 on `tests/distributions/test_constraints.py`:** nit: call __repr__ here (just for test coverage)
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** This seems fine to me but should ideally be documented, maybe under a `Notes` section in the class docstring.
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** Probably good to specifically reference how this is used, e.g. "Numerical stability constant used for minimum clamping when the second parameterization is specified."
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** Ideally we reference the parent Pyro class here and mention that alpha and beta refer to that parameterization.
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** You can also put this under a `Notes` section in the docstring.
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** Need to override the parent `__repr__` since it uses optional parameters (see #2395)
+
+**@martinkim0 on `tests/distributions/test_beta_binomial.py`:** Would be great to also see a call to `log_prob` with an `x` outside of the distribution's support.
+
+**@martinkim0 on `tests/distributions/test_beta_binomial.py`:** also need to test for `ValueError` when both parameterizations are provided as well as overlaps (e.g. `total_counts`, `beta`, and `gamma` are provided).
+
+**@martinkim0 (review, commented):** Thanks @ethanweinberger, overall this looks great. I left some minor comments and nitpicks regarding documentation, small code changes, and tests.
+
 **@martinkim0:** Forgot to mention in my review: it would also be nice to have a release note under `CHANGELOG.md`. Thanks!
 
+**@ethanweinberger on `tests/distributions/test_beta_binomial.py`:** Added a corresponding test
+
+**@ethanweinberger on `tests/distributions/test_beta_binomial.py`:** Added a corresponding test
+
+**@ethanweinberger on `scvi/distributions/_beta_binomial.py`:** Overridden as done in the distribution classes in `_negative_binomial.py`. I noticed that this piece of code (i.e., the overridden `__repr__`) is repeated in a few distribution classes already- would it be worth factoring this out somewhere?
+
+**@ethanweinberger on `scvi/distributions/_beta_binomial.py`:** Modified the docstring accordingly
+
+**@ethanweinberger on `scvi/distributions/_beta_binomial.py`:** Added additional details as requested
+
+**@ethanweinberger on `scvi/distributions/_constraints.py`:** Done
+
+**@ethanweinberger on `scvi/distributions/_constraints.py`:** Done
+
+**@ethanweinberger on `scvi/distributions/_beta_binomial.py`:** Added a corresponding `Notes` section as requested
+
 **@ethanweinberger:** @martinkim0 just finished addressing your comments. Let me know if there's anything else you'd like from me on this PR
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** Yes, good idea. I had a PR open in the pytorch repo for this, I'll probably revisit it and then we can remove it for our distributions.
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    1. (``alpha``, ``beta``, ``total_counts``) where alpha and beta are the shape parameters of
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    2. (``mu``, ``gamma``, ``total_counts``), which is the one used by methylVI. These
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    In the (``mu``, ``gamma``) parameterization, samples from the beta-binomial are generated
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    Under the hood we use :class:`~pyro.distributions.BetaBinomial` to implement
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+        As in :class:`~pyro.distributions.BetaBinomial`,
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+        As in :class:`~pyro.distributions.BetaBinomial`,
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+        Number of trials. Must be a non-negative integer.
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+        distribution. Must be greater than ``0``.
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+        distribution. Must be greater than ``0``.
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+        Mean of the distribution. Must be within the interval ``(0, 1)``.
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+        Dispersion. Must be within the interval ``(0, 1)``.
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+        Raise ``ValueError`` if arguments do not match the constraints.
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    the Beta-Binomial distribution. Thus, when the user specifies a (``mu``, ``gamma``)
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    parameterization, we must convert to the (``alpha``, ``beta``) parameterization
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    stability issues sometimes cause ``alpha`` or ``beta`` to be equal to (exactly) zero.
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    This is not allowed (``alpha`` and ``beta`` must be strictly greater than 0), so we clamp these
+```
+
+**@martinkim0 on `scvi/distributions/_beta_binomial.py`:** ```suggestion
+    values to be greater than a small constant ``eps``.
+```
+
+**@martinkim0 on `scvi/distributions/_constraints.py`:** ```suggestion
+    """Constrain to a real interval ``(lower_bound, upper_bound)``"""
+```
+
+**@martinkim0 (review, approved):** Thanks for addressing the comments! I added a couple of changes for formatting of the docstrings.
+
+I think this is ready to merge once tests + docs pass.
 
 ## #2633: Backport PR #2626 on branch 1.2.x (feat(model): support batch key in condscvi)
 **PR:** #2633 | **Last activity:** 2024-06-21T16:09:39Z
@@ -8233,9 +11169,15 @@ Set as an experimental feature for now. Will expand to models other than `SCVI` 
 
 ## #2775: Add normal distribution modelling of scVI for handling log-normalized data
 **PR:** #2775 | **Last activity:** 2024-05-19T01:58:49Z
-**State:** closed | **Author:** @HelloWorldLTY | **Comments:** 3 | **Created:** 2024-05-05 | **URL:** https://github.com/scverse/scvi-tools/pull/2775
+**State:** closed | **Author:** @HelloWorldLTY | **Comments:** 4 | **Created:** 2024-05-05 | **URL:** https://github.com/scverse/scvi-tools/pull/2775
 
 Hi, I have implemented a normal-distribution-based scVI to handle data after log-normalization. Would you please review it? I have tested the clustering performance of it and it looks good. Thanks.
+
+**@martinkim0 (review, changes requested):** Hi, thanks for your contribution. Looks good so far - could you add the following please:
+
+- A release note in `CHANGELOG.md`
+- Tests
+- Possibly a small benchmark notebook showing how it performs vs. other distributions
 
 **@HelloWorldLTY:** Hi, I have modified the changelog.
 
@@ -8318,7 +11260,7 @@ Backport PR #2756: feat(external): add mrvi
 
 ## #2756: feat(external): add mrvi
 **PR:** #2756 | **Last activity:** 2024-05-10T18:35:06Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 5 | **Created:** 2024-04-29 | **Labels:** cuda tests | **URL:** https://github.com/scverse/scvi-tools/pull/2756
+**State:** merged | **Author:** @martinkim0 | **Comments:** 16 | **Created:** 2024-04-29 | **Labels:** cuda tests | **URL:** https://github.com/scverse/scvi-tools/pull/2756
 
 **@martinkim0:** I'm going to use this branch as a staging branch and merge additional PRs into this one. To do:
 
@@ -8328,6 +11270,10 @@ Backport PR #2756: feat(external): add mrvi
 - [x] Add tutorial to docs
 - [x] Finalize user guide
 
+**@justjhong on `src/scvi/external/mrvi/_constants.py`:** let's move this into REGISTRY_KEYS
+
+**@justjhong (review, commented):** The requirement "statsmodels>=0.13.0" needs to be added (used for multiple test correction, lightweight package so shouldn't be a problem).
+
 **@martinkim0:** > The requirement "statsmodels>=0.13.0" needs to be added
 
 @justjhong Is there a particular reason for the lower bound?
@@ -8336,11 +11282,37 @@ Backport PR #2756: feat(external): add mrvi
 
 **@justjhong:** As mentioned offline, let's change statsmodels to scipy false_discovery_control since we already indirectly depend on scipy. https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.false_discovery_control.html
 
+**@justjhong on `src/scvi/external/mrvi/_model.py`:** .iloc[indices] to prevent FutureWarning spam
+
+**@martinkim0 on `src/scvi/external/mrvi/_module.py`:** This argument is currently not being used in the forward pass - is the plan to add support for this or should we remove it?
+
+**@justjhong on `src/scvi/external/mrvi/_module.py`:** yes let's remove, i can do this
+
+**@justjhong on `CHANGELOG.md`:** ```suggestion
+- Add {class}`scvi.external.MRVI` for modeling sample-level heterogeneity in single-cell RNA-seq data {pr}`2756`.
+```
+
+**@justjhong on `src/scvi/utils/_docstrings.py`:** ```suggestion
+    integer categories and saved to `adata.obs['_scvi_sample']`. If `None`, assigns the same sample
+```
+
+**@justjhong (review, approved):** Looks great!! Thanks for all the work 👍  As discussed, let's hold off until we have an idea of the timeline
+
 **@martinkim0:** tests failing due to new torchmetrics release
+
+**@justjhong on `src/scvi/external/mrvi/_module.py`:** ```suggestion
+        Number of latent variables for ``z``.
+```
+
+**@justjhong on `src/scvi/external/mrvi/_module.py`:** I'd like to raise a warning if n_latent is set lower than n_latent_u. what's the best way to do this @martinkim0 ?
+
+**@martinkim0 on `src/scvi/external/mrvi/_module.py`:** I can take a look at this!
 
 ## #2790: Update MrVI reference
 **PR:** #2790 | **Last activity:** 2024-05-10T17:47:56Z
-**State:** merged | **Author:** @justjhong | **Comments:** 0 | **Created:** 2024-05-10 | **URL:** https://github.com/scverse/scvi-tools/pull/2790
+**State:** merged | **Author:** @justjhong | **Comments:** 1 | **Created:** 2024-05-10 | **URL:** https://github.com/scverse/scvi-tools/pull/2790
+
+**@martinkim0 (review, approved):** lgtm thx
 
 ## #2789: SCVI-MMD HW task
 **PR:** #2789 | **Last activity:** 2024-05-10T08:05:43Z
@@ -8375,7 +11347,86 @@ Backport PR #2776: docs: update tutorials head
 
 ## #2761: docs: add mrvi user guide
 **PR:** #2761 | **Last activity:** 2024-05-02T20:41:00Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 0 | **Created:** 2024-04-29 | **URL:** https://github.com/scverse/scvi-tools/pull/2761
+**State:** merged | **Author:** @martinkim0 | **Comments:** 14 | **Created:** 2024-04-29 | **URL:** https://github.com/scverse/scvi-tools/pull/2761
+
+**@canergen on `docs/user_guide/models/mrvi.md`:** What's cellular and molecular? Can we just say molecular?
+
+**@canergen on `docs/user_guide/models/mrvi.md`:** Is this unique over other models?
+
+**@canergen on `docs/user_guide/models/mrvi.md`:** Target covariate?
+
+**@canergen on `docs/user_guide/models/mrvi.md`:** Add here optional celltype labels?
+
+**@justjhong on `docs/user_guide/models/mrvi.md`:** no (mostly because the only fair benchmarks are the composition ones), but i'd still like to leave it since by omission it implies we arent scalable (same note is in the other user guides).
+
+**@PierreBoyeau on `docs/user_guide/models/mrvi.md`:** ```suggestion
+MrVI conducts both **exploratory analyses** (locally dividing samples into groups based on molecular properties)
+and **comparative analyses** (comparing pre-defined groups of samples in terms of differential expression and differential abundance) at single-cell resolution.
+It can capture nonlinear and cell-type specific variation of sample-level covariates on gene expression.
+```
+
+**@PierreBoyeau on `docs/user_guide/models/mrvi.md`:** ```suggestion
+Additionally, it requires specification, for each cell $n$ of
+```
+
+**@PierreBoyeau on `docs/user_guide/models/mrvi.md`:** ```suggestion
+- a sample-level target covariate $s_n$, that typically corresponds to the sample ID,
+which defines which sample entities will be compared in explorary and comparative analyses.
+- nuisance covariates $b_n$ (e.g. sequencing run, processing day).
+
+Optionally, MrVI can also take as input
+- Cell-type labels for improved integration across samples, via a guided mixture of Gaussians prior.
+- Additional sample-level covariates of interest $c_s$ for each sample $s$ (e.g.
+  disease status, age, treatment) for comparative analysis.
+```
+
+**@PierreBoyeau on `docs/user_guide/models/mrvi.md`:** ```suggestion
+Here, $u_n$ captures broad cell states invariant to sample and batch,
+while $z_n$ augments $u_n$ with sample-specific effects while correcting for nuisance covariate effects
+```
+
+**@PierreBoyeau on `docs/user_guide/models/mrvi.md`:** ```suggestion
+Gene expression is obtained from $z_n$ using multi-head attention mechanisms to
+flexibly model batch and sample effects.
+```
+
+**@PierreBoyeau on `docs/user_guide/models/mrvi.md`:** ```suggestion
+1. For each cell state $u_n$ (cell $n$), compute counterfactual cell states $z^{(s)}_n$ for all possible samples $s$
+2. Compute cell-specific sample-sample distance matrices $D^{(n)}$ based on the Euclidean distance between all pairs of $z^{(s)}_n$
+3. Cluster cells based on their $D^{(n)}$ to find cell populations with distinct sample stratifications
+```
+
+**@PierreBoyeau (review, changes requested):** LGTM. I made some suggestions, mostly to avoid repetitions, remove lists that can be replaced by text, and give more details
+
+**@PierreBoyeau on `docs/user_guide/models/mrvi.md`:** ```suggestion
+### Comparative analysis
+
+MrVI also enables supervised comparative analysis to detect cell-type specific DE and DA between sample groups.
+
+
+#### Differential expression
+At a high level, the DE procedure regresses, within each cell $n$, counterfactual cell states $z^{(s)}_n$ on sample-level covariates $c_s$ of interest for analysis as
+$z^{(s)}_n = \beta_n c_s + \beta_0 + \epsilon_n$.
+For instance, if $c_s$ is a binary covariate, then $\beta_n$ will capture the shift (in $z$-space) induced by samples for which $c_s = 1$ compared to samples for which $c_s = 0$.
+
+This procedure, repeated for all cells, allows several downstream analyses.
+First, comparing the norm of $\beta_n$ (using $\chi^2$ statistics) across cells can identify cell-states that vary the most for a gi …
+
+**@PierreBoyeau on `docs/user_guide/models/mrvi.md`:** Sorry I have issues with suggestions, but I would remove all of this
+
+```
+The advantages of MrVI are:
+
+ - Facilitates both exploratory analysis to divide samples into groups based on
+     molecular properties and comparative analysis to compare pre-defined groups of samples.
+ - Provides single-cell-resolution differential expression and differential abundance estimates.
+ - Captures nonlinear, cell-type specific effects of sample-level covariates on gene expression.
+ - Scales to large datasets with millions of cells and hundreds of samples.
+
+ The limitations of MrVI include:
+
+ - Requires specification of sample-level target (i.e., of biological interest) and nuisance (i.e., introduces undesired variation) covariates.
+ - Differential expression procedure does not provide single …
 
 ## #2773: add mrvi tutorial to index
 **PR:** #2773 | **Last activity:** 2024-05-02T00:57:16Z
@@ -8409,11 +11460,22 @@ Backport PR #2769: feat(model): save mudata var names per modality
 
 ## #2696: Save per-modality feature names for MuData models
 **PR:** #2696 | **Last activity:** 2024-05-01T20:45:48Z
-**State:** closed | **Author:** @ethanweinberger | **Comments:** 3 | **Created:** 2024-04-08 | **URL:** https://github.com/scverse/scvi-tools/pull/2696
+**State:** closed | **Author:** @ethanweinberger | **Comments:** 5 | **Created:** 2024-04-08 | **URL:** https://github.com/scverse/scvi-tools/pull/2696
 
 Current MuData-based models save their `var_names` as a single list, with no information on which feature came from which modality. This is problematic for certain downstream features (e.g. reference mapping [#2393](https://github.com/scverse/scvi-tools/issues/2393)) which require knowledge of features' modalities. This PR thus modifies the base `save` function to save `var_names` as a dictionary for MuData models, where each key is a modality and each value is that modality's features. In anticipation of potential backwards compatibility issues, this PR also includes a `convert_legacy_mudata_save` method to update earlier MuData models saved under the previous scheme.
 
 @martinkim0 @canergen Per our discussion I added convenience functions for converting legacy models saved with the old MuData var names saving scheme (as opposed to just waiting until scvi-tools 2.0 and not worrying about backwards compatibility). I made this a separate PR from the scArches MuData PR (https://github.com/scverse/scvi-tools/pull/2578) to keep each PR more focused/reduce reviewer burden.
+
+**@ethanweinberger on `scvi/model/base/_base_model.py`:** Leaving 1.XX as a placeholder pending discussion on when this change should be incorporated
+
+**@martinkim0 (review, commented):** Hi @ethanweinberger, thanks so much for taking a stab at this. I think the changes to mudata saves makes a lot of sense. However, I'd like to approach converting legacy saves a bit differently since we already have a legacy save convert method, so this might be confusing to users.
+
+What I'd like to propose is the following:
+- new mudata-based models save per-mod var names by default (and raise a user warning here)
+- detect old model saves in `load` and implicitly convert them to the new format (and raise an implicit modification warning)
+- this means that new model saves won't be compatible with previous versions (but in this case we'll recommend upgrading scvi-tools)
+
+Let me know what you think!
 
 **@martinkim0:** Just to add to my comment above, we do some validation checking that the saved var names match with the loaded mudata in `load`.
 
@@ -8455,7 +11517,9 @@ the solution would be to only save var names for modalities registered with the 
 
 ## #2762: replace statsmodels with scipy stats
 **PR:** #2762 | **Last activity:** 2024-05-01T18:16:02Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 3 | **Created:** 2024-04-30 | **URL:** https://github.com/scverse/scvi-tools/pull/2762
+**State:** merged | **Author:** @martinkim0 | **Comments:** 4 | **Created:** 2024-04-30 | **URL:** https://github.com/scverse/scvi-tools/pull/2762
+
+**@justjhong on `src/scvi/external/mrvi/_model.py`:** should be false_discovery_control, not rate. let's make sure this one passes tests.
 
 **@martinkim0:** Tests are currently failing because `pvalue` has NaNs (before `false_discovery_control` is called). This wasn't being caught before for some reason (does statsmodels not check for NaNs?)
 
@@ -8483,7 +11547,30 @@ Backport PR #2765: docs: update contributing guide
 
 ## #2757: docs(external): add typing and docstrings for mrvi, remove laplace scaling
 **PR:** #2757 | **Last activity:** 2024-04-30T22:51:26Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 1 | **Created:** 2024-04-29 | **URL:** https://github.com/scverse/scvi-tools/pull/2757
+**State:** merged | **Author:** @martinkim0 | **Comments:** 6 | **Created:** 2024-04-29 | **URL:** https://github.com/scverse/scvi-tools/pull/2757
+
+**@martinkim0 on `src/scvi/external/mrvi/_module.py`:** Would love to get input on these
+
+**@martinkim0 on `src/scvi/external/mrvi/_module.py`:** This one too
+
+**@justjhong on `src/scvi/external/mrvi/_module.py`:** Whether to use the MAP estimate to approximate the posterior of ``z`` given ``u``
+
+**@justjhong on `src/scvi/external/mrvi/_module.py`:** z_u_prior
+    Whether to place a Gaussian prior on ``z`` given ``u``.
+z_u_prior_scale
+    Natural log of the scale parameter of the Gaussian prior placed on ``z`` given ``u``. Only applies of ``learn_z_u_prior_scale=False``.
+u_prior_scale
+    Natural log of the scale parameter of the Gaussian prior placed on ``u``. If ``u_prior_mixture=True``, this scale applies to each mixture component distribution.
+u_prior_mixture
+    Whether to use a mixture of Gaussians prior for ``u``.
+u_prior_mixture_k
+    Number of mixture components to use for the mixture of Gaussians prior on ``u``.
+learn_z_u_prior_scale
+    Whether to learn the scale parameter of the prior distribution of ``z`` given ``u``.
+scale_observations
+    Whether to scale the loss associated with each observation by the tota …
+
+**@justjhong (review, commented):** Thank you so much for this!
 
 **@martinkim0:** Thanks @justjhong! Just removed instances of laplace and As in the code.
 
@@ -8567,7 +11654,7 @@ Backport PR #2739: feat(data): add explicit synthetic protein and region var nam
 
 ## #2187: Remove chex upperbound
 **PR:** #2187 | **Last activity:** 2024-04-19T15:19:40Z
-**State:** closed | **Author:** @martinkim0 | **Comments:** 4 | **Created:** 2023-07-17 | **URL:** https://github.com/scverse/scvi-tools/pull/2187
+**State:** closed | **Author:** @martinkim0 | **Comments:** 5 | **Created:** 2023-07-17 | **URL:** https://github.com/scverse/scvi-tools/pull/2187
 
 -   [ ] Closes #xxxx (Replace xxxx with the GitHub issue number)
 -   [ ] Tests added and passed if fixing a bug or adding a new feature
@@ -8579,6 +11666,9 @@ Backport PR #2739: feat(data): add explicit synthetic protein and region var nam
 **@martinkim0:** Fails because the latest numba (0.57.1) and chex (0.1.81) have incompatible numpy dependencies (<=1.24 and >=1.25 respectively).
 
 See the numba tracker for 1.25 support, which should fix this: https://github.com/numba/numba/issues/8698. Numba 0.58 expected to release on the week of 2023-08-07
+
+**@martinkim0 on `pyproject.toml`:** ```suggestion
+```
 
 **@jykr:** chex<=0.1.8 is not compatible with the newest version of Jax (0.4.26) due to the use of KeyArray (see https://github.com/google-deepmind/chex/issues/332, https://github.com/google-deepmind/chex/compare/v0.1.8...master), leading to installation error. Updating to chex 0.1.86 resolved the issue.
 
@@ -8671,7 +11761,17 @@ Backport PR #2636: docs: update installation instructions
 
 ## #2636: docs: update installation instructions
 **PR:** #2636 | **Last activity:** 2024-04-11T18:48:26Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 0 | **Created:** 2024-03-29 | **URL:** https://github.com/scverse/scvi-tools/pull/2636
+**State:** merged | **Author:** @martinkim0 | **Comments:** 3 | **Created:** 2024-03-29 | **URL:** https://github.com/scverse/scvi-tools/pull/2636
+
+**@LevyNat on `docs/installation.md`:** can we keep this?
+
+**@martinkim0 on `docs/installation.md`:** I updated it to this:
+
+> For `conda`, we recommend using the Miniforge distribution, which is generally faster than the
+official distribution and comes with conda-forge as the default channel (where scvi-tools is
+hosted).
+
+**@martinkim0 on `docs/installation.md`:** The repo recommends using miniforge over mambaforge now
 
 ## #2715: Backport PR #2712 on branch 1.2.x (docs: update contributing and developer guides)
 **PR:** #2715 | **Last activity:** 2024-04-10T23:35:30Z
@@ -8792,11 +11892,13 @@ Right - I forgot to do that. This is slated to be released with 1.1.3, should we
 
 ## #1805: Fix observed variable detection
 **PR:** #1805 | **Last activity:** 2024-04-07T23:54:17Z
-**State:** closed | **Author:** @vitkl | **Comments:** 2 | **Created:** 2022-11-24 | **URL:** https://github.com/scverse/scvi-tools/pull/1805
+**State:** closed | **Author:** @vitkl | **Comments:** 3 | **Created:** 2022-11-24 | **URL:** https://github.com/scverse/scvi-tools/pull/1805
 
 Create a separate method to detect observed sites and apply it everywhere necessary to automatically exclude observed sites.
 
 Fixes #1801
+
+**@adamgayoso (review, commented):** What's the status of this @vitkl ?
 
 **@vitkl:** Still a work in progress, unfortunately, the solution I added doesn't seem to exclude observed variables. I will do a deeper dive some time this year.
 
@@ -8870,13 +11972,17 @@ Backport PR #2676: chore(misc): upper bound lightning to 2.3
 
 ## #2644: chore(module): remove unused code paths in scanvae loss
 **PR:** #2644 | **Last activity:** 2024-04-03T16:06:20Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 5 | **Created:** 2024-04-01 | **URL:** https://github.com/scverse/scvi-tools/pull/2644
+**State:** merged | **Author:** @martinkim0 | **Comments:** 7 | **Created:** 2024-04-01 | **URL:** https://github.com/scverse/scvi-tools/pull/2644
 
 BREAKING CHANGE: removes unused code paths in the loss method of SCANVAE due to the default being `feed_labels=False`. internal functions that call this method either have their own default set to `feed_labels=False` or have `feed_labels=True` but don't pass it into the loss method (e.g. compute_elbo).
 
 also adds typing within the modified file.
 
 closes #2134
+
+**@martinkim0 on `scvi/module/_scanvae.py`:** `feed_labels` is always `False` => `y` is always `None` => `is_labelled` is always `False`
+
+**@martinkim0 on `scvi/module/_scanvae.py`:** could probably clean up this function call since `y` is always `None` - it would help with debugging and addressing #2429
 
 **@martinkim0:** per our discussion in slack @canergen
 
@@ -9123,15 +12229,45 @@ Backport PR #2608: Deprecation warning for scvi.nn._utils.one_hot, in favour of 
 
 ## #2608: Deprecation warning for scvi.nn._utils.one_hot, in favour of PyTorch version
 **PR:** #2608 | **Last activity:** 2024-03-21T23:50:24Z
-**State:** merged | **Author:** @erleholgersen | **Comments:** 3 | **Created:** 2024-03-11 | **Labels:** cuda tests | **URL:** https://github.com/scverse/scvi-tools/pull/2608
+**State:** merged | **Author:** @erleholgersen | **Comments:** 11 | **Created:** 2024-03-11 | **Labels:** cuda tests | **URL:** https://github.com/scverse/scvi-tools/pull/2608
 
 Closes #2430 .
 
 Somewhat cowardly approach as it still uses an internal helper function that respects the same API – let me know if you had something else in mind!
 
+**@martinkim0 on `scvi/nn/_utils.py`:** ```suggestion
+        "The `one_hot` function is deprecated in v1.2 and will be removed in v1.3. "
+```
+
+**@martinkim0 (review, commented):** Hi, thanks so much for putting in this PR!
+
+Would it be possible to refactor so that we call the torch one_hot function directly instead of having a wrapper around it? Checking the index shape is nice, but I think we should be fine without it.
+
+Also we can probably take out the explicit cast to float32 since I believe PyTorch should do it automatically in later operations.
+
 **@erleholgersen:** Took a stab at refactoring to call torch `one_hot` directly.
 
 I did run into errors from the `torch.einsum` and `torch.nn.functional.linear` functions on the data types, but I have solved that by doing the conversion for those function calls. I'm by no means a PyTorch data type expert, so let me know if there are better ways you had in mind!
+
+**@martinkim0 on `scvi/external/cellassign/_module.py`:** ```suggestion
+            to_cat.append(F.one_hot(tensors[REGISTRY_KEYS.BATCH_KEY].squeeze(-1), self.n_batch)
+```
+Could we actually call `.squeeze(-1)` on `tensors[REGISTRY_KEYS.BATCH_KEY]` instead of `squeeze(-2)` (for all instances of this)? I think it makes it a bit more clear.
+
+**@martinkim0 (review, commented):** Thanks for addressing the previous comments! Just one minor comment on when squeeze is being called. Also sorry, didn't realize einsum and linear need explicit casts to float - seems reasonable to me to just call `float()` for these instances.
+
+Also if possible could you add a release note under docs/release_notes/index.md for the v1.2 release? Thanks!
+
+**@erleholgersen on `scvi/external/cellassign/_module.py`:** Oh this is a much better idea – thanks! Updated.
+
+**@martinkim0 on `scvi/module/_multivae.py`:** ```suggestion
+    n_layers_encoder
+```
+
+**@martinkim0 on `scvi/module/_multivae.py`:** ```suggestion
+```
+
+**@martinkim0 (review, approved):** Thanks once again! LGTM
 
 **@erleholgersen:** Thanks @martinkim0! Not sure what's going on with the tests here. Do you usually handle merging the PRs, or is there anything more I should be doing?
 
@@ -9271,7 +12407,7 @@ Fixes https://github.com/scverse/scvi-tools/issues/1551
 
 ## #1951: Fix fdr gene tagging when integers in var names/obsm columns
 **PR:** #1951 | **Last activity:** 2024-03-01T17:45:57Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 1 | **Created:** 2023-03-10 | **URL:** https://github.com/scverse/scvi-tools/pull/1951
+**State:** merged | **Author:** @adamgayoso | **Comments:** 5 | **Created:** 2023-03-10 | **URL:** https://github.com/scverse/scvi-tools/pull/1951
 
 For more context see the discussion on discourse:
 
@@ -9280,7 +12416,17 @@ https://discourse.scverse.org/t/questions-about-running-differential-expression/
 
 When using totalVI, if protein counts are in obsm as np array and no column names are provided, we generate sequential integers. This causes indexing issues in the fdr tagging as the index is mixed between gene names and the integers.
 
+**@adamgayoso on `tests/models/test_models.py`:** these were removed because they weren't doing anything
+
+**@martinkim0 (review, approved):** LGTM
+
 **@adamgayoso:** I just want @PierreBoyeau to give it a quick look
+
+**@PierreBoyeau (review, approved):** Looks good to me!
+
+**@adamgayoso on `scvi/model/base/_utils.py`:** ```suggestion
+    is_pred_de = is_pred_de.loc[original_index]
+```
 
 ## #2584: [releases] add date for 1.1.2
 **PR:** #2584 | **Last activity:** 2024-03-01T17:45:12Z
@@ -9947,9 +13093,56 @@ This was necessary as the spatial batches and GEX batches were 0-indexed, but we
 
 ## #2431: Switch to new typing
 **PR:** #2431 | **Last activity:** 2024-01-25T23:44:47Z
-**State:** closed | **Author:** @martinkim0 | **Comments:** 0 | **Created:** 2024-01-25 | **URL:** https://github.com/scverse/scvi-tools/pull/2431
+**State:** closed | **Author:** @martinkim0 | **Comments:** 12 | **Created:** 2024-01-25 | **URL:** https://github.com/scverse/scvi-tools/pull/2431
 
 Closes #2432
+
+**@martinkim0 on `scvi/data/fields/_base_field.py`:** ```suggestion
+    def view_state_registry(self, state_registry: dict) -> rich.table.Table | None:
+```
+
+**@martinkim0 on `scvi/data/fields/_dataframe_field.py`:** ```suggestion
+    def view_state_registry(self, _state_registry: dict) -> rich.table.Table | None:
+```
+
+**@martinkim0 on `scvi/data/fields/_dataframe_field.py`:** ```suggestion
+    def view_state_registry(self, state_registry: dict) -> rich.table.Table | None:
+```
+
+**@martinkim0 on `scvi/data/fields/_layer_field.py`:** ```suggestion
+    def view_state_registry(self, _state_registry: dict) -> rich.table.Table | None:
+```
+
+**@martinkim0 on `scvi/data/fields/_mudata.py`:** ```suggestion
+    def view_state_registry(self, state_registry: dict) -> rich.table.Table | None:
+```
+
+**@martinkim0 on `scvi/data/fields/_uns_field.py`:** ```suggestion
+    def view_state_registry(self, _state_registry: dict) -> rich.table.Table | None:
+```
+
+**@martinkim0 on `scvi/external/scar/_model.py`:** ```suggestion
+        ambient_profile: str | np.ndarray | pd.DataFrame | torch.Tensor | None = None,
+```
+
+**@martinkim0 on `scvi/external/scar/_module.py`:** ```suggestion
+        Callable used to ensure positivity of the variational distributions' variance.
+```
+
+**@martinkim0 on `scvi/model/base/_differential.py`:** ```suggestion
+from typing import Literal
+```
+
+**@martinkim0 on `scvi/model/base/_pyromixin.py`:** ```suggestion
+```
+
+**@martinkim0 on `scvi/train/_callbacks.py`:** ```suggestion
+        * `:class:`~scvi.train._callbacks.MetricCallable`: A function that takes in a
+```
+
+**@martinkim0 on `scvi/train/_callbacks.py`:** ```suggestion
+MetricCallable = callable[[BaseModelClass], float]
+```
 
 ## #2408: Copy cookiecutter release workflow
 **PR:** #2408 | **Last activity:** 2024-01-25T23:24:52Z
@@ -10074,7 +13267,7 @@ Backport PR #2378: Add support for S3 in `HubModel`
 
 ## #2378: Add support for S3 in `HubModel`
 **PR:** #2378 | **Last activity:** 2024-01-19T01:18:40Z
-**State:** merged | **Author:** @martinkim0 | **Comments:** 1 | **Created:** 2024-01-05 | **URL:** https://github.com/scverse/scvi-tools/pull/2378
+**State:** merged | **Author:** @martinkim0 | **Comments:** 2 | **Created:** 2024-01-05 | **URL:** https://github.com/scverse/scvi-tools/pull/2378
 
 - [x] Add `pull_from_s3` method to initialize a `HubModel`
 - [x] Allow different ways of passing in credentials
@@ -10084,6 +13277,8 @@ Backport PR #2378: Add support for S3 in `HubModel`
 - [x] Authenticate AWS in GitHub actions
 
 **@canergen:** Working. It would be good to check cache_dir exists and otherwise create it.
+
+**@canergen (review, approved):** LGTM
 
 ## #2414: Backport PR #2413 on branch 1.1.x (Add workflow for private tests)
 **PR:** #2414 | **Last activity:** 2024-01-18T21:21:02Z
@@ -10216,13 +13411,68 @@ See discussion detailing that both functions are equivalent, just that one has b
 
 ## #1608: Basic JaxPEAKVI class
 **PR:** #1608 | **Last activity:** 2024-01-11T22:01:18Z
-**State:** closed | **Author:** @RK900 | **Comments:** 1 | **Created:** 2022-07-18 | **Labels:** jax | **URL:** https://github.com/scverse/scvi-tools/pull/1608
+**State:** closed | **Author:** @RK900 | **Comments:** 27 | **Created:** 2022-07-18 | **Labels:** jax | **URL:** https://github.com/scverse/scvi-tools/pull/1608
 
 Partially addresses #1578
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** You should check if this is the same value as the BCELoss used in the torch implementation. From what I understand the default on BCELoss is a scaled (mean) version of the negative log likelihood of a binomial. The scaling matters here bc it's being combined with the KL term.
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** Should have a separate decoder here instead of sharing with JaxSCVI since we don't need the variance parameters. Additionally you can add the sigmoid activation at the end of the neural net to get the proper output.
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** Also the leakyrelu activation is used in both the encoder and decoder. You should be able to add that to both of these. If it's easier just rewrite a new Encoder class as well.
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** softmax is not the same as sigmoid activation. I don't think this is equivalent to the torch impl.
+
+**@justjhong (review, dismissed):** good start, but need to be very sure the model is implemented in parallel with the torch implementation. Implementing get_latent should help test this.
+
+**@RK900 on `scvi/module/_jaxpeakvae.py`:** https://optax.readthedocs.io/en/latest/api.html?highlight=binary#optax.sigmoid_binary_cross_entropy
+
+Do we want to use optax for these sorts of things?
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** that's fine as long as the sign and normalization match torch's
 
 **@RK900:** <img width="412" alt="Screen Shot 2022-07-28 at 8 08 49 PM" src="https://user-images.githubusercontent.com/16495330/181676514-c7e78366-97a0-4a81-ba4d-f740bb29c220.png">
 
 Latent space from JPVI, matching the one from the [PeakVI tutorial](https://docs.scvi-tools.org/en/0.15.1/tutorials/notebooks/PeakVI.html)
+
+**@justjhong on `scvi/model/_jaxpeakvi.py`:** change to f string
+e.g. f"n_hidden: {n_hidden}"
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** this should be named something specific to peakVI, same with FlaxDecoder below
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** move common generic components out to a new file similar to _base_components.py. Different file which indicates it contains jax modules.
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** i don't think this log normalization happens in peakvae, if you want it it can be a hyperparameter
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** it's clear now that a jax analog to FCLayers will be useful. Doesn't have to be done in this PR but something to think about for the next one.
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** do we need n_input if it's inferred? Seems like we just need n_output to be defined for every instance
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** dropout is deterministically set to 0 in peakvae, we can just remove this? same with dropout2
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** provide more descriptive names given that these are not sequential like the names would suggest otherwise
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** i think this should only be 2 layers by default
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** can we make this an optional encoder with the `model_depth` kwarg
+
+**@justjhong on `tests/models/test_models.py`:** use fixture
+
+**@justjhong (review, commented):** latent space is looking good! some comments on more discrepancies with the torch implementation. Doesn't have to have full functionality, but the least we can do is get the defaults right. Another necessary check is to ensure the elbo values are in the same range as the torch implementation.
+
+**@RK900 on `scvi/module/_jaxpeakvae.py`:** Moved it to _base_components
+
+**@RK900 on `tests/models/test_models.py`:** I'm gonna refactor these tests in a separate PR, I think I can add fixtures for the scvi tests as well
+
+**@RK900 on `scvi/module/_jaxpeakvae.py`:** I think we should keep it as a parameter that can be set in the JaxPEAKVI interface
+
+**@RK900 on `scvi/module/_jaxpeakvae.py`:** In peakvi the default dropout is 0.1
+
+**@RK900 on `scvi/module/_jaxpeakvae.py`:** I think we still need it for the Decoder
+
+**@RK900 on `scvi/module/_jaxpeakvae.py`:** I think we need all of these layers, one for x and one for batch
+
+**@justjhong on `scvi/module/_jaxpeakvae.py`:** This is only true in the encoder, for the decoder its set to 0: https://github.com/scverse/scvi-tools/blob/master/scvi/module/_peakvae.py#L62
 
 ## #2389: Backport PR #2361 on branch 1.1.x (Can criticism indices)
 **PR:** #2389 | **Last activity:** 2024-01-11T01:41:53Z
@@ -10232,7 +13482,7 @@ Backport PR #2361: Can criticism indices
 
 ## #2361: Can criticism indices
 **PR:** #2361 | **Last activity:** 2024-01-11T00:03:13Z
-**State:** merged | **Author:** @canergen | **Comments:** 4 | **Created:** 2023-12-08 | **URL:** https://github.com/scverse/scvi-tools/pull/2361
+**State:** merged | **Author:** @canergen | **Comments:** 8 | **Created:** 2023-12-08 | **URL:** https://github.com/scverse/scvi-tools/pull/2361
 
 -   [X ] Closes #2340
 -   [X] Tests added and passed if fixing a bug or adding a new feature
@@ -10245,9 +13495,20 @@ Backport PR #2361: Can criticism indices
 
 **@martinkim0:** Just needs a `from __future__ import annotations` at the top of the file for Python 3.9
 
+**@martinkim0 on `tests/criticism/test_criticism.py`:** We should also keep a call to `get_ppc_with_samples` without passing in `indices`.
+
+**@martinkim0 (review, commented):** LGMT, one minor comment and needs a release note
+
+**@martinkim0 on `docs/release_notes/index.md`:** ```suggestion
+-   Add `indices` argument to {class}`scvi.criticism.PosteriorPredictiveCheck` to run metrics on a subset of the data {pr}`2361`.
+```
+This should also be in the "Added" section.
+
 **@martinkim0:** I'm still confused as to whether criticism metrics should use `model.adata` or the user-inputted `adata`. I feel like it should default to `model.adata` if `adata` is not given, but otherwise should use `adata` for all computations after validating that it is compatible with the model.
 
 **@canergen:** @watiss You were opposed about a default to model.adata. We should then check that model.adata is not minified, in which case the default doesn't make sense.
+
+**@martinkim0 on `docs/release_notes/index.md`:** Did you mean to resolve this?
 
 ## #2385: Backport PR #2382 on branch 1.1.x (Add `save` method to `HubModel` and `HubMetadata`)
 **PR:** #2385 | **Last activity:** 2024-01-09T19:36:57Z
@@ -10550,7 +13811,7 @@ Looks like this was caused by `fsspec==2023.12.0` since [pinning](https://github
 
 ## #2265: Implement ContrastiveVI
 **PR:** #2265 | **Last activity:** 2023-12-02T05:09:24Z
-**State:** merged | **Author:** @chris522229197 | **Comments:** 9 | **Created:** 2023-09-15 | **URL:** https://github.com/scverse/scvi-tools/pull/2265
+**State:** merged | **Author:** @chris522229197 | **Comments:** 22 | **Created:** 2023-09-15 | **URL:** https://github.com/scverse/scvi-tools/pull/2265
 
 -   [x] Closes #2242
 -   [x] Tests added and passed for adding a new feature
@@ -10558,13 +13819,39 @@ Looks like this was caused by `fsspec==2023.12.0` since [pinning](https://github
 -   [x] Added type annotations to new arguments/methods/functions.
 -   [x] Added an entry in the latest `docs/release_notes/index.md` file for adding a new feature.
 
+**@martinkim0 (review, changes requested):** Hi, thanks so much for putting in this PR! I haven't taken a look at the code yet, but I'll quickly note that we require new models to be implemented in `scvi.external`. If you could move over all files under a new folder under that submodule, that would be great. Thanks!
+
 **@chris522229197:** I migrated the relevant files to `scvi.external` and updated the test & doc files accordingly.
+
+**@martinkim0 on `docs/user_guide/models/contrastivevi.md`:** Needs to be addressed
+
+**@martinkim0 on `scvi/model/base/_training_mixin.py`:** Preferable if this code lives directly in `ContrastiveVI` as the train method is not used by any other model (at least for now).
+
+**@martinkim0 on `scvi/dataloaders/_contrastive_dataloader.py`:** If I'm not mistaken, the behavior of this dataloader is identical to `ConcatDataLoader` except that the output is a dictionary with keys background and target. Is this necessary for the logic of the code? If not, it would be preferable to reuse `ConcatDataLoader` directly in `ContrastiveDataSplitter` and modify `ContrastiveVAE._get_inference_input_from_concat_tensors` and `ContrastiveVAE._get_generative_input_from_concat_tensors` to index into the mini-batched output correctly.
+
+**@martinkim0 on `scvi/dataloaders/_data_splitting.py`:** Ideally this code should also be under `scvi.external.contrastivevi`.
+
+**@martinkim0 on `scvi/external/contrastivevi/_model.py`:** Needs to be unindented
+
+**@martinkim0 on `scvi/external/contrastivevi/_model.py`:** Nit: preferable to raise a `ValueError` here
+
+**@martinkim0 (review, commented):** Thanks! Left some comments regarding the dataloaders and other minor comments. Let me know if you're also interested in contributing a tutorial!
+
+**@chris522229197 on `scvi/model/base/_training_mixin.py`:** Sounds good! I moved the code into `ContrastiveVI`.
+
+**@chris522229197 on `scvi/external/contrastivevi/_model.py`:** Good catch. I also unindented some other mistakenly indented docstrings.
+
+**@chris522229197 on `scvi/dataloaders/_contrastive_dataloader.py`:** This is not necessary for the code logic, but in my opinion the dictionary helps with readability and bug prevention in `ContrastiveVAE`. Otherwise it can be easy to swap the integer indices. It might also help with user debugging when they look at batches from the data loader.
+
+**@chris522229197 on `scvi/dataloaders/_data_splitting.py`:** Okay, I moved it under `scvi.external.contrastivevi`. The test cases are also now under `tests/external`.
 
 **@ethanweinberger:** Hi @martinkim0,
 
 I just wanted to check in to see if you have any additional feedback on the PR since @chris522229197's last round of commits. Also, I'm happy to contribute a contrastiveVI tutorial- would you prefer the tutorial to come as part of this PR or a separate one?
 
 **@martinkim0:** Hey @ethanweinberger and @chris522229197, sorry for the delay and thanks for addressing the comments! I'll go ahead and approve the PR since it looks like it's ready to merge. You can put in a separate PR in our tutorials [repo](https://github.com/scverse/scvi-tutorials) if you would like to contribute that too. Thanks!
+
+**@martinkim0 (review, approved):** LGTM!
 
 **@ethanweinberger:** > Hey @ethanweinberger and @chris522229197, sorry for the delay and thanks for addressing the comments! I'll go ahead and approve the PR since it looks like it's ready to merge. You can put in a separate PR in our tutorials [repo](https://github.com/scverse/scvi-tutorials) if you would like to contribute that too. Thanks!
 
@@ -10603,7 +13890,7 @@ I'll submit a PR for the tutorial notebook today so that it'll be rea …
 
 ## #1927: Implement PoissonVI to model scATAC-seq fragment counts
 **PR:** #1927 | **Last activity:** 2023-11-28T10:09:10Z
-**State:** closed | **Author:** @lauradmartens | **Comments:** 1 | **Created:** 2023-02-23 | **URL:** https://github.com/scverse/scvi-tools/pull/1927
+**State:** closed | **Author:** @lauradmartens | **Comments:** 4 | **Created:** 2023-02-23 | **URL:** https://github.com/scverse/scvi-tools/pull/1927
 
 ## New
 * Implements PoissonVI model
@@ -10611,24 +13898,71 @@ I'll submit a PR for the tutorial notebook today so that it'll be rea …
 ## Related Issues
 Closes #1926
 
+**@WeilerP on `scvi/data/_manager.py`:** @lauradmartens, any specific reason why you commented this part out? At first glance, this is the reason why the CI currently fails.
+
+**@lauradmartens on `scvi/model/_poissonvi.py`:** @marianogabitto this is the code for the conversion #1926
+
+**@lauradmartens on `scvi/model/_poissonvi.py`:** @marianogabitto this is the code for checking that the data is not binarized or read counts #1926
+
 **@martinkim0:** Closing this in favor of #2249
 
 ## #1946: Add reads to fragments function
 **PR:** #1946 | **Last activity:** 2023-11-28T10:09:07Z
-**State:** merged | **Author:** @lauradmartens | **Comments:** 2 | **Created:** 2023-03-07 | **URL:** https://github.com/scverse/scvi-tools/pull/1946
+**State:** merged | **Author:** @lauradmartens | **Comments:** 12 | **Created:** 2023-03-07 | **URL:** https://github.com/scverse/scvi-tools/pull/1946
 
 Adds a function in `data._preprocessing` to convert 10x scATAC-seq read counts to approximate fragment counts.
 #1926
+
+**@ivirshup on `scvi/data/_preprocessing.py`:** ```suggestion
+    output_df = pd.concat(seq_dfs, axis=0).loc[adata.var_names]
+```
+
+Is this what was meant?
+
+**@adamgayoso on `scvi/data/_preprocessing.py`:** I think this function should either:
+
+1. just return the new scipy sparse matrix based on the input layer, then the user can put it wherever they want and we could remove the copy option.
+
+or
+
+2. Have a read_layer argument for the input and a `fragment_layer` argument for the output layer, which should default to `fragments`
+
+**@adamgayoso (review, changes requested):** Thanks for adding this util! Just a small comment
 
 **@adamgayoso:** Ah and one more thing, would you be able to add the function to the docs? It should be added to this page:
 
 https://github.com/scverse/scvi-tools/blob/main/docs/api/user.md#basic-preprocessing
 
+**@lauradmartens on `scvi/data/_preprocessing.py`:** I opted for the second option now.
+
+**@adamgayoso on `scvi/data/_preprocessing.py`:** ```suggestion
+    data = adata.layers[read_layer].data if read_layer else adata.X.data
+    adata.layers[fragment_layer] =  adata.layers[read_layer].copy() is read_layer else adata.X.copy()
+    adata.layers[fragment_layer].data = np.ceil(adata.layers[fragment_layer].data / 2)
+
+```
+
+**@adamgayoso on `scvi/data/_preprocessing.py`:** Would be great to also add a check with https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.issparse.html as this will give an uninformative error if the data is not in a sparse format.
+
+**@lauradmartens on `scvi/data/_preprocessing.py`:** Thank you! I wrote it now so that is can handle both. Let me know if you'd prefer it differently.
+
+**@adamgayoso on `scvi/data/_preprocessing.py`:** ```suggestion
+    fragment_layer: str = "fragments",
+```
+
+**@adamgayoso (review, changes requested):** Actually @lauradmartens would you be able to add a test?
+
 **@lauradmartens:** Hi Adam, I am not sure why the docs building is failing, maybe you can help? I am also back now from my holidays and happy to work on adding the rest of the model.
+
+**@adamgayoso (review, approved):** LGTM
+
+The docs are failing due to https://github.com/executablebooks/sphinx-book-theme/issues/711
+
+we will merge this after we address that
 
 ## #2249: PoissonVI to model quantitative scATAC-seq fragment counts
 **PR:** #2249 | **Last activity:** 2023-11-27T14:57:36Z
-**State:** merged | **Author:** @lauradmartens | **Comments:** 10 | **Created:** 2023-08-23 | **URL:** https://github.com/scverse/scvi-tools/pull/2249
+**State:** merged | **Author:** @lauradmartens | **Comments:** 28 | **Created:** 2023-08-23 | **URL:** https://github.com/scverse/scvi-tools/pull/2249
 
 -   [x] Closes #1926
 -   [x] Tests added and passed if fixing a bug or adding a new feature
@@ -10645,6 +13979,39 @@ https://github.com/scverse/scvi-tools/blob/main/docs/api/user.md#basic-preproces
      - Implements the functions `get_accessibility_estimates` and `differential_accessibility`
      - In `get_accessibility_estimates` one has the option to compute normalized accessibility estimates without the region specific bias which is essentially the bias parameter of the last layer of the model (similar to PeakVi's region parameter)
 
+**@martinkim0 on `scvi/external/poissonvi/_model.py`:** ```suggestion
+from __future__ import annotations
+
+import logging
+```
+I think this will fix the typing error in Python 3.9. I'll take a look at the rest of the code later. Thanks!
+
+**@lauradmartens on `scvi/external/poissonvi/_model.py`:** Thanks!
+
+**@martinkim0 on `scvi/data/_utils.py`:** I think it would be preferable to use pure numpy here instead of jax because, for most use cases, this function will only be called once. Jax jit is generally not worth it unless the function is called multiple times.
+
+**@martinkim0 on `scvi/data/_utils.py`:** Cleaner to use `scipy.sparse.issparse`
+
+**@martinkim0 on `scvi/data/_utils.py`:** Need to check for the unlikely edge case where `adata.n_obs < n_to_check`.
+
+**@martinkim0 on `scvi/data/_utils.py`:** Same here
+
+**@martinkim0 on `scvi/data/_utils.py`:** This line could potentially be copying the entire dataframe into a numpy. In terms of performance, it would be preferable to subset the dataframe first and then convert to numpy.
+
+**@martinkim0 on `scvi/data/_utils.py`:** I'd also just refactor so that the logic in `_is_not_fragment_val` is inside `_check_fragment_counts`
+
+**@martinkim0 on `tests/external/test_poissonvi.py`:** ```suggestion
+```
+
+**@martinkim0 on `tests/external/test_poissonvi.py`:** ```suggestion
+    adata = synthetic_iid(batch_size=100)
+```
+
+**@martinkim0 on `tests/external/test_poissonvi.py`:** ```suggestion
+```
+
+**@martinkim0 (review, commented):** Thanks for the contribution! One comment that I wasn't able to include: since `POISSONVI` needs to reproduce the default parameters of `PEAKVI`, it would be preferable if the latter is a subclass of the former so there is less repeated code. And then you could add a parameter `likelihood` to the model init that is defaulted to `"poisson"`.
+
 **@lauradmartens:** Thanks a lot for the comments! I addressed the minor changes on the `_check_fragment_counts` and will rewrite the model as a subclass of `PEAKVI` by the end of the week.
 
 **@lauradmartens:** Thanks again for your comments! I thought again of the suggestions of making `PEAKVI` a subclass of `POISSONVI` to have less repeated code for the model architecture. If I understood it correctly, you would call `PEAKVI` init with an additional likelihood parameter set to `"poisson"`? I am unsure how to make this work with `VAE` as the module class, because `PEAKVI/PEAKVAE` has many arguments that are not in `VAE` (`n_input_regions`, `region_factors`, `model_depth`).
@@ -10653,9 +14020,26 @@ https://github.com/scverse/scvi-tools/blob/main/docs/api/user.md#basic-preproces
 
 **@lauradmartens:** Hi @martinkim0! I think it's actually easier to use the `VAE` model because it implements all the functions to deal with Poisson/negative binomial loss whereas the `PEAKVAE` model has the binary decoder and the additional region and cell-specific factors. When I said the same architecture, I just meant the same number of layers, etc. to deal with the much larger feature space in scATAC-seq compared to scRNA-seq. I now wrote it in a way that `POISSONVI` inherits from `PEAKVI`, which reduces the doubled code at least for the training. Let me know what you think :)
 
+**@martinkim0 on `scvi/external/poissonvi/_model.py`:** Needs to be addressed
+
+**@martinkim0 on `scvi/external/poissonvi/_model.py`:** Preferable to raise a `NotImplementedError` here
+
+**@martinkim0 on `scvi/data/fields/_layer_field.py`:** Taking a second look at this, I think it would be cleaner if we're able to directly modify `LayerField` instead. In other words, we can add an argument `check_fragment_counts` to `LayerField.__init__` and then have
+```
+if self.check_fragment_counts and not _check_fragment_counts(x):
+    ....
+```
+in `LayerField.validate_field`. What do you think?
+
+**@martinkim0 on `scvi/external/poissonvi/_model.py`:** `NotImplementedError` here too
+
+**@martinkim0 (review, commented):** Looks great overall! Left some minor comments and it should be good to merge after that. Let me know if you're also interested in contributing a tutorial
+
 **@lauradmartens:** Hi Martin! I added the changes as you suggested and used a provisional link for the tutorial. I am of course happy to also contribute a tutorial. Would you also like me to do a `user_guide` section of what is the difference?
 
 **@martinkim0:** Thanks for addressing the comments! The user guide is optional - it should just be a condensed explanation of how the model works. Since we already have a PeakVI [one](https://docs.scvi-tools.org/en/stable/user_guide/models/peakvi.html), you could just copy paste and make the necessary changes. For tutorials, you can put in a PR in our [tutorials repo](https://github.com/scverse/scvi-tutorials).
+
+**@martinkim0 (review, approved):** LGTM
 
 **@martinkim0:** Hi @lauradmartens, what's the status on this? Are there any changes you wanted to add before merging?
 

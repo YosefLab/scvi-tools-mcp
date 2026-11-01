@@ -298,20 +298,42 @@ def _is_bot(user: dict | None) -> bool:
     return user.get("type") == "Bot" or str(user.get("login", "")).endswith("[bot]")
 
 
-def _fetch_github_comments(repo: str, number: int) -> list[dict]:
-    comments: list[dict] = []
-    url: str | None = f"{GITHUB_API}/repos/{repo}/issues/{number}/comments"
+def _fetch_github_list(url: str) -> list[dict]:
+    """GET every page of a GitHub list endpoint."""
+    out: list[dict] = []
+    next_url: str | None = url
     params: dict | None = {"per_page": 100}
-    while url:
-        resp = _github_get(url, params=params)
-        comments.extend(resp.json())
-        url = resp.links.get("next", {}).get("url")
+    while next_url:
+        resp = _github_get(next_url, params=params)
+        out.extend(resp.json())
+        next_url = resp.links.get("next", {}).get("url")
         params = None  # the "next" link already carries the query string
-    return comments
+    return out
 
 
-def build_github_entry(item: dict, comments: list[dict]) -> SnapshotEntry:
-    """Render one GitHub issue or PR (as returned by the issues API) into a snapshot section."""
+def _fetch_github_comments(repo: str, number: int) -> list[dict]:
+    """Conversation comments of an issue or PR."""
+    return _fetch_github_list(f"{GITHUB_API}/repos/{repo}/issues/{number}/comments")
+
+
+def _fetch_github_reviews(repo: str, number: int) -> tuple[list[dict], list[dict]]:
+    """Review summaries and inline (code) review comments of a PR."""
+    reviews = _fetch_github_list(f"{GITHUB_API}/repos/{repo}/pulls/{number}/reviews")
+    review_comments = _fetch_github_list(f"{GITHUB_API}/repos/{repo}/pulls/{number}/comments")
+    return reviews, review_comments
+
+
+def build_github_entry(
+    item: dict,
+    comments: list[dict],
+    reviews: list[dict] | None = None,
+    review_comments: list[dict] | None = None,
+) -> SnapshotEntry:
+    """Render one GitHub issue or PR (as returned by the issues API) into a snapshot section.
+
+    Conversation comments, review summaries and inline review comments are merged
+    into a single chronological discussion; bot authors are skipped.
+    """
     number = item["number"]
     is_pr = "pull_request" in item
     state = item.get("state", "")
@@ -320,11 +342,36 @@ def build_github_entry(item: dict, comments: list[dict]) -> SnapshotEntry:
     labels = ", ".join(lb["name"] for lb in item.get("labels", []))
     author = (item.get("user") or {}).get("login", "unknown")
     last_activity = _parse_ts(item.get("updated_at")) or _parse_ts(item.get("created_at"))
-    human_comments = [c for c in comments if not _is_bot(c.get("user"))]
+
+    timeline: list[tuple[str, str]] = []  # (timestamp, rendered line)
+    for comment in comments:
+        if _is_bot(comment.get("user")):
+            continue
+        cbody = _trim(comment.get("body") or "", MAX_COMMENT_CHARS)
+        if cbody:
+            login = (comment.get("user") or {}).get("login", "unknown")
+            timeline.append((comment.get("created_at") or "", f"**@{login}:** {cbody}"))
+    for review in reviews or []:
+        if _is_bot(review.get("user")):
+            continue
+        rbody = _trim(review.get("body") or "", MAX_COMMENT_CHARS)
+        if rbody:  # approvals without text carry no knowledge
+            login = (review.get("user") or {}).get("login", "unknown")
+            verdict = str(review.get("state") or "").replace("_", " ").lower()
+            timeline.append((review.get("submitted_at") or "", f"**@{login} (review, {verdict}):** {rbody}"))
+    for rc in review_comments or []:
+        if _is_bot(rc.get("user")):
+            continue
+        rcbody = _trim(rc.get("body") or "", MAX_COMMENT_CHARS)
+        if rcbody:
+            login = (rc.get("user") or {}).get("login", "unknown")
+            where = f" on `{rc['path']}`" if rc.get("path") else ""
+            timeline.append((rc.get("created_at") or "", f"**@{login}{where}:** {rcbody}"))
+    timeline.sort(key=lambda t: t[0])
 
     lines = [
         f"**{'PR' if is_pr else 'Issue'}:** #{number} | **Last activity:** {_fmt_ts(last_activity)}",
-        f"**State:** {state} | **Author:** @{author} | **Comments:** {len(human_comments)}"
+        f"**State:** {state} | **Author:** @{author} | **Comments:** {len(timeline)}"
         f" | **Created:** {(item.get('created_at') or '')[:10]}"
         + (f" | **Labels:** {labels}" if labels else "")
         + f" | **URL:** {item.get('html_url', '')}",
@@ -333,11 +380,8 @@ def build_github_entry(item: dict, comments: list[dict]) -> SnapshotEntry:
     body = _trim(item.get("body") or "", MAX_BODY_CHARS)
     if body:
         lines += [body, ""]
-    for comment in human_comments:
-        cauthor = (comment.get("user") or {}).get("login", "unknown")
-        cbody = _trim(comment.get("body") or "", MAX_COMMENT_CHARS)
-        if cbody:
-            lines += [f"**@{cauthor}:** {cbody}", ""]
+    for _, line in timeline:
+        lines += [line, ""]
 
     return SnapshotEntry(
         title=f"#{number}: {(item.get('title') or '').strip()}",
@@ -353,16 +397,16 @@ def _since(existing: Iterable[SnapshotEntry], now: dt.datetime) -> dt.datetime:
 
 
 def fetch_github_issues_and_pulls(
-    repo: str, existing: list[SnapshotEntry], now: dt.datetime
+    repo: str, existing: list[SnapshotEntry], now: dt.datetime, since: dt.datetime | None = None
 ) -> tuple[list[SnapshotEntry], list[SnapshotEntry]]:
     """Fetch a repo's issues and PRs updated since the newest entry already stored.
 
     Items are processed oldest update first, so if a run stops early everything up
     to that point can be saved and the next run resumes from the newest stored
     ``Last activity``. Errors propagate as :class:`PartialFetchError` carrying the
-    progress made so far.
+    progress made so far. ``since`` overrides the stored cursor (used for backfills).
     """
-    since = _since(existing, now)
+    since = since or _since(existing, now)
     print(f"  {repo}: issues/PRs updated since {_fmt_ts(since)}")
     issues: list[SnapshotEntry] = []
     pulls: list[SnapshotEntry] = []
@@ -373,12 +417,21 @@ def fetch_github_issues_and_pulls(
             for item in resp.json():
                 if _is_bot(item.get("user")):
                     continue
-                comments = _fetch_github_comments(repo, item["number"]) if item.get("comments", 0) > 0 else []
-                (pulls if "pull_request" in item else issues).append(build_github_entry(item, comments))
+                number = item["number"]
+                comments = _fetch_github_comments(repo, number) if item.get("comments", 0) > 0 else []
+                if "pull_request" in item:
+                    reviews, review_comments = _fetch_github_reviews(repo, number)
+                    pulls.append(build_github_entry(item, comments, reviews, review_comments))
+                else:
+                    issues.append(build_github_entry(item, comments))
                 time.sleep(0.2)
             if not resp.links.get("next"):
                 break
     except Exception as e:
+        done = [x.last_activity for x in issues + pulls if x.last_activity is not None]
+        if done:
+            last = _fmt_ts(max(done))
+            print(f"  {repo}: processed up to {last} (resume a backfill with --since {last})")
         raise PartialFetchError(e, issues, pulls) from e
     return issues, pulls
 
@@ -489,7 +542,7 @@ def _github_header(repo: str, kind: str) -> tuple[str, str]:
 
 
 def refresh_github_repo(
-    repo: str, texts: dict[str, str], now: dt.datetime | None = None
+    repo: str, texts: dict[str, str], now: dt.datetime | None = None, since: dt.datetime | None = None
 ) -> tuple[dict[str, str], bool]:
     """Refresh one repo's snapshots.
 
@@ -504,7 +557,7 @@ def refresh_github_repo(
 
     try:
         fetched["issues"], fetched["pulls"] = fetch_github_issues_and_pulls(
-            repo, existing["issues"] + existing["pulls"], now
+            repo, existing["issues"] + existing["pulls"], now, since
         )
     except PartialFetchError as e:
         fetched["issues"], fetched["pulls"] = e.partial
@@ -531,20 +584,29 @@ def refresh_github_repo(
     return out, rate_limited
 
 
-def refresh_github(faq_dir: Path, now: dt.datetime | None = None) -> None:
-    """Refresh the snapshot files of every repo in ``GITHUB_REPOS`` inside ``faq_dir``."""
+def refresh_github(
+    faq_dir: Path,
+    now: dt.datetime | None = None,
+    since: dt.datetime | None = None,
+    repos: list[str] | None = None,
+) -> None:
+    """Refresh the snapshot files of every repo in ``GITHUB_REPOS`` inside ``faq_dir``.
+
+    ``since`` re-fetches everything updated after that time instead of resuming from
+    the stored cursor (e.g. to backfill new fields into existing entries).
+    """
     legacy: dict[tuple[str, str], str] = {}
     for fname, target in LEGACY_GITHUB_FILES.items():
         legacy[target] = _read(faq_dir / fname)
 
-    for repo in GITHUB_REPOS:
+    for repo in repos or GITHUB_REPOS:
         texts = {}
         for kind in GITHUB_KINDS:
             text = _read(faq_dir / github_snapshot_name(repo, kind))
             extra = legacy.get((repo, kind), "")
             texts[kind] = text + ("\n" + extra if extra else "")
         try:
-            out, rate_limited = refresh_github_repo(repo, texts, now)
+            out, rate_limited = refresh_github_repo(repo, texts, now, since)
         except Exception as e:
             print(f"  WARN: {repo} refresh failed: {e}")
             continue
@@ -700,30 +762,46 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
-def run(faq_dir: Path = KNOWLEDGE_FAQ) -> None:
+def run(
+    faq_dir: Path = KNOWLEDGE_FAQ,
+    only: str | None = None,
+    since: dt.datetime | None = None,
+    repos: list[str] | None = None,
+) -> None:
     faq_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Fetching GitHub issues, pull requests and discussions...")
-    try:
-        refresh_github(faq_dir)
-    except Exception as e:
-        print(f"  WARN: GitHub refresh failed: {e}")
+    if only in (None, "github"):
+        print("Fetching GitHub issues, pull requests and discussions...")
+        try:
+            refresh_github(faq_dir, since=since, repos=repos)
+        except Exception as e:
+            print(f"  WARN: GitHub refresh failed: {e}")
+        time.sleep(1)
 
-    time.sleep(1)
-
-    print("Fetching Discourse threads...")
-    discourse_path = faq_dir / "discourse_threads.md"
-    try:
-        discourse_md = refresh_discourse(_read(discourse_path))
-        discourse_path.write_text(discourse_md, encoding="utf-8")
-        print(f"  wrote {discourse_path.name} ({len(discourse_md)} chars)")
-    except Exception as e:
-        print(f"  WARN: Discourse refresh failed: {e}")
+    if only in (None, "discourse"):
+        print("Fetching Discourse threads...")
+        discourse_path = faq_dir / "discourse_threads.md"
+        try:
+            discourse_md = refresh_discourse(_read(discourse_path))
+            discourse_path.write_text(discourse_md, encoding="utf-8")
+            print(f"  wrote {discourse_path.name} ({len(discourse_md)} chars)")
+        except Exception as e:
+            print(f"  WARN: Discourse refresh failed: {e}")
 
     print("Done.")
 
 
 if __name__ == "__main__":
-    import sys
+    import argparse
 
-    run(Path(sys.argv[1]) if len(sys.argv) > 1 else KNOWLEDGE_FAQ)
+    parser = argparse.ArgumentParser(description="Refresh the accumulative GitHub/Discourse FAQ snapshots.")
+    parser.add_argument("faq_dir", nargs="?", type=Path, default=KNOWLEDGE_FAQ)
+    parser.add_argument("--only", choices=["github", "discourse"], help="refresh only one source")
+    parser.add_argument(
+        "--since",
+        type=_parse_ts,
+        help="GitHub: re-fetch everything updated after this ISO time instead of resuming from the stored cursor",
+    )
+    parser.add_argument("--repo", action="append", dest="repos", help="GitHub: limit to this repo (repeatable)")
+    args = parser.parse_args()
+    run(args.faq_dir, only=args.only, since=args.since, repos=args.repos)

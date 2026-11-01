@@ -1,10 +1,14 @@
 # YosefLab/scib-metrics GitHub Pull Requests
 
-60 pull requests (open, closed and merged, bots excluded) from YosefLab/scib-metrics with activity in the last 3 years, most recently active first. This snapshot accumulates across refreshes; PRs are only removed once they age out of that window.
+61 pull requests (open, closed and merged, bots excluded) from YosefLab/scib-metrics with activity in the last 3 years, most recently active first. This snapshot accumulates across refreshes; PRs are only removed once they age out of that window.
+
+## #306: release: v0.6.2
+**PR:** #306 | **Last activity:** 2026-11-01T10:19:26Z
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-11-01 | **URL:** https://github.com/YosefLab/scib-metrics/pull/306
 
 ## #305: fix: get_results(min_max_scale=True) on pandas 3
-**PR:** #305 | **Last activity:** 2026-10-30T22:13:36Z
-**State:** open | **Author:** @Marius1311 | **Comments:** 1 | **Created:** 2026-10-30 | **URL:** https://github.com/YosefLab/scib-metrics/pull/305
+**PR:** #305 | **Last activity:** 2026-11-01T10:07:00Z
+**State:** merged | **Author:** @Marius1311 | **Comments:** 1 | **Created:** 2026-10-30 | **URL:** https://github.com/YosefLab/scib-metrics/pull/305
 
 On pandas 3, `Benchmarker.get_results(min_max_scale=True)` raises `TypeError: Invalid value 'Aggregate score' for dtype 'float64'`. Min-max scaling makes the aggregate score columns float64, and pandas 3 no longer upcasts a column when a string is written into it (it warned before).
 
@@ -241,7 +245,7 @@ We added (optional) integration with VScode and improved cookiecutter prompts:
 
 ## #197: Add fast BRAS implementation to scib-metrics package.
 **PR:** #197 | **Last activity:** 2025-09-01T11:30:24Z
-**State:** merged | **Author:** @prauten | **Comments:** 2 | **Created:** 2025-04-02 | **URL:** https://github.com/YosefLab/scib-metrics/pull/197
+**State:** merged | **Author:** @prauten | **Comments:** 13 | **Created:** 2025-04-02 | **URL:** https://github.com/YosefLab/scib-metrics/pull/197
 
 Hi there,
 
@@ -258,6 +262,26 @@ Let me know if you would like any adjustments or further context.
 Best,
 Pia
 
+**@adamgayoso on `src/scib_metrics/utils/_silhouette.py`:** Would be great to check all options explicitly and have the else raise an error
+
+**@adamgayoso on `CHANGELOG.md`:** ```suggestion
+- Add batch removal adapted silhouette (BRAS) metric ({func}`scib_metrics.metrics.bras`) {pr}`197`, which addresses limitations of silhouette for scoring batch effect removal.
+```
+
+**@adamgayoso on `CHANGELOG.md`:** ```suggestion
+- Changed {func}`scib_metrics.utils.cdist` to support cosine distance.
+```
+
+**@adamgayoso on `src/scib_metrics/metrics/_silhouette.py`:** ```suggestion
+    Additional options enable BRAS compatible usage (see :func:`~scib_metrics.metrics.bras` documentation).
+```
+
+**@adamgayoso on `src/scib_metrics/utils/_silhouette.py`:** ```suggestion
+     of evaluating data integration (see :func:`~scib_metrics.metrics.bras` documentation).
+```
+
+**@adamgayoso (review, changes requested):** Thanks! Some small changes suggested. In a follow-up PR, would you like to add this to the benchmarker? Specifically just the dataclass and the enum should be necessary.
+
 **@prauten:** Hi Adam,
 
 Thanks for your swift response and code reviews!
@@ -266,6 +290,16 @@ It is a great idea to add the BRAS metric to the benchmarker. Once I get to it, 
 
 Best,
 Pia
+
+**@prauten on `src/scib_metrics/utils/_silhouette.py`:** Thanks for the suggestion, I will implement it and update the pull request.
+
+**@prauten on `src/scib_metrics/utils/_silhouette.py`:** Marking this as resolved.
+
+**@adamgayoso on `CHANGELOG.md`:** Can you move these into the unreleased section above?
+
+**@adamgayoso (review, approved):** LGTM. Please move the release notes up for now. Thanks.
+
+**@prauten on `CHANGELOG.md`:** I did! Apologies for the oversight. I thought version 0.5.4 had not been released yet, as it doesn't show as "latest" on the main page of the package on GitHub.
 
 **@prauten:** Thank you for including BRAS in your package and reviewing my PR!
 
@@ -402,7 +436,7 @@ Added `progress_bar` argument that lets users disable the progress bar in `Bench
 
 ## #52: initial benchmarker and plotting
 **PR:** #52 | **Last activity:** 2024-02-23T23:05:58Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 0 | **Created:** 2022-11-13 | **URL:** https://github.com/YosefLab/scib-metrics/pull/52
+**State:** merged | **Author:** @adamgayoso | **Comments:** 16 | **Created:** 2022-11-13 | **URL:** https://github.com/YosefLab/scib-metrics/pull/52
 
 Fixes #13
 Fixes #14
@@ -410,13 +444,71 @@ Fixes #41
 
 See the rendered docs for the new tutorial and new classes.
 
+**@adamgayoso on `pyproject.toml`:** ```suggestion
+    "ipython!=8.7.0", # code highlighting issue
+```
+
+**@martinkim0 on `src/scib_metrics/utils/_pcr.py`:** ```suggestion
+        covariate = one_hot(np.asarray(pd.Categorical(covariate).codes))
+```
+
+**@martinkim0 on `src/scib_metrics/utils/_pcr.py`:** ```suggestion
+        covariate = np.asarray(covariate)
+        covariate = covariate.reshape((covariate.shape[0], 1))
+```
+
+**@martinkim0 on `src/scib_metrics/utils/_pcr.py`:** ```suggestion
+```
+
+**@adamgayoso on `src/scib_metrics/utils/_pcr.py`:** this happens on line 48 though!
+
+**@adamgayoso on `src/scib_metrics/utils/_pcr.py`:** same here! I think we should take care of all input validations in a future PR
+
+**@adamgayoso on `src/scib_metrics/utils/_pcr.py`:** oh didn't see this. I will make the change!
+
+**@justjhong on `src/scib_metrics/benchmark/_core.py`:** instead of a callable why not the user pass in a dict of kwargs and create the partial callable here if they passed in a dict instead of `True`.
+
+**@justjhong on `src/scib_metrics/benchmark/_core.py`:** This would avoid the user having to match the correct scib_metrics fn to the one they want to specify kwargs for and prevent unintentional mismatch between labels and actual metric fns.
+
+**@justjhong on `src/scib_metrics/benchmark/_core.py`:** should this fn avoid incomplete overrides of results? It seems like there are few to no cases where it should be called multiple times but it would just redo computation here. Specifically confusing in cases where somebody calls benchmark againintentionally after tweaking metrics they want to run, this would result in a mishmash of old and new results.
+
+**@justjhong on `src/scib_metrics/benchmark/_core.py`:** is this split based on the paper?
+
+**@justjhong on `src/scib_metrics/benchmark/_core.py`:** :o
+
+**@justjhong (review, approved):** looks awesome!!
+
+**@adamgayoso on `src/scib_metrics/benchmark/_core.py`:** yes
+
+**@adamgayoso on `src/scib_metrics/benchmark/_core.py`:** I'll add a comment
+
+**@adamgayoso on `src/scib_metrics/benchmark/_core.py`:** can use frozen in the metrics dataclasses so that it wouldn't be possible to run benchmark with different metrics
+
 ## #42: Reimplement silhouette in a mem constant way, pdist using lax scan
 **PR:** #42 | **Last activity:** 2024-02-23T23:05:57Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 0 | **Created:** 2022-10-25 | **URL:** https://github.com/YosefLab/scib-metrics/pull/42
+**State:** merged | **Author:** @adamgayoso | **Comments:** 6 | **Created:** 2022-10-25 | **URL:** https://github.com/YosefLab/scib-metrics/pull/42
 
 Fixes #36
 
 Our implementation now exactly follows the algorithm used in sklearn (instead of computing full X pairwise distance matrix, compute it in vertical chunks `cdist(X_chunk_size, X)` and then aggregate intra and inter clust dists
+
+**@martinkim0 on `src/scib_metrics/utils/_silhouette.py`:** ```suggestion
+    return get_ndarray(jnp.nan_to_num(sil_samples))
+```
+from `utils`.
+
+**@martinkim0 on `src/scib_metrics/utils/_silhouette.py`:** Is there a reason why `jnp` wasn't used here?
+
+**@martinkim0 on `src/scib_metrics/utils/_silhouette.py`:** ```suggestion
+from ._types import NdArray
+```
+
+**@martinkim0 on `src/scib_metrics/utils/_silhouette.py`:** ```suggestion
+```
+
+**@martinkim0 on `src/scib_metrics/utils/_dist.py`:** nice
+
+**@adamgayoso on `src/scib_metrics/utils/_silhouette.py`:** Nope.
 
 ## #139: Update template to v0.3.1
 **PR:** #139 | **Last activity:** 2024-02-23T22:35:02Z
@@ -549,7 +641,7 @@ If there are any questions, feel free to reach out to @grst, e.g. on the [scvers
 
 ## #129: Refactor neighbors-based metrics to use `NeighborsResults`
 **PR:** #129 | **Last activity:** 2024-01-04T17:32:06Z
-**State:** merged | **Author:** @adamgayoso | **Comments:** 1 | **Created:** 2023-12-27 | **URL:** https://github.com/YosefLab/scib-metrics/pull/129
+**State:** merged | **Author:** @adamgayoso | **Comments:** 2 | **Created:** 2023-12-27 | **URL:** https://github.com/YosefLab/scib-metrics/pull/129
 
 - Refactor neighbors-based metrics to use `NeighborsResults`, making it simpler for users as there is no confusion over passing distances or connectivities. Also reduces overhead of converting back and forth between sparse and dense representations of the neighbor results.
 - Compute umap-based connectivities in this package instead of scanpy, and make the implementation more efficient
@@ -560,11 +652,35 @@ If there are any questions, feel free to reach out to @grst, e.g. on the [scvers
 
 Fixes #109 as lisi always uses the dense (indices, distances) representation for neighbors. The issue arose when the approximate neighbors method gave a distance of zero to non-self cells.
 
+**@jan-engelmann (review, approved):** LGTM!
+Looked through and ran the tests.
+
+Now for 500 000 cells the main time used is spent in `pynndescent` (86%) and in `fuzzy_simplical_set` (4%) see profiling results below. Also, tests are passing.  `test_kmeans` failed for me once locally but has been passing ever since.
+
+Let me know if I should have a look at anything specific!
+
+<details>
+
+```python
+K = 90
+N = 500_000
+Q = 30
+X = np.random.randn(N, Q)
+neigh_result = pynndescent(X, n_neighbors=K)
+neigh_result = neigh_result.subset_neighbors(n=K)
+new_connect = neigh_result.knn_graph_connectivities
+new_dist = neigh_result.knn_graph_distances
+```
+  <summary>Profiling Results</summary>
+
+![test_adam_profiled](https://github.com/YosefLab/scib-metrics/assets/43600842/4ab06294-6d35-4ac7-b635-d262b96179b3)
+</details>
+
 **@adamgayoso:** @jan-engelmann  thanks! I will make a release soon
 
 ## #128: Speedup `Benchmarker.prepare` (`compute_connectivities_umap`)
 **PR:** #128 | **Last activity:** 2023-12-29T12:19:11Z
-**State:** closed | **Author:** @jan-engelmann | **Comments:** 7 | **Created:** 2023-12-20 | **URL:** https://github.com/YosefLab/scib-metrics/pull/128
+**State:** closed | **Author:** @jan-engelmann | **Comments:** 14 | **Created:** 2023-12-20 | **URL:** https://github.com/YosefLab/scib-metrics/pull/128
 
 Thanks for the great package!
 
@@ -591,6 +707,20 @@ What do you think @Zethson @adamgayoso
 I'd rather lobby for a new scanpy release and bring any improvements upstream into scanpy.
 
 But cool work @jan-engelmann !
+
+**@adamgayoso on `src/scib_metrics/utils/_utils.py`:** Please add typing
+
+**@adamgayoso on `src/scib_metrics/utils/_utils.py`:** Can you put a more general docstring? Overview of the method and that it matches how connectivies are computed in scanpy?
+
+**@adamgayoso on `src/scib_metrics/utils/_utils.py`:** nit: I prefer using keywords everywhere
+
+**@adamgayoso on `tests/test_utils.py`:** nit: use `np.testing`
+
+**@adamgayoso on `tests/test_utils.py`:** I don't think this test is necessary if you add a reproducible script to this PR description
+
+**@adamgayoso on `src/scib_metrics/utils/_utils.py`:** is this bit still necessary? What's the lower bound for scanpy? If we merge this PR we will need to make umap a direct dependency, so please also add that and potentially remove this block.
+
+**@adamgayoso (review, commented):** Thanks for this! I think this should be added to the package so we don't rely on a private fn of scanpy. Also the fn is quite simple.
 
 **@adamgayoso:** Actually I would hold off on this PR. I see some redundancies in converting back and forth from sparse distance matrices that I'd like to address first. This should eliminate the need for building the sparse distance graph here
 

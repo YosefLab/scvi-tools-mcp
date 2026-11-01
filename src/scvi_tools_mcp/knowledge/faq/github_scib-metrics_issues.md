@@ -187,7 +187,7 @@ adata = sc.read(
     "data/lung_atlas.h5ad",
     backup_url="https://figshare.com/ndownloader/files/24539942",
 )
-adata.layers["counts"].sum()
+adata.layers['counts'].sum()
 ```
 
 same thing for the pancreas dataset.

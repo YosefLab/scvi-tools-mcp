@@ -17,6 +17,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   only the top 30 Discourse threads by views from the first listing page (so e.g. "Correct way to run SOLO for
   doublet detection" fell out) and overwrote `github_issues.md`, which had been empty since June.
 - `refresh_knowledge.yaml` change detection now also picks up newly created (untracked) snapshot files.
+- `search_knowledge` no longer ranks the large community snapshot files as single documents (which let them dominate
+  every query while exposing only one line per file). GitHub/Discourse entries are now split out and ranked
+  individually, and listed in their own "Community" section with title, date, link and best-matching line, so they
+  no longer push curated model/tutorial docs out of the results. `get_faq` uses the same ranking for its community
+  part.
+- GitHub PR snapshots now include review summaries and inline code-review comments (previously only conversation
+  comments), merged chronologically with the conversation.
+- The `ruff`/`ruff-format` pre-commit hooks no longer touch `src/scvi_tools_mcp/knowledge/`: they rewrote Python code
+  blocks quoted in GitHub/Discourse posts (e.g. `'counts'` -> `"counts"`), altering user code and causing churn on
+  every refresh. Affected snapshots were re-scraped verbatim.
 
 ### Added
 
@@ -31,6 +41,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Both scrapers are incremental: the first run builds a 3-year baseline, later runs only fetch what changed since
   the newest stored entry, so monthly refreshes are light.
 - Discourse: every thread is stored with all of its posts.
+- Community search results are weighted by recency (weight halves per year of age, floor 1/8): among threads that
+  answer a question equally well, the most recent answer ranks first, while a clearly better older match still wins.
+- `scripts/scrape_external.py` CLI: `--only {github,discourse}`, `--repo`, and `--since` to re-fetch (backfill)
+  GitHub items from a given time instead of resuming from the stored cursor.
 - GitHub: open and closed issues, PRs (bots excluded) and Discussions with all comments, fetched incrementally and
   resuming after rate limits, for scvi-tools, scvi-tutorials, scviva-tools, scib-metrics, scvi-colab and
   scvi-hub-models. Snapshots are written per repo to `knowledge/faq/github_<repo>_{issues,pulls,discussions}.md`;

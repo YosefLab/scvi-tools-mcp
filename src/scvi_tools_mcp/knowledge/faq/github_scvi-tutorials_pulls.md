@@ -4,7 +4,7 @@
 
 ## #578: Update the default python version and add py 3.15
 **PR:** #578 | **Last activity:** 2026-10-28T08:46:59Z
-**State:** open | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-10-26 | **URL:** https://github.com/scverse/scvi-tutorials/pull/578
+**State:** open | **Author:** @ori-kron-wis | **Comments:** 3 | **Created:** 2026-10-26 | **URL:** https://github.com/scverse/scvi-tutorials/pull/578
 
 ## Formatting
 
@@ -20,6 +20,12 @@
 
 - [ ] Counts and normalized data should co-exist in the datasets, see the [API overview](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/api_overview.html) for an example
 - [ ] For scRNA-seq data, normalization should be counts per median library size and then log1p transformed -- if not, a reason should be given
+
+**@ori-kron-wis on `.github/workflows/run_notebook.yaml`:** True for now, but we are going to release a new scvi-tools version that will build it with py3.14 and cu13 so it will be ok
+
+**@ori-kron-wis on `.github/workflows/run_linux_cuda.yml`:** Will fix it.
+
+**@ori-kron-wis on `.github/workflows/run_linux_cuda.yml`:** Same like in above
 
 ## #575: cytovi tutos updates
 **PR:** #575 | **Last activity:** 2026-10-14T07:25:43Z
@@ -128,7 +134,7 @@ Requires changes introduced in https://github.com/scverse/scvi-tools/pull/3146 t
 
 ## #491: refactor: updates to backend files to match scverse template cookiecutter
 **PR:** #491 | **Last activity:** 2026-07-26T12:45:31Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2025-11-20 | **URL:** https://github.com/scverse/scvi-tutorials/pull/491
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2025-11-20 | **URL:** https://github.com/scverse/scvi-tutorials/pull/491
 
 ## Formatting
 
@@ -144,6 +150,8 @@ Requires changes introduced in https://github.com/scverse/scvi-tools/pull/3146 t
 
 - [ ] Counts and normalized data should co-exist in the datasets, see the [API overview](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/api_overview.html) for an example
 - [ ] For scRNA-seq data, normalization should be counts per median library size and then log1p transformed -- if not, a reason should be given
+
+**@Zethson (review, approved):** Great, thank you very much!
 
 **@ori-kron-wis:** @Zethson should we merge?
 
@@ -452,7 +460,7 @@ Demonstrates the bias-point collapse of standard SCVI on low-UMI cells and how J
 
 ## #526: Annbatch tuto
 **PR:** #526 | **Last activity:** 2026-06-17T14:30:54Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-06-17 | **URL:** https://github.com/scverse/scvi-tutorials/pull/526
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2026-06-17 | **URL:** https://github.com/scverse/scvi-tutorials/pull/526
 
 ## Formatting
 
@@ -469,9 +477,11 @@ Demonstrates the bias-point collapse of standard SCVI on low-UMI cells and how J
 - [ ] Counts and normalized data should co-exist in the datasets, see the [API overview](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/api_overview.html) for an example
 - [ ] For scRNA-seq data, normalization should be counts per median library size and then log1p transformed -- if not, a reason should be given
 
+**@ori-kron-wis on `.github/workflows/run_notebook_all.yaml`:** its ok we will push correct packages in the annbatch branch
+
 ## #508: DiagVI tutorials
 **PR:** #508 | **Last activity:** 2026-04-29T09:18:16Z
-**State:** merged | **Author:** @michelta00 | **Comments:** 0 | **Created:** 2026-02-21 | **URL:** https://github.com/scverse/scvi-tutorials/pull/508
+**State:** merged | **Author:** @michelta00 | **Comments:** 2 | **Created:** 2026-02-21 | **URL:** https://github.com/scverse/scvi-tutorials/pull/508
 
 ## Formatting
 
@@ -487,6 +497,20 @@ Demonstrates the bias-point collapse of standard SCVI on low-UMI cells and how J
 
 - [x] Counts and normalized data should co-exist in the datasets, see the [API overview](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/api_overview.html) for an example
 - [x] For scRNA-seq data, normalization should be counts per median library size and then log1p transformed -- if not, a reason should be given
+
+**@ori-kron-wis on `multimodal/DiagVI_spatial_proteomics.ipynb`:** A few things:
+1. I wouldn't commit with `warnings.filterwarnings("ignore")`
+2. See other comments from the scvi-tools diagvi PR. e.g : compute_foscttm into a different location
+3. Add convergence curves
+4. Validate with the most recent scvi-tools/scib-metrics versions (from main branch)
+5. Validate both CPU/GPU runs (even a few epochs to see it works logically)
+6. Perhaps we want to compare to TotalVI and TotalANVI?. Both of them are multimodal for RNA and Protein data
+
+**@michelta00 on `multimodal/DiagVI_spatial_proteomics.ipynb`:** Thanks for the feedback!
+
+Regarding `warnings.filterwarnings("ignore")`, we use this setting to suppress warnings mainly from other packages that are not directly relevant to the user and clutter the notebook output. If you would still recommend removing it, we can of course do that.
+
+And regarding the comparison with totalVI and totalANVI, we think this would be difficult due to two reasons. First, totalVI is designed for paired inputs, while DiagVI is designed for unpaired input, so we are not sure whether totalVI can be meaningfully applied in this setting. Second, in the spatial proteomics tutorial, we apply DiagVI to imaging-based spatial proteomics data which is represented as continuous values, but totalVI only supports NB and ZINB distributions as far as we can tell.
 
 ## #512: typo in totalvi tutorial
 **PR:** #512 | **Last activity:** 2026-03-03T11:19:54Z
@@ -1140,7 +1164,7 @@ Autotune, I thought you wanted to highlight how to use scib-metrics during tunin
 
 ## #212: SysVI tutorial
 **PR:** #212 | **Last activity:** 2025-02-25T08:47:03Z
-**State:** merged | **Author:** @Hrovatin | **Comments:** 2 | **Created:** 2024-01-19 | **URL:** https://github.com/scverse/scvi-tutorials/pull/212
+**State:** merged | **Author:** @Hrovatin | **Comments:** 3 | **Created:** 2024-01-19 | **URL:** https://github.com/scverse/scvi-tutorials/pull/212
 
 Associated with https://github.com/scverse/scvi-tools/issues/2383
 
@@ -1160,6 +1184,8 @@ Could you help with this?
 - [x ] Counts and normalized data should co-exist in the datasets, see the [API overview](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/api_overview.html) for an example
 - [ x] For scRNA-seq data, normalization should be counts per median library size and then log1p transformed -- if not, a reason should be given
 Data is normalized to fixed number of total counts as it was normalized separately for mouse and human. If median library size was used for normalization the two datasets would not be comparable.
+
+**@martinkim0 (review, approved):** I'm approving this for now, but this needs to be run again once https://github.com/scverse/scvi-tools/pull/2421 is merged into main since we require that tutorials are run top to bottom in a container.
 
 **@Hrovatin:** @ori-kron-wis @canergen I updated the tutorial now according to https://github.com/scverse/scvi-tools/pull/2421
 
@@ -1371,7 +1397,7 @@ This is related to https://github.com/scverse/scvi-tools/pull/2842
 
 ## #363: MethylVI batch effect tutorial
 **PR:** #363 | **Last activity:** 2024-11-27T13:33:25Z
-**State:** merged | **Author:** @ethanweinberger | **Comments:** 4 | **Created:** 2024-10-07 | **URL:** https://github.com/scverse/scvi-tutorials/pull/363
+**State:** merged | **Author:** @ethanweinberger | **Comments:** 21 | **Created:** 2024-10-07 | **URL:** https://github.com/scverse/scvi-tutorials/pull/363
 
 Tutorial accompanies https://github.com/scverse/scvi-tools/pull/2834
 
@@ -1390,14 +1416,64 @@ Tutorial accompanies https://github.com/scverse/scvi-tools/pull/2834
 - [x] Counts and normalized data should co-exist in the datasets, see the [API overview](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/api_overview.html) for an example
 - [x] For scRNA-seq data, normalization should be counts per median library size and then log1p transformed -- if not, a reason should be given (Note: not applicable to this tutorial as we're not using scRNA-seq)
 
+**@canergen on `scbs/MethylVI_batch.ipynb`:** <p>Make consistent with other tutorials.</p>
+<br/>
+
+ _Reply via <a href='https://app.reviewnb.com/scverse/scvi-tutorials/pull/363/discussion/#comment-1792439828'>ReviewNB</a>_ <div id='ReviewNBCommentContext-DoNotDelete' style='display:none' data-state='RESOLVED' data-cellIndex='6'/>
+
+**@canergen on `scbs/MethylVI_batch.ipynb`:** @ori-kron-wis can we use our download function instead?
+
+**@canergen on `scbs/MethylVI_batch.ipynb`:** <p>jointly = one model but treat both seperately not add both and get one output? Maybe write "we'll jointly model both".</p><p>How would <code>modalities={"categorical_covariate_keys": "mCG"}</code>look like for two different fields. Please put in the comment.</p>
+<br/>
+
+ _Reply via <a href='https://app.reviewnb.com/scverse/scvi-tutorials/pull/363/discussion/#comment-1792439833'>ReviewNB</a>_ <div id='ReviewNBCommentContext-DoNotDelete' style='display:none' data-state='RESOLVED' data-cellIndex='19'/>
+
+**@canergen on `scbs/MethylVI_batch.ipynb`:** <p>Maybe show get_normalized_methylation or DE additionally to go beyond latent space analysis? See our other tutorials for examples.</p>
+<br/>
+
+ _Reply via <a href='https://app.reviewnb.com/scverse/scvi-tutorials/pull/363/discussion/#comment-1792439834'>ReviewNB</a>_ <div id='ReviewNBCommentContext-DoNotDelete' style='display:none' data-state='RESOLVED' data-cellIndex='25'/>
+
 **@canergen:** See comments overall looks fine. @ori-kron-wis can you help make the style consistent with other tutorials (I assume removing notebook style commands). These might change rendering on the webpage, which can end up ugly.
+
+**@ethanweinberger on `scbs/MethylVI_batch.ipynb`:** <p>Once this notebook is merged in I plan to create a separate tutorial for feature-level analysis that will replicate the results from our (upcoming) preprint</p>
+
+**@ethanweinberger on `scbs/MethylVI_batch.ipynb`:** <p>@canergen what exactly should I change here? I took this block of code from the Atlas integration tutorial at <a href="https://docs.scvi-tools.org/en/stable/tutorials/notebooks/scrna/harmonization.html" target="_blank">https://docs.scvi-tools.org/en/stable/tutorials/notebooks/scrna/harmonization.html</a></p>
+
+**@ethanweinberger on `scbs/MethylVI_batch.ipynb`:** To make the description clearer, I changed the wording to "Here we'll jointly model both CpG and non-CpG methylation features" as suggested.
+
+For the `modalities` argument, I added a {note} block similar to the one in the totalVI tutorial (https://docs.scvi-tools.org/en/stable/tutorials/notebooks/multimodal/totalVI.html)
+
+**@canergen on `scbs/MethylVI_batch.ipynb`:** <p>Thanks and my bad. It was more a note to Ori to double-check once. Resolved.</p>
+
+**@canergen on `scbs/MethylVI_batch.ipynb`:** <p>Please add the code that you would use if mCH and mCH in the note block below. It doesn't become clear to me.</p>
+
+**@canergen on `scbs/MethylVI_batch.ipynb`:** <p>Can we have it in one notebook? I don't like bloating the number of tutorials. It's currently already quite painful to rerun and manually merge notebooks. Do you need different datasets for it?</p>
+
+**@canergen on `scbs/MethylVI_batch.ipynb`:** Maybe you post here the code if both have different categories and then I can advise what's the minimum information required.
+
+**@ethanweinberger on `scbs/MethylVI_batch.ipynb`:** For feature-level analysis I would prefer to use a different dataset (I don't have as good ground truths for the dataset here used for batch effect correction). I'm happy to put both analyses in a single notebook though if that's preferred. Let me know how you would prefer to proceed.
+
+**@ethanweinberger on `scbs/MethylVI_batch.ipynb`:** @canergen what's the exact scenario you're thinking of?
+
+I think I misunderstood your original comment, and I'm not sure what you're asking (was `if mCH and mCH` above a typo?). For example, by two different fields did you mean:
+
+1. I have two categorical covariate fields, one if which lives in `mdata['mCG'].obs` and the other of which lives in `mdata['mCH'].obs`? In this case I believe the `MuDataCategoricalJointObsField` used in the `setup_mudata` function doesn't support this use case, and we would ask users to consolidate their categorical variables into one modality's `.obs` field.
+2. Alternatively, do you mean one argument to the `setup_mudata` function is stored in one modality (e.g. `batch_key` is in `mCG`) while the other is in a different field (e.g. `categorical_covariate_ …
+
+**@ori-kron-wis on `scbs/MethylVI_batch.ipynb`:** not sure, instead of what?
 
 **@ori-kron-wis:** @canergen not so sure what is the problem/difference in style? care to give a few examples?
 I could think about adding a save/load model part and also make a new line for each input parameter in a scanpy function (this is to be equivalent to other tutorials)
 
 **@ethanweinberger:** Hi @canergen. Just wanted to check in to see if you had updates re: my and @ori-kron-wis's previous comments.
 
+**@canergen on `scbs/MethylVI_batch.ipynb`:** No if it's using different datasets, make it different notebooks.
+
+**@canergen (review, approved):** Please replace wget with pooch.
+
 **@canergen:** @ori-kron-wis Please merge after adding pooch.
+
+**@ori-kron-wis on `scbs/MethylVI_batch.ipynb`:** replaces wget with pooch
 
 ## #371: docs: Remove autotune hyperparameters info from tutorial
 **PR:** #371 | **Last activity:** 2024-11-27T09:51:05Z
@@ -1491,7 +1567,7 @@ Fixing bad link in tutorial
 
 ## #346: docs: updated several tutorials
 **PR:** #346 | **Last activity:** 2024-09-23T18:32:17Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2024-09-23 | **URL:** https://github.com/scverse/scvi-tutorials/pull/346
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 1 | **Created:** 2024-09-23 | **URL:** https://github.com/scverse/scvi-tutorials/pull/346
 
 ## Formatting
 
@@ -1507,6 +1583,8 @@ Fixing bad link in tutorial
 
 - [ ] Counts and normalized data should co-exist in the datasets, see the [API overview](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/api_overview.html) for an example
 - [ ] For scRNA-seq data, normalization should be counts per median library size and then log1p transformed -- if not, a reason should be given
+
+**@canergen on `scrna/scanvi_fix.ipynb`:** I don't get this change. Rest approved.
 
 ## #322: Update pyproject.toml
 **PR:** #322 | **Last activity:** 2024-09-22T10:24:52Z
@@ -1696,7 +1774,7 @@ closes https://github.com/scverse/scvi-tools/issues/991
 
 ## #278: MrVI Quick Start Tutorial
 **PR:** #278 | **Last activity:** 2024-05-01T17:25:55Z
-**State:** merged | **Author:** @justjhong | **Comments:** 2 | **Created:** 2024-05-01 | **URL:** https://github.com/scverse/scvi-tutorials/pull/278
+**State:** merged | **Author:** @justjhong | **Comments:** 4 | **Created:** 2024-05-01 | **URL:** https://github.com/scverse/scvi-tutorials/pull/278
 
 ## Formatting
 
@@ -1715,6 +1793,20 @@ closes https://github.com/scverse/scvi-tools/issues/991
 
 **@canergen:** Does the missing Colab check mean that it doesn't work or that it's not tested yet? In the first case can we make it pass? IMO it's the easiest way for reviewers to check algorithms and for users to get to know them.
 
+**@martinkim0 (review, changes requested):** Thanks for much Justin! Overall looks great, just a couple of comments:
+
+Could you change the first line to:
+
+> MrVI (Multi-resolution Variational Inference) is a **model**...
+
+and maybe put like 1-2 sentences summarizing for what kind of datasets MrVI is appropriate?
+
+Would it also be possible to add a citation for the dataset, a quick description of how it was subsetted, as well as a summary of the different `obs` fields?
+
+Finally, in `Visualize cell embeddings and sample distances`, could you summarize the difference between `u` and `z` (I guess I'm assuming a user who is going to this tutorial directly without having read the paper).
+
+**@martinkim0 (review, approved):** LGTM!!
+
 **@martinkim0:** While you're at it, would you mind updating https://github.com/scverse/scvi-tutorials/blob/main/.github/workflows/run_linux_cuda.yml and https://github.com/scverse/scvi-tutorials/blob/main/.github/workflows/run_linux_cuda_branch.yml to include the new file? Thanks
 
 ## #275: misc: manually update pre-commit versions
@@ -1727,7 +1819,7 @@ closes https://github.com/scverse/scvi-tools/issues/991
 
 ## #268: CELLxGENE model.
 **PR:** #268 | **Last activity:** 2024-04-06T21:25:46Z
-**State:** closed | **Author:** @canergen | **Comments:** 0 | **Created:** 2024-03-12 | **URL:** https://github.com/scverse/scvi-tutorials/pull/268
+**State:** closed | **Author:** @canergen | **Comments:** 1 | **Created:** 2024-03-12 | **URL:** https://github.com/scverse/scvi-tutorials/pull/268
 
 ## Formatting
 
@@ -1743,6 +1835,8 @@ closes https://github.com/scverse/scvi-tools/issues/991
 
 - [] Counts and normalized data should co-exist in the datasets, see the [API overview](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/api_overview.html) for an example
 - [ x] For scRNA-seq data, normalization should be counts per median library size and then log1p transformed -- if not, a reason should be given
+
+**@martinkim0 (review, approved):** Looks great overall! I'm going to approve in order to get this in, but I'll change the loading part once we have a better way to deal with minified data in hubmodels.
 
 ## #270: Add botocore unsigned key
 **PR:** #270 | **Last activity:** 2024-03-23T22:41:30Z
@@ -2117,7 +2211,7 @@ draft of batch embedding / "scvi in large donor studies" tutorial (currently usi
 
 ## #162: contrastiveVI tutorial
 **PR:** #162 | **Last activity:** 2023-12-05T19:03:35Z
-**State:** merged | **Author:** @ethanweinberger | **Comments:** 0 | **Created:** 2023-12-02 | **URL:** https://github.com/scverse/scvi-tutorials/pull/162
+**State:** merged | **Author:** @ethanweinberger | **Comments:** 1 | **Created:** 2023-12-02 | **URL:** https://github.com/scverse/scvi-tutorials/pull/162
 
 ## Formatting
 
@@ -2134,9 +2228,11 @@ draft of batch embedding / "scvi in large donor studies" tutorial (currently usi
 - [x] Counts and normalized data should co-exist in the datasets, see the [API overview](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/api_overview.html) for an example
 - [x] For scRNA-seq data, normalization should be counts per median library size and then log1p transformed -- if not, a reason should be given
 
+**@martinkim0 (review, approved):** LGMT, thanks a lot!
+
 ## #160: PoissonVI tutorial
 **PR:** #160 | **Last activity:** 2023-11-28T17:41:35Z
-**State:** merged | **Author:** @lauradmartens | **Comments:** 1 | **Created:** 2023-11-27 | **URL:** https://github.com/scverse/scvi-tutorials/pull/160
+**State:** merged | **Author:** @lauradmartens | **Comments:** 2 | **Created:** 2023-11-27 | **URL:** https://github.com/scverse/scvi-tutorials/pull/160
 
 ## Formatting
 
@@ -2152,5 +2248,9 @@ draft of batch embedding / "scvi in large donor studies" tutorial (currently usi
 
 - [x] Counts and normalized data should co-exist in the datasets, see the [API overview](https://docs.scvi-tools.org/en/stable/tutorials/notebooks/api_overview.html) for an example
 - [x] For scRNA-seq data, normalization should be counts per median library size and then log1p transformed -- if not, a reason should be given (not applicable here)
+
+**@martinkim0 (review, approved):** Typo: "appraoches" in one the cells
+
+Other than that, LGTM!
 
 **@lauradmartens:** @martinkim0, fixed it!

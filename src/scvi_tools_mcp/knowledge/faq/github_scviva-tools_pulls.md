@@ -975,4 +975,8 @@ Brief description of changes and motivation.
 
 ## #1: feat: add spatialvi-tools v0.1.0 — DestVI, ResolVI, and scVIVA with shared spatial base infrastructure
 **PR:** #1 | **Last activity:** 2026-03-25T19:39:26Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-03-25 | **URL:** https://github.com/YosefLab/scviva-tools/pull/1
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 2 | **Created:** 2026-03-25 | **URL:** https://github.com/YosefLab/scviva-tools/pull/1
+
+**@ori-kron-wis on `src/spatialvi/model/_destvi.py`:** @codex address that feedback
+
+**@ori-kron-wis on `src/spatialvi/model/_destvi.py`:** @codex address that feedback

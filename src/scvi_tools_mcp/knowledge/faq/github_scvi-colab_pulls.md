@@ -10,7 +10,15 @@
 
 ## #33: fix: remove deps of ContextualVersionConflict
 **PR:** #33 | **Last activity:** 2026-02-09T11:57:38Z
-**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-02-09 | **URL:** https://github.com/scverse/scvi-colab/pull/33
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 4 | **Created:** 2026-02-09 | **URL:** https://github.com/scverse/scvi-colab/pull/33
+
+**@ori-kron-wis on `scvi_colab/_core.py`:** @codex can you suggest a fix to this PR?
+
+**@ori-kron-wis on `scvi_colab/_core.py`:** https://github.com/codex can you suggest a fix to this PR?
+
+**@ori-kron-wis on `scvi_colab/_core.py`:** @codex can you suggest a fix to this PR?
+
+**@ori-kron-wis on `scvi_colab/_core.py`:** @codex thats not a good fix, as it vrings back from pkg_resources import ContextualVersionConflict which is the thing we wanted to avoid at the first place
 
 ## #4: add uv as installer
 **PR:** #4 | **Last activity:** 2025-01-27T13:35:43Z

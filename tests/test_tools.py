@@ -507,3 +507,72 @@ def test_all_tools_registered():
         "get_scib_metrics_tutorial",
     }
     assert expected == names, f"Missing: {expected - names}, Extra: {names - expected}"
+
+
+# --- community snapshots: entry-level ranking with recency ---
+
+
+def _community_entry(title, kind, number, last, text):
+    meta = f"**{kind}:** #{number} | **Last activity:** {last}\n**State:** closed | **URL:** u/{number}"
+    return f"## {title}\n{meta}\n\n{text}\n\n"
+
+
+def test_community_ranking_is_per_entry_and_prefers_recent(tmp_path):
+    import datetime as dt
+
+    from scvi_tools_mcp.tools import _community
+
+    faq = tmp_path / "faq"
+    faq.mkdir()
+    (faq / "github_x_issues.md").write_text(
+        "# X\n\n3 issues\n\n"
+        + _community_entry("#1: old solo answer", "Issue", 1, "2024-01-01T00:00:00Z", "Run SOLO on hvg genes.")
+        + _community_entry(
+            "#2: new solo answer", "Issue", 2, "2026-10-01T00:00:00Z", "Run SOLO on hvg genes.\n## Notes"
+        )
+        + _community_entry("#3: unrelated", "Issue", 3, "2026-10-30T00:00:00Z", "Nothing relevant here."),
+        encoding="utf-8",
+    )
+    now = dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc)
+    entries = _community.load_entries(faq)
+    assert [e.title for e in entries] == ["#1: old solo answer", "#2: new solo answer", "#3: unrelated"]
+
+    ranked = _community.rank_entries(entries, _community.keywords_from_query("how to run SOLO with hvg"), now)
+
+    assert [e.title for _, e in ranked] == ["#2: new solo answer", "#1: old solo answer"]
+
+
+def test_community_full_match_beats_recent_partial_match():
+    import datetime as dt
+
+    from scvi_tools_mcp.tools import _community
+
+    now = dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc)
+    text = _community_entry(
+        "#1: year old full match", "Issue", 1, "2025-11-01T00:00:00Z", "solo doublet hvg"
+    ) + _community_entry("#2: fresh partial match", "Issue", 2, "2026-10-31T00:00:00Z", "solo doublet")
+    entries = _community.split_entries(text, "github_x_issues")
+
+    ranked = _community.rank_entries(entries, ["solo", "doublet", "hvg"], now)
+
+    assert ranked[0][1].title == "#1: year old full match"
+
+
+def test_search_knowledge_lists_community_entries_separately(mock_knowledge):
+    from scvi_tools_mcp.tools._troubleshooting import search_knowledge
+
+    (mock_knowledge / "faq" / "github_scvi-tools_issues.md").write_text(
+        "# Issues\n\n1 issues\n\n"
+        + _community_entry(
+            "#3949: Correct way to run SOLO", "Issue", 3949, "2026-04-23T00:00:00Z", "You can run hvg and run SOLO."
+        ),
+        encoding="utf-8",
+    )
+
+    result = search_knowledge(query="run SOLO hvg")
+
+    assert result.error is None
+    assert "## Community" in result.content
+    assert "#3949: Correct way to run SOLO" in result.content
+    assert "> You can run hvg and run SOLO." in result.content
+    assert "**faq/github_scvi-tools_issues**" not in result.content  # not ranked as one big file

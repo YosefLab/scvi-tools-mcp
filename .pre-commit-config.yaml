@@ -58,9 +58,13 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.2
     hooks:
+      # Generated knowledge snapshots quote user code verbatim; ruff would rewrite
+      # Python code blocks inside them (and the next refresh would revert it).
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+        exclude: ^src/scvi_tools_mcp/knowledge/
       - id: ruff-format
+        exclude: ^src/scvi_tools_mcp/knowledge/
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

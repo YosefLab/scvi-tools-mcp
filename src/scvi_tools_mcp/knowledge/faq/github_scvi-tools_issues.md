@@ -20,10 +20,8 @@
 log_theta_mu_eps = log(theta + mu + eps)
 res = (
     theta * (log(theta + eps) - log_theta_mu_eps)
-    + x * (log(mu + eps) - log_theta_mu_eps)  # <- nearly equal logs, then scaled by x
-    + lgamma(x + theta)
-    - lgamma(theta)
-    - lgamma(x + 1)
+    + x * (log(mu + eps) - log_theta_mu_eps)     # <- nearly equal logs, then scaled by x
+    + lgamma(x + theta) - lgamma(theta) - lgamma(x + 1)
 )
 ```
 
@@ -690,12 +688,10 @@ This is surprising, as MultiVI is designed to handle missing modalities during m
 # This used to run (<=2024), but now fails immediately after upgrade
 # ...
 import muon as mu
-
 # mdata: MuData with unpaired cells between rna & atac modalities
 ...
 # Setup for MultiVI:
 from scvi.model import MULTIVI
-
 MULTIVI.setup_mudata(mdata)
 # Exception raised here
 ```
@@ -1062,24 +1058,26 @@ Should be easy to reimplement VAEMixin for JAX models. Will require a whole new 
 
 Example implementation of `get_reconstruction_error`:
 ```python
-def get_reconstruction_error(
-    self,
-    adata: AnnData | None = None,
-    indices: list[int] | None = None,
-    batch_size: int | None = None,
-    **kwargs,
-) -> dict[str, float]:
-    adata = self._validate_anndata(adata)
-    dataloader = self._make_data_loader(adata=adata, indices=indices, batch_size=batch_size, iter_ndarray=True)
+ def get_reconstruction_error(
+        self,
+        adata: AnnData | None = None,
+        indices: list[int] | None = None,
+        batch_size: int | None = None,
+        **kwargs,
+    ) -> dict[str, float]:
+        adata = self._validate_anndata(adata)
+        dataloader = self._make_data_loader(
+            adata=adata, indices=indices, batch_size=batch_size, iter_ndarray=True
+        )
 
-    reconstruction_loss_sum = 0.0
-    for batch in dataloader:
-        vars_in = {"params": self.module.params, **self.module.state}
-        outputs = self.module.apply(vars_in, batch, rngs=self.module.rngs, **kwargs)
-        rec_loss_output = outputs[2].reconstruction_loss_sum.item()
-        reconstruction_loss_sum += rec_loss_output
+        reconstruction_loss_sum = 0.0
+        for batch in dataloader:
+            vars_in = {"params": self.module.params, **self.module.state}
+            outputs = self.module.apply(vars_in, batch, rngs=self.module.rngs, **kwargs)
+            rec_loss_output = outputs[2].reconstruction_loss_sum.item()
+            reconstruction_loss_sum += rec_loss_output
 
-    return -(reconstruction_loss_sum / len(dataloader.dataset))
+        return -(reconstruction_loss_sum / len(dataloader.dataset))
 ```
 
 **@ori-kron-wis:** As we made Jax optional dependency , this is not likely to be implemented anytime soon
@@ -1427,7 +1425,7 @@ _model_.train(
     batch_size=int(batch_size),
     eps=eps,
     early_stopping=early_stopping,
-    early_stopping_patience=int(early_stopping_patience),
+    early_stopping_patience=int(early_stopping_patience)
 )
 ```
 
@@ -1668,17 +1666,13 @@ With the help of various development tools and AI, the code now runs in Python u
 
 ```python
 latent
-array(
-    [
-        [nan, nan, nan, ..., nan, nan, nan],
-        [nan, nan, nan, ..., nan, nan, nan],
-        [nan, nan, nan, ..., nan, nan, nan],
-        ...,
-        [nan, nan, nan, ..., nan, nan, nan],
-        [nan, nan, nan, ..., nan, nan, nan],
-        [nan, nan, nan, ..., nan, nan, nan],
-    ]
-)
+array([[nan, nan, nan, ..., nan, nan, nan],
+       [nan, nan, nan, ..., nan, nan, nan],
+       [nan, nan, nan, ..., nan, nan, nan],
+       ...,
+       [nan, nan, nan, ..., nan, nan, nan],
+       [nan, nan, nan, ..., nan, nan, nan],
+       [nan, nan, nan, ..., nan, nan, nan]])
 ```
 
 Due to my limited mathematical and programming skills, I am unable to resolve this issue or even identify where to start. A previous issue mentioned problems with `lgamma`, but I couldn't find the corresponding part in my code.
@@ -1768,7 +1762,7 @@ autotune.run_autotune(
     resources={"cpu": 10, "gpu": 1},
     logging_dir=out_dir,
     save_checkpoints=True,
-    log_to_driver=True,
+    log_to_driver=True
 )
 ```
 I think that this line of code might be causing the issue, because `self.metrics` is a list and so `"elbo_validation"` (or even `"validation_loss"` like in the tutorial) would not be matched:
@@ -2169,6 +2163,7 @@ It seems the issue is that self.adata _should_ be None, but the backing attribut
 <!-- To reproduce -->
 
 ```python
+
 # My custom datamodule
 dm = scvi_datamodule.scDatasetModule(
     ad_paths=ad_paths,
@@ -2703,7 +2698,9 @@ Anndata is 22GB with 5,000 highly variable genes but watching htop during traini
 I am training from a pre-trained scVI model
 
 ```python
-model = scvi.model.SCVI(adata, n_latent=50, dropout_rate=0.2, n_layers=2, gene_likelihood="nb")
+model = scvi.model.SCVI(
+    adata, n_latent=50, dropout_rate=0.2, n_layers=2, gene_likelihood="nb"
+)
 tparams = {
     "max_epochs": 30,
     "early_stopping": True,
@@ -2948,7 +2945,7 @@ Model = scvi.model.LinearSCVI
 Model.setup_anndata(
     adata,
     layer="counts",
-    categorical_covariate_keys=["gene"],  # works for SCVI
+    categorical_covariate_keys=["gene"], # works for SCVI
 )
 ```
 
@@ -3145,15 +3142,14 @@ https://docs.ray.io/en/latest/train/user-guides/persistent-storage.html#setting-
 model_cls = scvi.model.SCVI
 model_cls.setup_anndata(adata=adata_scvi, batch_key=batch_key, layer="counts")
 scvi_tuner = autotune.ModelTuner(model_cls)
-# scvi_tuner.info()
+#scvi_tuner.info()
 
 search_space = {
     "n_hidden": tune.choice([92, 128, 192, 256]),
     "n_latent": tune.choice([10, 20, 30, 40, 50, 60]),
     "n_layers": tune.choice([1, 2, 3]),
     "lr": tune.loguniform(1e-4, 1e-2),
-    "gene_likelihood": tune.choice(["nb", "zinb"]),
-}
+    "gene_likelihood": tune.choice(["nb", "zinb"])}
 
 results = scvi_tuner.fit(
     adata_scvi,
@@ -3162,7 +3158,7 @@ results = scvi_tuner.fit(
     num_samples=5,
     max_epochs=100,
     resources={"cpu": 10, "gpu": 1},
-    # logging_dir='/content/logging'
+    #logging_dir='/content/logging'
 )
 ```
 
@@ -4814,12 +4810,19 @@ I'm using mutli-GPU for training and it's causing me to be unable to save the mo
 
 ```python
 print("Training scVI model...")
-vae = scvi.model.SCVI(adata_combined, n_hidden=256, n_latent=50, n_layers=2)
+vae = scvi.model.SCVI(
+    adata_combined,
+    n_hidden=256,
+    n_latent=50,
+    n_layers=2
+)
 
 vae.train(max_epochs=400, accelerator="gpu", devices=-1, strategy="ddp_find_unused_parameters_true")
 
 vae.save(dir_path="SCVI_Model_integrated_before_clustering", save_anndata=True, overwrite=True)
-adata_combined.write("Total_Dataset_SCVI_integrated_before_clustering.h5ad")
+adata_combined.write('Total_Dataset_SCVI_integrated_before_clustering.h5ad')
+
+
 ```
 
 <!-- Put your Error output in this code block (if applicable, else delete the block): -->
@@ -5110,6 +5113,7 @@ I am running a single-cell analysis, and I ran a SOLO model for doublet detectio
 However, I am unable to reload the model with the following commands:
 
 ```python
+
 solo_model_dir = "../models/cellranger_output/sample_0013/solo_model/"
 solo_model = scvi.external.SOLO.load(solo_model_dir, prefix="solo_")
 ```
@@ -5295,17 +5299,9 @@ After training a MultiVI model on CITE-seq data, `get_protein_foreground_probabi
 <!-- To reproduce -->
 mdata is the 10x PBMC 5k dataset
 ```python
-scvi.model.MULTIVI.setup_mudata(
-    mdata, rna_layer="counts", protein_layer="counts", modalities={"rna_layer": "rna", "protein_layer": "prot"}
-)
+scvi.model.MULTIVI.setup_mudata(mdata, rna_layer="counts", protein_layer="counts", modalities={"rna_layer": "rna", "protein_layer": "prot"})
 vae = scvi.model.MULTIVI(mdata, gene_likelihood="nb")
-vae.train(
-    max_epochs=500,
-    train_size=1,
-    datasplitter_kwargs={"num_workers": 4, "pin_memory": True},
-    early_stopping=False,
-    batch_size=1000,
-)
+vae.train(max_epochs=500, train_size=1, datasplitter_kwargs={"num_workers": 4, "pin_memory": True}, early_stopping=False, batch_size=1000)
 vae.get_protein_foreground_probability(mdata)
 ```
 
@@ -6464,7 +6460,6 @@ def train(self, ...):
 def MyModelClass(PyroSampleMixin, PyroSviTrainMixin, BaseModelClass):
     def train_compiled(self, **kwargs):
         import torch
-
         self.train(**kwargs, max_steps=1)
         self.module._model = torch.compile(self.module.model)
         self.module._guide = torch.compile(self.module.guide)
@@ -7176,21 +7171,21 @@ scvi doublet predictions seem off (too many cells that should not be doublets) i
 <!-- To reproduce -->
 
 ```python
-adata.obs.index.name = None
-scvi.model.SCVI.setup_anndata(adata)
-vae = scvi.model.SCVI(adata)
-vae.train()  # batch_size=130
+    adata.obs.index.name = None
+    scvi.model.SCVI.setup_anndata(adata)
+    vae = scvi.model.SCVI(adata)
+    vae.train() # batch_size=130
 
-solo = scvi.external.SOLO.from_scvi_model(vae)
-solo.train(batch_size=130)  # batch_size=130
-# vae.train(batch_size=130) and solo.train(batch_size=130) # ValueError: Expected more than 1 value per channel when training, got input size torch.Size([1, 128])
-# change batch_size when error is thrown
+    solo = scvi.external.SOLO.from_scvi_model(vae)
+    solo.train(batch_size=130) # batch_size=130
+    # vae.train(batch_size=130) and solo.train(batch_size=130) # ValueError: Expected more than 1 value per channel when training, got input size torch.Size([1, 128])
+    # change batch_size when error is thrown
 
-doublet_prediction = solo.predict()
-doublet_prediction["prediction"] = solo.predict(soft=False)
+    doublet_prediction = solo.predict()
+    doublet_prediction['prediction'] = solo.predict(soft = False)
 
-adata.obs = adata.obs.reset_index().merge(doublet_prediction.reset_index(), on="index", how="left").set_index("index")
-adata.obs.index.name = None
+    adata.obs = adata.obs.reset_index().merge(doublet_prediction.reset_index(),on='index',how='left').set_index('index')
+    adata.obs.index.name = None
 ```
 
 <!-- Put your Error output in this code block (if applicable, else delete the block): -->
@@ -7514,16 +7509,19 @@ Closing here, please open a thread on Discourse if further discussion is needed.
 Training iterations are way slower when upgrading to 1.2.1 as compared to 1.2.0. I suspect that it doesn't take into account the explicit `batch_size` parameter passed to `train` method.
 
 ```python
+
 # For the exact same dataset and model, here's the code snippet:
 
-data_splitter_kwargs = {"external_indexing": [train_indices, validation_indices, test_indices]}
+data_splitter_kwargs = {
+     "external_indexing": [train_indices, validation_indices, test_indices]
+}
 
 early_stopping_kwargs = {
-    "early_stopping": True,
-    "early_stopping_monitor": "elbo_validation",
-    "early_stopping_patience": 10,
-    "early_stopping_min_delta": 0.0,
-    "check_val_every_n_epoch": 1,
+    'early_stopping': True,
+    'early_stopping_monitor': 'elbo_validation',
+    'early_stopping_patience': 10,
+    'early_stopping_min_delta': 0.0,
+    'check_val_every_n_epoch': 1
 }
 
 plan_kwargs = {
@@ -7532,17 +7530,7 @@ plan_kwargs = {
     "lr_factor": 0.1,
 }
 
-model.train(
-    max_epochs=500,
-    accelerator="gpu",
-    devices=[int(index_of_gpu)],
-    shuffle_set_split=True,
-    batch_size=2048,
-    load_sparse_tensor=True,
-    plan_kwargs=plan_kwargs,
-    datasplitter_kwargs=data_splitter_kwargs,
-    **early_stopping_kwargs,
-)
+model.train(max_epochs=500,  accelerator='gpu', devices=[int(index_of_gpu)], shuffle_set_split=True, batch_size=2048, load_sparse_tensor=True, plan_kwargs = plan_kwargs, datasplitter_kwargs = data_splitter_kwargs, **early_stopping_kwargs)
 ```
 
 <!-- Put your Error output in this code block (if applicable, else delete the block): -->
@@ -7582,27 +7570,27 @@ When training the gimVI model, I am running into a ValueError in the first epoch
 <!-- To reproduce -->
 
 ```python
-import scvi
-from scvi.external import GIMVI
+    import scvi
+    from scvi.external import GIMVI
 
-# preprocessing of data
-spatial_adata = spatial_adata[:, spatial_adata.var_names.isin(RNAseq_adata.var_names)]
+    # preprocessing of data
+    spatial_adata = spatial_adata[:, spatial_adata.var_names.isin(RNAseq_adata.var_names)]
 
-# indices for filtering out zero-expression cells
-filtered_cells_spatial = spatial_adata.X.sum(axis=1) > 1
-filtered_cells_RNAseq = RNAseq_adata.X.sum(axis=1) > 1
+    # indices for filtering out zero-expression cells
+    filtered_cells_spatial = (spatial_adata.X.sum(axis=1) > 1)
+    filtered_cells_RNAseq = (RNAseq_adata.X.sum(axis=1) > 1)
 
-# make copies of subsets
-spatial_adata = spatial_adata[filtered_cells_spatial, :].copy()
-RNAseq_adata = RNAseq_adata[filtered_cells_RNAseq, :].copy()
+    # make copies of subsets
+    spatial_adata = spatial_adata[filtered_cells_spatial,:].copy()
+    RNAseq_adata = RNAseq_adata[filtered_cells_RNAseq,:].copy()
 
-# setup anndata for scvi
-GIMVI.setup_anndata(spatial_adata)
-GIMVI.setup_anndata(RNAseq_adata)
+    # setup anndata for scvi
+    GIMVI.setup_anndata(spatial_adata)
+    GIMVI.setup_anndata(RNAseq_adata)
 
-# train gimVI model
-model = GIMVI(RNAseq_adata, spatial_adata, **kwargs)
-model.train(200)
+    # train gimVI model
+    model = GIMVI(RNAseq_adata, spatial_adata, **kwargs)
+    model.train(200)
 ```
 
 <!- …
@@ -7794,15 +7782,13 @@ always meet error when loading saved models. Personally, I think it's torch 's p
 
 ```python
 scanvi_ref_path = os.path.join("ref_scanvi", "2024_12_14_forquery_scanvi_ref")
-scanvi_ref.save(scanvi_ref_path, overwrite=True, save_anndata=True)
+scanvi_ref.save(scanvi_ref_path, overwrite=True, save_anndata = True)
 
-scvi.model.SCANVI.prepare_query_anndata(
-    query, scanvi_ref
-)  # this works since it directly uses the model in the environment
-scvi.model.SCANVI.prepare_query_anndata(query, scanvi_ref_path)  # this fails
+scvi.model.SCANVI.prepare_query_anndata(query, scanvi_ref) # this works since it directly uses the model in the environment
+scvi.model.SCANVI.prepare_query_anndata(query, scanvi_ref_path) # this fails
 
-scanvi_query = scvi.model.SCANVI.load_query_data(query, scanvi_ref)  # this works
-scanvi_query = scvi.model.SCANVI.load_query_data(query, scanvi_ref_path)  # this fails
+scanvi_query = scvi.model.SCANVI.load_query_data(query, scanvi_ref) # this works
+scanvi_query = scvi.model.SCANVI.load_query_data(query, scanvi_ref_path) # this fails
 ```
 
 <!-- Put your Error output in this code block (if applicable, else delete the block): -->
@@ -8064,7 +8050,9 @@ previously tuner.info() had created a nice table of default values for a given m
 <!-- To reproduce -->
 
 ```python
-de_df = model.differential_expression(groupby="rna_subset:leiden_totalVI", delta=0.5, batch_correction=False)
+de_df = model.differential_expression(
+    groupby="rna_subset:leiden_totalVI", delta=0.5, batch_correction=False
+)
 de_df.head(5)
 ```
 
@@ -9421,14 +9409,14 @@ Hello! I am currently conducting research on single-cell multimodal data. I acce
 # TRAIN ALL 3 MODALITIES
 adata = anndata.read("dogma_all_genes_cells_dig_ctrl_annotated.h5ad.gz")
 adata = adata.copy()
-scvi.data.setup_anndata(adata, protein_expression_obsm_key="protein_expression")
+scvi.data.setup_anndata(adata, protein_expression_obsm_key='protein_expression')
 
-n_genes = (adata.var.modality == "Gene Expression").sum()
-n_regions = (adata.var.modality == "Peaks").sum()
-n_proteins = adata.obsm["protein_expression"].shape[1]
+n_genes = (adata.var.modality == 'Gene Expression').sum()
+n_regions = (adata.var.modality == 'Peaks').sum()
+n_proteins = adata.obsm['protein_expression'].shape[1]
 
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 mvi = scvi.model.MULTIVI(adata, n_genes=n_genes, n_regions=n_regions, n_proteins=n_proteins)
 testing(mvi, save_path="trained_models/Test3Mod_DIGCTRL75b_211020", pdf_path="Test3Mod_DIGCTRL75B_")
@@ -10361,7 +10349,7 @@ if isinstance(unspliced, csr_matrix) or isinstance(unspliced, csr_matrix):
     sorted_unspliced = np.empty(unspliced.shape)
     # batch size of 1000 here
     for i in range(0, unspliced_shape.shape[1], 1000):
-        sorted[:, i : i + 1000] = np.argsort(unspliced[:, i : i + 1000].todense(), axis=0)
+        sorted[:, i:i+1000] = np.argsort(unspliced[:, i:i+1000].todense(), axis = 0)
 ```
 
 **@martinkim0:** Thanks for the suggestion. I'm personally leaning towards a solution that natively deals with the sparse matrix instead of having to implicitly convert to dense. I'm also looking into what might be a potential bug in this whole preprocessing step.
@@ -10433,14 +10421,12 @@ import torch
 import scanpy as sc
 import scvi
 
-counts = torch.randint(0, 10, (500, 10))
+counts = torch.randint(0,10,(500, 10))
 
-adata = sc.AnnData(
-    scipy.sparse.csr_matrix(counts.shape),  # AnnData does not allow torch.Tensor in .X field
-    layers={"counts": counts},
-)
+adata = sc.AnnData(scipy.sparse.csr_matrix(counts.shape), #AnnData does not allow torch.Tensor in .X field
+                                 layers={'counts':counts})
 
-scvi.model.SCVI.setup_anndata(adata, layer="counts")
+scvi.model.SCVI.setup_anndata(adata,layer="counts")
 model = scvi.model.SCVI(adata)
 model.train()
 ```
@@ -10483,7 +10469,8 @@ When creating a tuner from a contrastiveVI object, an error is thrown due to the
 <!-- To reproduce -->
 
 ```python
-scvi.external.ContrastiveVI.setup_anndata(adata, layer="counts", batch_key="sample_id")
+
+scvi.external.ContrastiveVI.setup_anndata(adata, layer="counts", batch_key='sample_id')
 contrastive_vi_model = scvi.external.ContrastiveVI(
     adata,
     n_salient_latent=10,
@@ -10491,6 +10478,7 @@ contrastive_vi_model = scvi.external.ContrastiveVI(
     use_observed_lib_size=False,
 )
 scvi_tuner = autotune.ModelTuner(contrastive_vi_model)
+
 ```
 
 <!-- Put your Error output in this code block (if applicable, else delete the block): -->
@@ -10635,7 +10623,7 @@ This can be addressed by adding a 'stratify' option for dataloader and dataslitt
 
 ```python
 model = SCVI(...)
-model.train(..., stratify_validation_split_by_obs_key="key")
+model.train(..., stratify_validation_split_by_obs_key='key')
 ```
 
 **@martinkim0:** @vitkl We could definitely add this feature. Going off of Adam's comment previously, I think it makes sense to name it `stratify_by_obs_key` with an additional argument `stratify_min_size`, which should either raise an error or warning if the minimum split size cannot be achieved.
@@ -11181,7 +11169,7 @@ I checked that my adata didn't have any duplicated variable names.
 ```python
 # Nothing stored in query.raw
 np.sum(query.var_names.duplicated()) == 0
-np.sum(query.obsm["protein_counts"].columns.duplicated()) == 0
+np.sum(query.obsm['protein_counts'].columns.duplicated()) == 0
 ```
 
 environment:
@@ -11425,7 +11413,7 @@ AttributeError: module 'scvi' has no attribute 'autotune'
 
 #### Versions:
 ```python
-print(scvi.__version__)
+print (scvi.__version__)
 ```
 > 1.1.2
 ```python
@@ -12276,11 +12264,10 @@ Using `scvi.criticism`, I can successfully perform all available posterior predi
 When I try
 ```python
 from scvi.criticism import PosteriorPredictiveCheck
-
 ppc = PosteriorPredictiveCheck(
     adata,
-    models_dict={"scANVI": scanvi_model},
-    count_layer_key="raw",
+    models_dict={'scANVI': scanvi_model},
+    count_layer_key='raw',
     n_samples=10,
 )
 ppc.calibration_error()
@@ -12849,14 +12836,12 @@ I set up the mudata exactly as described.
 
 
 ```python
-adata_sommarin_protein = adata_sommarin[
-    :, adata_sommarin.var["Feature types"].isin(["Antibody capture", "Antibody capture 2"])
-].copy()
+adata_sommarin_protein = adata_sommarin[:, adata_sommarin.var["Feature types"].isin(["Antibody capture", "Antibody capture 2"])].copy()
 adata_sommarin_rna = adata_sommarin[:, adata_sommarin.var["Feature types"] == "Gene Expression"].copy()
 
 # rna preprocessing
 adata_sommarin_rna.layers["counts"] = adata_sommarin_rna.X.copy()
-sc.pp.normalize_total(adata_sommarin_rna, target_sum=1e4)
+sc.pp.normalize_total(adata_sommarin_rna, target_sum = 1e4)
 sc.pp.log1p(adata_sommarin_rna)
 adata_sommarin_rna.obs_names_make_unique()
 
@@ -12864,12 +12849,18 @@ adata_sommarin_protein.obs_names_make_unique()
 
 mdata = md.MuData({"rna": adata_sommarin_rna, "protein": adata_sommarin_protein})
 
-mdata.mod["protein"].layers["counts"] = adata_sommarin_protein.X.copy()
+mdata.mod['protein'].layers['counts'] = adata_sommarin_protein.X.copy()
 
 # high var on log of counts instead of counts
-sc.pp.highly_variable_genes(mdata.mod["rna"], n_top_genes=4000, batch_key="Sample")
+sc.pp.highly_variable_genes(
+    mdata.mod["rna"],
+    n_top_genes=4000,
+    batch_key="Sample"
+)
 # Place subsetted counts in a new modality
-mdata.mod["rna_subset"] = mdata.mod["rna"][:, mdata.mod["rna"].var["highly_variable"]].copy()
+mdata.mod["rna_subset"] = mdata.mod["rna"][
+    :, mdata.mod["rna"].var["highly_variable"]
+].copy()
 
 mdata.update()
 
@@ -14890,7 +14881,10 @@ I understand, thank you ! You've resolved my question.
 <!-- To reproduce -->
 
 ```python
-scvi.model.SCVI.setup_anndata(ad, layer="raw", categorical_covariate_keys=["block_id", "tma"])
+scvi.model.SCVI.setup_anndata(
+ad,
+layer="raw",
+categorical_covariate_keys=['block_id','tma'])
 model = scvi.model.SCVI(ad, n_layers=2, n_latent=30)
 
 model.train(enable_progress_bar=False)
@@ -15259,7 +15253,6 @@ Importing and loading scvi in jupyter notebook
 ```python
 import scvi
 import torch
-
 scvi.settings.seed = 0
 print("Last run with scvi-tools version:", scvi.__version__)
 from scvi.model.utils import mde
@@ -15695,6 +15688,7 @@ from scvi.hub import HubModel
 ref_model = "scvi-tools/tabula-sapiens-vasculature-scanvi"
 hubmodel = HubModel.pull_from_huggingface_hub(ref_model)
 hubmodel.adata.obs
+
 ```
 returns:
 ```pytb
@@ -15969,11 +15963,12 @@ When I am trying to make data setup (scvi.model.SCVI.setup_anndata(adata, layer 
 
 ```python
 # adata=import_adata
-summary = pd.read_csv
-adata.layers["counts"] = adata.X.toarray()
+summary=pd.read_csv
+adata.layers['counts']=adata.X.toarray()
 max_epochs_scvi = np.min([round((20000 / adata.n_obs) * 400), 400])
 
-scvi.model.SCVI.setup_anndata(adata, layer="counts", batch_key="Source", gene_likelihood="nb")
+scvi.model.SCVI.setup_anndata(adata, layer = "counts", batch_key="Source", gene_likelihood='nb')
+
 ```
 
 <!-- NameError  -->

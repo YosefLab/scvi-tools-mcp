@@ -1,10 +1,14 @@
 # YosefLab/scvi-hub-models GitHub Pull Requests
 
-15 pull requests (open, closed and merged, bots excluded) from YosefLab/scvi-hub-models with activity in the last 3 years, most recently active first. This snapshot accumulates across refreshes; PRs are only removed once they age out of that window.
+16 pull requests (open, closed and merged, bots excluded) from YosefLab/scvi-hub-models with activity in the last 3 years, most recently active first. This snapshot accumulates across refreshes; PRs are only removed once they age out of that window.
+
+## #19: pr-18-template-v0.8.0
+**PR:** #19 | **Last activity:** 2026-11-01T09:21:59Z
+**State:** merged | **Author:** @ori-kron-wis | **Comments:** 0 | **Created:** 2026-11-01 | **URL:** https://github.com/YosefLab/scvi-hub-models/pull/19
 
 ## #18: Update template to v0.8.0
-**PR:** #18 | **Last activity:** 2026-07-17T07:12:13Z
-**State:** open | **Author:** @scverse-bot | **Comments:** 0 | **Created:** 2026-07-17 | **URL:** https://github.com/YosefLab/scvi-hub-models/pull/18
+**PR:** #18 | **Last activity:** 2026-11-01T09:20:35Z
+**State:** merged | **Author:** @scverse-bot | **Comments:** 0 | **Created:** 2026-07-17 | **URL:** https://github.com/YosefLab/scvi-hub-models/pull/18
 
 `cookiecutter-scverse` released [v0.8.0](https://github.com/scverse/cookiecutter-scverse/releases/tag/v0.8.0).
 
