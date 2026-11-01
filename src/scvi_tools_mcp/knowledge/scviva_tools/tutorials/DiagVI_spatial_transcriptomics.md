@@ -8,15 +8,19 @@ We use two publicly available datasets:
 - Dissociated scRNA-seq data from [Pijuan-Sala et al.](https://www.nature.com/articles/s41586-019-0933-9), profiling 166,312 cells between embryonic days E6.5 and E8.5, and providing a comprehensive reference atlas of early mouse development.
 
 ```{note}
-Running the following cell will install tutorial dependencies on Google Colab and in the currently active environment when running outside of Google Colab.
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
 ```
 
 ```python
-!pip install --quiet scvi-colab
-!pip install --quiet cellmapper
-from scvi_colab import install
+import sys
 
-install()
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+    !pip install --quiet cellmapper
 ```
 
 ## Imports and data loading
@@ -36,6 +40,23 @@ import torch
 from cellmapper import CellMapper
 from scib_metrics.benchmark import Benchmarker
 from scviva.external.diagvi import DIAGVI
+```
+
+```python
+HAS_RSC = False
+try:
+    import cupy as cp
+    import rapids_singlecell as rsc
+
+    # rapids_singlecell can be importable without a usable GPU (e.g. a CPU runtime on Google Colab)
+    HAS_RSC = cp.cuda.runtime.getDeviceCount() > 0
+except Exception:  # ImportError, or a CUDA error when no GPU/driver is present
+    HAS_RSC = False
+
+if HAS_RSC:
+    print("RAPIDS SingleCell is installed and a GPU is available, using rapids_singlecell")
+else:
+    print("RAPIDS SingleCell (or a GPU) is not available, falling back to scanpy")
 ```
 
 ```python
@@ -67,13 +88,17 @@ save_dir = tempfile.TemporaryDirectory()
 
 ```python
 adata_rna_path = os.path.join(save_dir.name, "ad_diss.h5ad")
-ad_diss = sc.read(adata_rna_path, backup_url="https://exampledata.scverse.org/scvi-tools/dissociated.h5ad")
+ad_diss = sc.read(
+    adata_rna_path, backup_url="https://exampledata.scverse.org/scvi-tools/dissociated.h5ad"
+)
 ad_diss
 ```
 
 ```python
 adata_protein_path = os.path.join(save_dir.name, "ad_sp.h5ad")
-ad_sp = sc.read(adata_protein_path, backup_url="https://exampledata.scverse.org/scvi-tools/spatial.h5ad")
+ad_sp = sc.read(
+    adata_protein_path, backup_url="https://exampledata.scverse.org/scvi-tools/spatial.h5ad"
+)
 ad_sp
 ```
 
@@ -104,7 +129,9 @@ print(f"Computed {ad_diss.var['highly_variable'].sum()} highly variable genes")
 We subset the dissociated data to the union of highly variable genes and spatially measured genes. This ensures the model can learn from the full set of informative genes.
 
 ```python
-genes_diss = ad_sp.var_names.union(ad_diss.var.query("highly_variable").index).intersection(ad_diss.var_names)
+genes_diss = ad_sp.var_names.union(ad_diss.var.query("highly_variable").index).intersection(
+    ad_diss.var_names
+)
 ad_diss = ad_diss[:, genes_diss].copy()
 
 print(f"Spatial data dimensions: {ad_sp.shape}")
@@ -263,14 +290,17 @@ Then we use the DiagVI latent space, to recalculate and plot the joint embedding
 ```python
 PCA_LATENT_KEY = "X_joint_pca"
 DIAGVI_UMAP_KEY = "X_umap_diagvi"
-import rapids_singlecell as rsc
 
 sc.tl.pca(combined, key_added=PCA_LATENT_KEY)
 ```
 
 ```python
-rsc.pp.neighbors(combined, use_rep=DIAGVI_LATENT_KEY, metric="cosine")
-rsc.tl.umap(combined, key_added=DIAGVI_UMAP_KEY)
+if HAS_RSC:
+    rsc.pp.neighbors(combined, use_rep=DIAGVI_LATENT_KEY, metric="cosine")
+    rsc.tl.umap(combined, key_added=DIAGVI_UMAP_KEY)
+else:
+    sc.pp.neighbors(combined, use_rep=DIAGVI_LATENT_KEY, metric="cosine")
+    sc.tl.umap(combined, key_added=DIAGVI_UMAP_KEY)
 sc.pl.embedding(
     combined,
     basis="umap_diagvi",
@@ -321,7 +351,10 @@ with warnings.catch_warnings():
             adata,
             spot_size=1,
             color=gene_names,
-            title=[f"{name} {key} (r={corr:.2f})" for name, corr in zip(gene_names, gene_corrs, strict=False)],
+            title=[
+                f"{name} {key} (r={corr:.2f})"
+                for name, corr in zip(gene_names, gene_corrs, strict=False)
+            ],
             ncols=len(gene_names),
             size=2,
             cmap="viridis",
@@ -372,7 +405,9 @@ ad_sp.obs["celltype_harmonized_conf"] = classifier_predictions["confidence"]
 
 ```python
 cmap = CellMapper(query=ad_sp, reference=ad_sp)
-cmap.evaluate_label_transfer(label_key="celltype_harmonized", prediction_postfix="_pred", confidence_postfix="_conf")
+cmap.evaluate_label_transfer(
+    label_key="celltype_harmonized", prediction_postfix="_pred", confidence_postfix="_conf"
+)
 ```
 
 The performance is comparable to the label transfer implemented with CellMapper, while offering the advantage of not requiring any additional dependencies.
@@ -427,8 +462,12 @@ embedding_keys = {
 }
 
 for _, (latent_key, umap_key) in embedding_keys.items():
-    rsc.pp.neighbors(combined, use_rep=latent_key, metric="cosine")
-    rsc.tl.umap(combined, key_added=umap_key)
+    if HAS_RSC:
+        rsc.pp.neighbors(combined, use_rep=latent_key, metric="cosine")
+        rsc.tl.umap(combined, key_added=umap_key)
+    else:
+        sc.pp.neighbors(combined, use_rep=latent_key, metric="cosine")
+        sc.tl.umap(combined, key_added=umap_key)
 ```
 
 ```python
@@ -501,7 +540,9 @@ To demonstrate DiagVI's strength in the weak-linkage regime, we repeat the integ
 # keep genes present in both modalities + HVGs
 sc.pp.highly_variable_genes(ad_sp, n_top_genes=50, flavor="seurat_v3")
 linked_genes = ad_sp[:, ad_sp.var["highly_variable"]].var_names
-ad_diss_sub = ad_diss[:, ad_diss.var_names.isin(linked_genes) | ad_diss.var["highly_variable"]].copy()
+ad_diss_sub = ad_diss[
+    :, ad_diss.var_names.isin(linked_genes) | ad_diss.var["highly_variable"]
+].copy()
 ad_sp_sub = ad_sp[:, ad_sp.var_names.isin(linked_genes)].copy()
 
 # Setup and train DiagVI with reduced linkage (50 features)
@@ -571,8 +612,12 @@ combined_sub.obsm[SCANVI_LATENT_KEY] = scanvi_sub.get_latent_representation()
 
 ```python
 for _, (latent_key, umap_key) in embedding_keys.items():
-    rsc.pp.neighbors(combined_sub, use_rep=latent_key, metric="cosine")
-    rsc.tl.umap(combined_sub, key_added=umap_key)
+    if HAS_RSC:
+        rsc.pp.neighbors(combined_sub, use_rep=latent_key, metric="cosine")
+        rsc.tl.umap(combined_sub, key_added=umap_key)
+    else:
+        sc.pp.neighbors(combined_sub, use_rep=latent_key, metric="cosine")
+        sc.tl.umap(combined_sub, key_added=umap_key)
 ```
 
 ```python

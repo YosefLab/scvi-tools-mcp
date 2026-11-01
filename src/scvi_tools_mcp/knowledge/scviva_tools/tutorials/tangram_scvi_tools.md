@@ -4,9 +4,23 @@ This tutorial demonstrates how to use [Tangram](https://www.nature.com/articles/
 
 In scvi-tools, the `"cells"` and `"constrained"` modes of Tangram are implemented. In the `"cells"` mode, the priors will need to be calculated manually. We show this below.
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
+```python
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+```
+
 ```python
 import tempfile
-import rapids_singlecell as rsc
 
 import matplotlib.pyplot as plt
 import mudata

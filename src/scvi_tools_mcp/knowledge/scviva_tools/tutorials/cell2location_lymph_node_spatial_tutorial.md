@@ -20,6 +20,21 @@ In this tutorial, we analyse a publicly available Visium dataset of the human ly
 
 ![Figure 1.](https://raw.githubusercontent.com/BayraktarLab/cell2location/master/docs/images/FigS1_cell2location_workflow.png)
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
+```python
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+```
+
 ## Loading packages <a class="anchor" id="Loading_packages"></a>
 
 ```python
@@ -37,7 +52,6 @@ from cell2location.models import Cell2location, RegressionModel
 from cell2location.plt import plot_spatial
 from cell2location.utils import select_slide
 from cell2location.utils.filtering import filter_genes
-import rapids_singlecell as rsc
 ```
 
 ```python
@@ -88,7 +102,7 @@ Note
 Here we rename genes to ENSEMBL ID for correct matching between single cell and spatial data.
 </div>
 
-You can still plot gene expression by name using standard scanpy functions as follows:
+You can still plot gene expression by name using standard scanpy functions as follows: 
 ```python
 sc.pl.spatial(color="PTPRC", gene_symbols="SYMBOL", ...)
 ```
@@ -117,7 +131,9 @@ Here we download this dataset, import into anndata and change variable names to 
 
 ```python
 adata_path = os.path.join(save_dir.name, "sc.h5ad")
-adata_ref = sc.read(adata_path, backup_url="https://exampledata.scverse.org/scvi-tools/sc.h5ad")
+adata_ref = sc.read(
+    adata_path, backup_url="https://exampledata.scverse.org/scvi-tools/sc.h5ad"
+)
 adata_ref
 ```
 
@@ -142,7 +158,9 @@ In this 2D histogram, orange rectangle highlights genes excluded based on the co
 In this case, the downloaded dataset was already filtered using this method, hence no density under the orange rectangle (to be changed in the future version of the tutorial).
 
 ```python
-selected = filter_genes(adata_ref, cell_count_cutoff=5, cell_percentage_cutoff2=0.03, nonz_mean_cutoff=1.12)
+selected = filter_genes(
+    adata_ref, cell_count_cutoff=5, cell_percentage_cutoff2=0.03, nonz_mean_cutoff=1.12
+)
 
 # filter the object
 adata_ref = adata_ref[:, selected].copy()
@@ -245,7 +263,9 @@ if "means_per_cluster_mu_fg" in adata_ref.varm.keys():
         [f"means_per_cluster_mu_fg_{i}" for i in adata_ref.uns["mod"]["factor_names"]]
     ].copy()
 else:
-    inf_aver = adata_ref.var[[f"means_per_cluster_mu_fg_{i}" for i in adata_ref.uns["mod"]["factor_names"]]].copy()
+    inf_aver = adata_ref.var[
+        [f"means_per_cluster_mu_fg_{i}" for i in adata_ref.uns["mod"]["factor_names"]]
+    ].copy()
 inf_aver.columns = adata_ref.uns["mod"]["factor_names"]
 inf_aver.iloc[0:5, 0:5]
 ```
@@ -300,7 +320,7 @@ mod.train(
 
 # plot ELBO loss history during training, removing first 100 epochs from the plot
 mod.plot_history(1000)
-plt.legend(labels=["full data training"])
+plt.legend(labels=["full data training"]);
 ```
 
 <div class="alert alert-block alert-message">

@@ -13,23 +13,49 @@ Plan for this tutorial:
 %autoreload 2
 ```
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
 ```python
-# Install from GitHub for now
-!pip install --quiet scviva-tools
-!pip install --quiet adjustText
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+    !pip install --quiet adjustText
 ```
 
 ```python
 import os
 import random
 import tempfile
-import rapids_singlecell as rsc
 import scvi
-import numpy as np
-import scanpy as sc
-import scviva
-import torch
-from rich import print
+import numpy as np  
+import scanpy as sc  
+import scviva  
+import torch  
+from rich import print  
+```
+
+```python
+HAS_RSC = False
+try:
+    import cupy as cp
+    import rapids_singlecell as rsc
+
+    # rapids_singlecell can be importable without a usable GPU (e.g. a CPU runtime on Google Colab)
+    HAS_RSC = cp.cuda.runtime.getDeviceCount() > 0
+except Exception:  # ImportError, or a CUDA error when no GPU/driver is present
+    HAS_RSC = False
+
+if HAS_RSC:
+    print("RAPIDS SingleCell is installed and a GPU is available, using rapids_singlecell")
+else:
+    print("RAPIDS SingleCell (or a GPU) is not available, falling back to scanpy")
 ```
 
 ```python
@@ -177,8 +203,12 @@ adata.obsm["X_scVIVA"] = nichevae.get_latent_representation()
 We may visualize the latent space in UMAP coordinates, coloring by cell type.
 
 ```python
-rsc.pp.neighbors(adata, use_rep="X_scVIVA", n_neighbors=30)
-rsc.tl.umap(adata)
+if HAS_RSC:
+    rsc.pp.neighbors(adata, use_rep="X_scVIVA", n_neighbors=30)
+    rsc.tl.umap(adata)
+else:
+    sc.pp.neighbors(adata, use_rep="X_scVIVA", n_neighbors=30)
+    sc.tl.umap(adata)
 
 sc.pl.umap(adata, color="cell_type", frameon=False)
 ```
@@ -197,8 +227,12 @@ print(adata_endothelial)
 We perform coarse Leiden clustering on the endothelial latent space, in a bid to find spatially confined populations of endothelial cells.
 
 ```python
-rsc.pp.neighbors(adata_endothelial, use_rep="X_scVIVA", n_neighbors=30, random_state=42)
-rsc.tl.umap(adata_endothelial)
+if HAS_RSC:
+    rsc.pp.neighbors(adata_endothelial, use_rep="X_scVIVA", n_neighbors=30, random_state=42)
+    rsc.tl.umap(adata_endothelial)
+else:
+    sc.pp.neighbors(adata_endothelial, use_rep="X_scVIVA", n_neighbors=30, random_state=42)
+    sc.tl.umap(adata_endothelial)
 sc.tl.leiden(
     adata_endothelial,
     key_added="leiden_scVIVA",
@@ -226,7 +260,9 @@ sc.pl.spatial(
 
 ```python
 adata.obs["leiden_scVIVA"] = "Unknown"
-adata.obs.loc[adata.obs["cell_type"] == "Endothelial", "leiden_scVIVA"] = adata_endothelial.obs["leiden_scVIVA"]
+adata.obs.loc[adata.obs["cell_type"] == "Endothelial", "leiden_scVIVA"] = adata_endothelial.obs[
+    "leiden_scVIVA"
+]
 ```
 
 ```python
@@ -302,7 +338,9 @@ We can then filter genes to upregulated genes, i.e. such that the median Log-Fol
 ```python
 PROBA_TRES = 0.8
 
-g1_g3_genes = DE_1_0.g1_g2[(DE_1_0.g1_g2["lfc_median"] > 0) & (DE_1_0.g1_g2["proba_de"] > PROBA_TRES)].index
+g1_g3_genes = DE_1_0.g1_g2[
+    (DE_1_0.g1_g2["lfc_median"] > 0) & (DE_1_0.g1_g2["proba_de"] > PROBA_TRES)
+].index
 ```
 
 We then display the results: median Log-Fold Change (LFC) of upregulated genes in $\textit{G1}$ vs $\textit{G2}$ displayed on the x-axis, while we compare differential expression computed between $\textit{N1}$  and $\textit{G2}$ on the y-axis.
@@ -383,7 +421,9 @@ We display _ESM1_, _KDR_, _SNAI1_, critical genes for angiogenesis in invasive c
 
 ```python
 gene_list_invasive = ["ESM1", "KDR", "SNAI1", "FOXA1"]
-percentiles_invasive = get_gene_percentiles_list(adata, gene_list_invasive, 99.9, layer="min_max_scaled")
+percentiles_invasive = get_gene_percentiles_list(
+    adata, gene_list_invasive, 99.9, layer="min_max_scaled"
+)
 ```
 
 We first plot these genes in endothelial cells:
@@ -448,7 +488,9 @@ vivs_model.train(max_epochs=200)
 `get_hier_importance` clusters genes by decoder-scale correlation at several resolutions, then re-runs the conditional randomization test with group-level knockoff substitution at each resolution, giving FDR-controlled p-values both for individual genes and for coarser gene clusters. Passing `n_clusters_list=[50, 100, 200]` tests three resolutions in addition to the finest (per-gene) one.
 
 ```python
-res = vivs_model.get_hier_importance(n_clusters_list=[50, 100, 200], batch_size=8192, n_mc_samples=100)
+res = vivs_model.get_hier_importance(
+    n_clusters_list=[50, 100, 200], batch_size=8192, n_mc_samples=100
+)
 res
 ```
 

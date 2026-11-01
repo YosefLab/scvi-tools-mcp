@@ -7,10 +7,24 @@ In this notebook, we present the workflow to run Stereoscope within the scvi-too
 
 You can access the raw count matrices as 'anndata' objects at www.heartcellatlas.org.
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
+```python
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+```
+
 ```python
 import os
 import tempfile
-import rapids_singlecell as rsc
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -223,7 +237,9 @@ In this example we can observe how nicely the arterial endotehlial cells (EC5_ar
 
 ```python
 # low dpi for uploading to github
-sc.settings.set_figure_params(dpi=60, color_map="RdPu", dpi_save=200, vector_friendly=True, format="svg")
+sc.settings.set_figure_params(
+    dpi=60, color_map="RdPu", dpi_save=200, vector_friendly=True, format="svg"
+)
 sc.pl.spatial(
     st_adata,
     img_key="hires",

@@ -9,18 +9,26 @@ Plan for this tutorial:
 4. Transfer mapping.
 5. Generating corrected counts and perform DE analysis
 
-```python
-# Install from GitHub for now
-!pip install --quiet scviva-tools
-!pip install --quiet decoupler
-!pip install --quiet adjustText
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
 
+```python
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+    !pip install --quiet decoupler
+    !pip install --quiet adjustText
 ```
 
 ```python
 import os
 import tempfile
-import rapids_singlecell as rsc
 
 import decoupler as dc
 import matplotlib.pyplot as plt
@@ -28,6 +36,23 @@ import numpy as np
 import scanpy as sc
 import scvi
 import scviva
+```
+
+```python
+HAS_RSC = False
+try:
+    import cupy as cp
+    import rapids_singlecell as rsc
+
+    # rapids_singlecell can be importable without a usable GPU (e.g. a CPU runtime on Google Colab)
+    HAS_RSC = cp.cuda.runtime.getDeviceCount() > 0
+except Exception:  # ImportError, or a CUDA error when no GPU/driver is present
+    HAS_RSC = False
+
+if HAS_RSC:
+    print("RAPIDS SingleCell is installed and a GPU is available, using rapids_singlecell")
+else:
+    print("RAPIDS SingleCell (or a GPU) is not available, falling back to scanpy")
 ```
 
 ```python
@@ -52,7 +77,9 @@ The data was originally labeled using Leiden clustering of an optimized segmenta
 
 ```python
 adata_path = os.path.join(save_dir.name, "tutorial_xenium_brain.h5ad")
-adata = sc.read(adata_path, backup_url="https://exampledata.scverse.org/scvi-tools/tutorial_xenium_brain.h5ad")
+adata = sc.read(
+    adata_path, backup_url="https://exampledata.scverse.org/scvi-tools/tutorial_xenium_brain.h5ad"
+)
 adata
 ```
 
@@ -110,7 +137,9 @@ ref_adata
 ```
 
 ```python
-ref_adata.obsm["resolvi_celltypes"] = supervised_resolvi.predict(ref_adata, num_samples=3, soft=True)
+ref_adata.obsm["resolvi_celltypes"] = supervised_resolvi.predict(
+    ref_adata, num_samples=3, soft=True
+)
 ```
 
 ```python
@@ -121,8 +150,12 @@ ref_adata.obsm["X_resolVI"] = supervised_resolvi.get_latent_representation(ref_a
 Again, we may visualize the latent space as well as the inferred labels
 
 ```python
-rsc.pp.neighbors(ref_adata, use_rep="X_resolVI")
-rsc.tl.umap(ref_adata)
+if HAS_RSC:
+    rsc.pp.neighbors(ref_adata, use_rep="X_resolVI")
+    rsc.tl.umap(ref_adata)
+else:
+    sc.pp.neighbors(ref_adata, use_rep="X_resolVI")
+    sc.tl.umap(ref_adata)
 ```
 
 ```python
@@ -241,7 +274,9 @@ ref_adata.layers["generated_expression"] = samples_corr.loc["post_sample_q50", "
 
 ```python
 sc.pl.umap(ref_adata, color=["resolvi_predicted", "Slc17a6"], layer="counts", vmax="p98")
-sc.pl.umap(ref_adata, color=["resolvi_predicted", "Slc17a6"], layer="generated_expression", vmax="p98")
+sc.pl.umap(
+    ref_adata, color=["resolvi_predicted", "Slc17a6"], layer="generated_expression", vmax="p98"
+)
 ```
 
 ## Query transfer
@@ -262,15 +297,21 @@ query_resolvi.train(max_epochs=20)
 ```
 
 ```python
-query_adata.obs["resolvi_predicted"] = query_resolvi.predict(query_adata, num_samples=3, soft=False)
+query_adata.obs["resolvi_predicted"] = query_resolvi.predict(
+    query_adata, num_samples=3, soft=False
+)
 query_adata.obsm["X_resolVI"] = query_resolvi.get_latent_representation(query_adata)
 ```
 
 Again, we may visualize the latent space as well as the inferred labels
 
 ```python
-rsc.pp.neighbors(query_adata, use_rep="X_resolVI")
-rsc.tl.umap(query_adata)
+if HAS_RSC:
+    rsc.pp.neighbors(query_adata, use_rep="X_resolVI")
+    rsc.tl.umap(query_adata)
+else:
+    sc.pp.neighbors(query_adata, use_rep="X_resolVI")
+    sc.tl.umap(query_adata)
 ```
 
 ```python
@@ -281,12 +322,18 @@ sc.pl.spatial(query_adata, color=["predicted_celltype", "resolvi_predicted"], sp
 We can now concatenate the datasets again and find good integration and accurate cell-type information.
 
 ```python
-full_adata = ref_adata.concatenate(query_adata, batch_key="source", batch_categories=["reference", "query"])
+full_adata = ref_adata.concatenate(
+    query_adata, batch_key="source", batch_categories=["reference", "query"]
+)
 ```
 
 ```python
-rsc.pp.neighbors(full_adata, use_rep="X_resolVI")
-rsc.tl.umap(full_adata)
+if HAS_RSC:
+    rsc.pp.neighbors(full_adata, use_rep="X_resolVI")
+    rsc.tl.umap(full_adata)
+else:
+    sc.pp.neighbors(full_adata, use_rep="X_resolVI")
+    sc.tl.umap(full_adata)
 ```
 
 ```python
