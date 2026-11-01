@@ -57,9 +57,7 @@ We can see the advantage with larger data, while for the small data, there's no 
 
 - From non-interactive session:
 ```python
-model.train(
-    ..., accelerator="gpu", devices=-1, strategy="ddp_find_unused_parameters_true"
-)
+model.train(..., accelerator="gpu", devices=-1, strategy="ddp_find_unused_parameters_true")
 ```
 
 - From interactive session (e.g. jupyter notebook):
