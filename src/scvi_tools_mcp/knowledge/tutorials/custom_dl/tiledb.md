@@ -246,7 +246,9 @@ Add the generated embedding (stored in `latent`) in the obsm slot of the AnnData
 
 ```python
 # verify cell order:
-assert np.array_equal(np.array(adata.obs["soma_joinid"]), inference_datamodule.train_dataset.query_ids.obs_joinids)
+assert np.array_equal(
+    np.array(adata.obs["soma_joinid"]), inference_datamodule.train_dataset.query_ids.obs_joinids
+)
 
 adata.obsm["scvi"] = latent
 ```
@@ -438,7 +440,9 @@ model_scanvi.history["train_f1_score"].tail()
 ```
 
 ```python
-model_scanvi.save("census_model_scanvi", save_anndata=False, overwrite=True, datamodule=datamodule_scanvi)
+model_scanvi.save(
+    "census_model_scanvi", save_anndata=False, overwrite=True, datamodule=datamodule_scanvi
+)
 ```
 
 ```python
@@ -473,7 +477,9 @@ assert np.array_equal(
 Extracting Embedding and creaTing UMAPs
 
 ```python
-latent_scanvi = model_scanvi.get_latent_representation(dataloader=inference_datamodule_scanvi.inference_dataloader())
+latent_scanvi = model_scanvi.get_latent_representation(
+    dataloader=inference_datamodule_scanvi.inference_dataloader()
+)
 latent_scanvi.shape
 ```
 
@@ -509,7 +515,9 @@ sc.pl.umap(adata, color="cell_type", title="SCANVI")
 Calculate Predictions
 
 ```python
-adata.obs["predictions_scanvi"] = model_scanvi.predict(dataloader=inference_datamodule_scanvi.inference_dataloader())
+adata.obs["predictions_scanvi"] = model_scanvi.predict(
+    dataloader=inference_datamodule_scanvi.inference_dataloader()
+)
 ```
 
 ```python
@@ -597,7 +605,11 @@ adata.obs["predictions_scanvi_non_dataloder"] = model_census4.predict()
 ```
 
 ```python
-df = adata.obs.groupby(["cell_type", "predictions_scanvi_non_dataloder"]).size().unstack(fill_value=0)
+df = (
+    adata.obs.groupby(["cell_type", "predictions_scanvi_non_dataloder"])
+    .size()
+    .unstack(fill_value=0)
+)
 norm_df = df / df.sum(axis=0)
 import matplotlib.pyplot as plt
 
