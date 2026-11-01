@@ -30,7 +30,7 @@ Notes
 -----
 See further usage examples in the following tutorial:
 
-1. :doc:`/tutorials/notebooks/spatial/stereoscope_heart_LV_tutorial`
+1. `Stereoscope: Deconvolving Spatial Heart Data <https://scviva-tools.readthedocs.io/en/latest/tutorials/stereoscope_heart_LV_tutorial.html>`__
 
 ## setup_anndata
 
@@ -119,7 +119,7 @@ Starting scVI-Tools v1.5 this model is part of scVIVA-Tools, and no longer being
 
 ```{topic} Tutorial:
 
--   {doc}`/tutorials/notebooks/spatial/stereoscope_heart_LV_tutorial`
+-   [Stereoscope: Deconvolving Spatial Heart Data](https://scviva-tools.readthedocs.io/en/latest/tutorials/stereoscope_heart_LV_tutorial.html)
 ```
 
 ## Preliminaries

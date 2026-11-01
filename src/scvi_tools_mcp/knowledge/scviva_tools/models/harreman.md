@@ -26,6 +26,17 @@ model
 layer_key
     Layer to use for counts. ``None`` uses ``adata.X``.
 
+Notes
+-----
+Lower-level functions are grouped under accessors that default to this
+object's AnnData:
+
+- ``ha.hs`` -- hotspot analysis, see :class:`~scviva.tools.harreman.HarremanHotspotAccessor`.
+- ``ha.vs`` -- VISION signatures, see :class:`~scviva.tools.harreman.HarremanVisionAccessor`.
+- ``ha.tl`` -- graph and interaction tools, see
+  :class:`~scviva.tools.harreman.HarremanToolsAccessor`.
+- ``ha.pl`` -- plotting, see :class:`~scviva.tools.harreman.HarremanPlottingAccessor`.
+
 Examples
 --------
 Without model:

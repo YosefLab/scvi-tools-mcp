@@ -15,8 +15,9 @@ Currently the "cells" and "constrained" modes are implemented.
 
 Parameters
 ----------
-mdata
+sc_adata
     MuData object that has been registered via :meth:`~scviva.external.Tangram.setup_mudata`.
+    Despite its name, this is the full MuData (scRNA and spatial modalities).
 constrained
     Whether to use the constrained version of Tangram instead of cells mode.
 target_count

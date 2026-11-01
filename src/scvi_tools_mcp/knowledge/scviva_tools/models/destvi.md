@@ -23,12 +23,16 @@ px_decoder_state_dict
     state_dict from the px_decoder of the CondSCVI model
 px_r
     parameters for the px_r tensor in the CondSCVI model
+per_ct_bias
+    estimates of per cell-type expression bias in the CondSCVI model
 n_hidden
     Number of nodes per hidden layer.
 n_latent
     Dimensionality of the latent space.
 n_layers
     Number of hidden layers used for encoder and decoder NNs.
+dropout_decoder
+    Dropout rate for the decoder neural network (same dropout as in CondSCVI decoder).
 **module_kwargs
     Keyword args for :class:`~scviva.module.MRDeconv`
 
@@ -76,6 +80,8 @@ batch_key
     key in `adata.obs` for batch information. Categories will automatically be converted into
     integer categories and saved to `adata.obs['_scvi_batch']`. If `None`, assigns the same batch
     to all the data.
+**kwargs
+    Keyword args for :meth:`~scvi.data.AnnDataManager.register_fields`.
 
 ## train
 
