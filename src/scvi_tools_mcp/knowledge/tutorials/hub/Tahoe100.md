@@ -41,13 +41,11 @@ save_dir = tempfile.TemporaryDirectory()
 
 ## Get the data
 
-We start by downloading the model from its hub. 
+We start by downloading the model from its hub.
 Note that the model is very large therefore it will take time to being download.
 
 ```python
-tahoe_hubmodel = scvi.hub.HubModel.pull_from_huggingface_hub(
-    repo_name="vevotx/Tahoe-100M-SCVI-v1", cache_dir="."
-)
+tahoe_hubmodel = scvi.hub.HubModel.pull_from_huggingface_hub(repo_name="vevotx/Tahoe-100M-SCVI-v1", cache_dir=".")
 ```
 
 We can see the model card
@@ -77,7 +75,7 @@ tahoe.view_anndata_setup()
 # pprint(tahoe.registry)
 ```
 
-## Get the latent space 
+## Get the latent space
 
 ```python
 SCVI_LATENT_KEY = "X_scVI"
@@ -306,7 +304,7 @@ bm.plot_results_table(min_max_scale=False)
 ## Performing Differential Expression in scVI
 
 While we only have access to the minified data, we can still perform downstream analysis using the generative part of the model.
-For example here, we will do it on a cluster of DMSO_TF controls vs the drug Harringtonine that is used for protein synthesis inhibitor per the cell line CVCL_0459 which is typicaly associated with Lung large cell carcinoma, a sub type of NSCLC. 
+For example here, we will do it on a cluster of DMSO_TF controls vs the drug Harringtonine that is used for protein synthesis inhibitor per the cell line CVCL_0459 which is typicaly associated with Lung large cell carcinoma, a sub type of NSCLC.
 We also choose to use the sub group of G2M cell cycle phase.
 
 ```python
@@ -393,9 +391,7 @@ import plotnine as p9
 
 (
     p9.ggplot(de_change, p9.aes("lfc_mean", "-log10_pscore", color="Biotype"))
-    + p9.geom_point(
-        de_change.query("Biotype == 'protein_coding'"), alpha=0.5
-    )  # Plot other genes with transparence
+    + p9.geom_point(de_change.query("Biotype == 'protein_coding'"), alpha=0.5)  # Plot other genes with transparence
     + p9.xlim(-5, 5)  # Set x limits
     + p9.ylim(0, 2.5)  # Set y limits
     + p9.geom_point(de_change.query("Biotype != 'protein_coding'"))

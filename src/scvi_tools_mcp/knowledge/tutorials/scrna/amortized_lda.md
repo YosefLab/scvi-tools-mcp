@@ -64,9 +64,7 @@ sc.pp.log1p(adata)
 adata.raw = adata  # freeze the state in `.raw`
 
 adata = adata[:, ~adata.var_names.str.startswith("MT-")]
-sc.pp.highly_variable_genes(
-    adata, flavor="seurat_v3", layer="counts", n_top_genes=1000, subset=True
-)
+sc.pp.highly_variable_genes(adata, flavor="seurat_v3", layer="counts", n_top_genes=1000, subset=True)
 ```
 
 ## Create and fit `AmortizedLDA` model

@@ -80,9 +80,7 @@ tm_droplet = tm_droplet[
     & (tm_droplet.obs.sex == "female")
 ].copy()
 tm_facs = tm_facs[
-    (tm_facs.obs.tissue == "Marrow")
-    & (~tm_facs.obs.cell_ontology_class.isna())
-    & (tm_facs.obs.sex == "female")
+    (tm_facs.obs.tissue == "Marrow") & (~tm_facs.obs.cell_ontology_class.isna()) & (tm_facs.obs.sex == "female")
 ].copy()
 
 tm_droplet.obs["tech"] = "10x"
@@ -268,9 +266,7 @@ sc.tl.umap(adata, min_dist=0.3)
 
 ```python
 # in order to make colors matchup
-adata.obs.C_scANVI = pd.Categorical(
-    adata.obs.C_scANVI.values, categories=adata.obs.cell_ontology_class.cat.categories
-)
+adata.obs.C_scANVI = pd.Categorical(adata.obs.C_scANVI.values, categories=adata.obs.cell_ontology_class.cat.categories)
 ```
 
 ```python

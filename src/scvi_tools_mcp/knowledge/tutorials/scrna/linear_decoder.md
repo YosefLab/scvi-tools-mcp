@@ -73,9 +73,7 @@ sc.pp.normalize_total(adata, target_sum=10e4)
 sc.pp.log1p(adata)
 adata.raw = adata  # freeze the state in `.raw`
 
-sc.pp.highly_variable_genes(
-    adata, flavor="seurat_v3", layer="counts", n_top_genes=1000, subset=True
-)
+sc.pp.highly_variable_genes(adata, flavor="seurat_v3", layer="counts", n_top_genes=1000, subset=True)
 ```
 
 ## Create and fit `LDVAE` model
@@ -153,8 +151,7 @@ For every latent variable Z, we extract the genes with largest _magnitude_, and 
 
 ```python
 print(
-    "Top loadings by magnitude\n------------------------------------------------------------------"
-    "---------------------"
+    "Top loadings by magnitude\n---------------------------------------------------------------------------------------"
 )
 for clmn_ in loadings:
     loading_ = loadings[clmn_].sort_values()
@@ -162,11 +159,7 @@ for clmn_ in loadings:
     fstr += "\t".join([f"{i}, {loading_[i]:.2}" for i in loading_.head(5).index])
     fstr += "\n\t...\n\t"
     fstr += "\t".join([f"{i}, {loading_[i]:.2}" for i in loading_.tail(5).index])
-    print(
-        fstr
-        + "\n-------------------------------------------------------------------------------------"
-        "--\n"
-    )
+    print(fstr + "\n---------------------------------------------------------------------------------------\n")
 ```
 
 It is important to keep in mind that unlike traditional PCA, these latent variables are not ordered. Z_0 does not necessarily explain more variance than Z_1.

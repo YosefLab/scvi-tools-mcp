@@ -60,9 +60,7 @@ save_dir = tempfile.TemporaryDirectory()
 First we download the pre-trained scANVI model from the HuggingFace [repo](https://huggingface.co/scvi-tools/human-lung-cell-atlas).
 
 ```python
-hubmodel = HubModel.pull_from_huggingface_hub(
-    "scvi-tools/human-lung-cell-atlas-scanvi", cache_dir=save_dir.name
-)
+hubmodel = HubModel.pull_from_huggingface_hub("scvi-tools/human-lung-cell-atlas-scanvi", cache_dir=save_dir.name)
 adata = hubmodel.adata
 model = hubmodel.model
 ```

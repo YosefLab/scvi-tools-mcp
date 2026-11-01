@@ -65,17 +65,13 @@ Let's download our data from a comparative study of murine lymph nodes, comparin
 
 ```python
 url1 = os.path.join(save_dir.name, "ST-LN-compressed.h5ad")
-st_adata = sc.read(
-    url1, backup_url="https://exampledata.scverse.org/scvi-tools/ST-LN-compressed.h5ad"
-)
+st_adata = sc.read(url1, backup_url="https://exampledata.scverse.org/scvi-tools/ST-LN-compressed.h5ad")
 st_adata
 ```
 
 ```python
 url2 = os.path.join(save_dir.name, "scRNA-LN-compressed.h5ad")
-sc_adata = sc.read(
-    url2, backup_url="https://exampledata.scverse.org/scvi-tools/scRNA-LN-compressed.h5ad"
-)
+sc_adata = sc.read(url2, backup_url="https://exampledata.scverse.org/scvi-tools/scRNA-LN-compressed.h5ad")
 sc_adata
 ```
 
@@ -96,9 +92,7 @@ sc.pp.filter_genes(sc_adata, min_counts=10)
 
 sc_adata.layers["counts"] = sc_adata.X.copy()
 
-sc.pp.highly_variable_genes(
-    sc_adata, n_top_genes=G, subset=True, layer="counts", flavor="seurat_v3"
-)
+sc.pp.highly_variable_genes(sc_adata, n_top_genes=G, subset=True, layer="counts", flavor="seurat_v3")
 
 sc.pp.normalize_total(sc_adata, target_sum=10e4)
 sc.pp.log1p(sc_adata)
@@ -247,9 +241,7 @@ Because the inference of cell type specific gene expression is prone to error wh
 This part of the software is not directly available in scvi-tools, but instead in the util package `destvi_utils` (installable from GitHub; refer to the top of this tutorial).
 
 ```python
-ct_thresholds = destvi_utils.automatic_proportion_threshold(
-    st_adata, ct_list=ct_list, kind_threshold="secondary"
-)
+ct_thresholds = destvi_utils.automatic_proportion_threshold(st_adata, ct_list=ct_list, kind_threshold="secondary")
 ```
 
 In terms of cell type location, we observe a strong compartimentalization of the cell types in the lymph node (B cells / T cells), as expected. We also observe a differential localization of the monocytes (refer to the paper for further details).
@@ -337,9 +329,7 @@ mask2 = np.logical_and(
     color < threshold,
 ).values
 
-_ = destvi_utils.de_genes(
-    st_model, mask=mask, mask2=mask2, threshold=ct_thresholds[ct], ct=ct, key="IFN_rich"
-)
+_ = destvi_utils.de_genes(st_model, mask=mask, mask2=mask2, threshold=ct_thresholds[ct], ct=ct, key="IFN_rich")
 
 display(st_adata.uns["IFN_rich"]["de_results"].head(10))
 

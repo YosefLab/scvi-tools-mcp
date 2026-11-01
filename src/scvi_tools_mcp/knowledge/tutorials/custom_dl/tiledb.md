@@ -19,7 +19,7 @@ from scvi_colab import install
 install()
 ```
 
-## Training the model 
+## Training the model
 
 Let's start by importing the necessary dependencies.
 
@@ -202,7 +202,7 @@ We will now load the model back and use it to generate cell embeddings (the late
 
 ## Generate cell embeddings
 
-We will now generate the cell embeddings for this model, using the `get_latent_representation` function available in scvi-tools. 
+We will now generate the cell embeddings for this model, using the `get_latent_representation` function available in scvi-tools.
 
 We can use another instance of the `SCVIDataModule` for the forward pass, so we don't need to load the whole dataset in memory. This will have shuffling disabled to make it easier to join the embeddings later. We also want to restore the list of scVI batch labels from the training data, ensuring our forward pass will map batch labels to tensors in the expected way (although this specific example would work regardless, since it reuses the same query).
 
@@ -246,9 +246,7 @@ Add the generated embedding (stored in `latent`) in the obsm slot of the AnnData
 
 ```python
 # verify cell order:
-assert np.array_equal(
-    np.array(adata.obs["soma_joinid"]), inference_datamodule.train_dataset.query_ids.obs_joinids
-)
+assert np.array_equal(np.array(adata.obs["soma_joinid"]), inference_datamodule.train_dataset.query_ids.obs_joinids)
 
 adata.obsm["scvi"] = latent
 ```
@@ -280,7 +278,7 @@ sc.pl.umap(
 sc.pl.umap(adata, color="cell_type", title="SCVI")
 ```
 
-lets train the actual adata that we extracted the normal way in order to see the integration 
+lets train the actual adata that we extracted the normal way in order to see the integration
 
 ```python
 adata.obs["batch"] = adata.obs[batch_keys].agg("//".join, axis=1).astype("category")
@@ -440,9 +438,7 @@ model_scanvi.history["train_f1_score"].tail()
 ```
 
 ```python
-model_scanvi.save(
-    "census_model_scanvi", save_anndata=False, overwrite=True, datamodule=datamodule_scanvi
-)
+model_scanvi.save("census_model_scanvi", save_anndata=False, overwrite=True, datamodule=datamodule_scanvi)
 ```
 
 ```python
@@ -477,9 +473,7 @@ assert np.array_equal(
 Extracting Embedding and creaTing UMAPs
 
 ```python
-latent_scanvi = model_scanvi.get_latent_representation(
-    dataloader=inference_datamodule_scanvi.inference_dataloader()
-)
+latent_scanvi = model_scanvi.get_latent_representation(dataloader=inference_datamodule_scanvi.inference_dataloader())
 latent_scanvi.shape
 ```
 
@@ -515,9 +509,7 @@ sc.pl.umap(adata, color="cell_type", title="SCANVI")
 Calculate Predictions
 
 ```python
-adata.obs["predictions_scanvi"] = model_scanvi.predict(
-    dataloader=inference_datamodule_scanvi.inference_dataloader()
-)
+adata.obs["predictions_scanvi"] = model_scanvi.predict(dataloader=inference_datamodule_scanvi.inference_dataloader())
 ```
 
 ```python
@@ -605,11 +597,7 @@ adata.obs["predictions_scanvi_non_dataloder"] = model_census4.predict()
 ```
 
 ```python
-df = (
-    adata.obs.groupby(["cell_type", "predictions_scanvi_non_dataloder"])
-    .size()
-    .unstack(fill_value=0)
-)
+df = adata.obs.groupby(["cell_type", "predictions_scanvi_non_dataloder"]).size().unstack(fill_value=0)
 norm_df = df / df.sum(axis=0)
 import matplotlib.pyplot as plt
 
@@ -640,6 +628,6 @@ bm.benchmark()
 bm.plot_results_table(min_max_scale=False)
 ```
 
-As expected SCANVI outperforms the SCVI using the labels data, 
+As expected SCANVI outperforms the SCVI using the labels data,
 however as can be seen the regular use of Anndataloader dataloader
 gives 5% better integration results that the census dataloader

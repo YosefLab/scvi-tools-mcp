@@ -153,8 +153,7 @@ for ind_cell_type, cell_type in zip(codes, cats, strict=False):
 # With avg expressions > 1
 for ind_cell_type, cell_type in zip(codes, cats, strict=False):
     mask_sufficient_expression = (
-        np.array(adata.X[adata.obs.str_labels.values.reshape(-1) == cell_type, :].mean(axis=0))
-        > 1.0
+        np.array(adata.X[adata.obs.str_labels.values.reshape(-1) == cell_type, :].mean(axis=0)) > 1.0
     ).reshape(-1)
     print(
         f"Fraction of genes with avg expression > 1 for cell type {cell_type} :",

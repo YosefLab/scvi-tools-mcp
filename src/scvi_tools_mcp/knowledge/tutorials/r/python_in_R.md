@@ -15,7 +15,7 @@ library(SeuratData)
 Before we use reticulate, we will need to point it to the correct conda env we use for the analysis
 
 ```python
-use_condaenv("base", required = TRUE)
+use_condaenv("base", required=TRUE)
 ```
 
 ## Operating between Python and R
@@ -23,7 +23,7 @@ use_condaenv("base", required = TRUE)
 First, we will create a dummy list, and convert between R and Python. Note that R is 1-indexed while Python is 0-indexed, so when retrieiving elements the user should be conscious of what kind of object they are operating on.
 
 ```python
-lst <- list(1, 2, 3)
+lst < -list(1, 2, 3)
 print(lst)
 print(typeof(lst))
 ```
@@ -59,7 +59,7 @@ print(py_lst)
 Finally, we will convert back into an R list with the function `py_to_r()` which executes the inverse of `r_to_py()`.
 
 ```python
-lst <- py_to_r(py_lst)
+lst < -py_to_r(py_lst)
 print(lst)
 ```
 
@@ -79,7 +79,7 @@ sc <- import('scanpy', convert = FALSE)
 
 ```python
 data("pbmc3k")
-pbmc <- pbmc3k
+pbmc < -pbmc3k
 ```
 
 ```python
@@ -119,7 +119,7 @@ class(py_to_r(adata))
 
 ```python
 # Convert adata object to R AnnDataR6 object.
-adata <- py_to_r(adata)
+adata < -py_to_r(adata)
 ```
 
 We can set fields in the AnnData object using the `$` syntax. Here, we run CPM normalization using scanpy and save it to a new layer in the AnnData object. For the sake of demonstration, we do not use the inplace update option that scanpy provides. Note, this only works well if using the AnnDataR6 object.

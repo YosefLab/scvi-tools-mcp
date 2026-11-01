@@ -142,9 +142,7 @@ Additionally, since scBasset considers training mini-batches across regions rath
 ```python
 bdata = adata.transpose()
 bdata.layers["binary"] = (bdata.X.copy() > 0).astype(float)
-scvi.external.SCBASSET.setup_anndata(
-    bdata, layer="binary", dna_code_key="dna_code", batch_key=BATCH_KEY
-)
+scvi.external.SCBASSET.setup_anndata(bdata, layer="binary", dna_code_key="dna_code", batch_key=BATCH_KEY)
 ```
 
 We now create the model. We use a non-default argument (`l2_reg_cell_embedding`), which is designed to aid integration of scATAC-seq data.

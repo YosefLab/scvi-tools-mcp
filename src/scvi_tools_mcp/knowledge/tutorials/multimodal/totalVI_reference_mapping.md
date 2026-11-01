@@ -204,9 +204,7 @@ This dataset is also CITE-seq, but contains a subset of the proteins of the refe
 ```python
 query_path = os.path.join(save_dir.name, "covid_cite.h5ad")
 
-query = sc.read(
-    query_path, backup_url="https://exampledata.scverse.org/scvi-tools/covid_cite.h5ad"
-)
+query = sc.read(query_path, backup_url="https://exampledata.scverse.org/scvi-tools/covid_cite.h5ad")
 ```
 
 ### Preprocessing
@@ -250,9 +248,7 @@ for p in adata.obsm["protein_counts"].columns:
     if p not in query.obsm["protein_counts"].columns:
         query.obsm["protein_counts"][p] = 0.0
 # ensure columns are in same order
-query.obsm["protein_counts"] = query.obsm["protein_counts"].loc[
-    :, adata.obsm["protein_counts"].columns
-]
+query.obsm["protein_counts"] = query.obsm["protein_counts"].loc[:, adata.obsm["protein_counts"].columns]
 ```
 
 For later visualization, we add some metadata to denote whether the dataset is reference of query
@@ -313,9 +309,7 @@ We can also use the same UMAP operator from the reference step to visualize our 
 ```python
 TOTALVI_UMAP_PROJECT_KEY = "X_umap_project"
 
-query.obsm[TOTALVI_UMAP_PROJECT_KEY] = query_model.umap_op_.transform(
-    query.obsm[TOTALVI_QUERY_LATENT_KEY]
-)
+query.obsm[TOTALVI_UMAP_PROJECT_KEY] = query_model.umap_op_.transform(query.obsm[TOTALVI_QUERY_LATENT_KEY])
 ```
 
 ```python
@@ -340,12 +334,8 @@ umap_adata = sc.AnnData(
         axis=0,
     )
 )
-umap_adata.obs["celltype"] = np.concatenate(
-    [query.obs["celltype.l2"].values, adata.obs["celltype.l2"].values]
-)
-umap_adata.obs["dataset"] = np.concatenate(
-    [query.shape[0] * ["query"], adata.shape[0] * ["reference"]]
-)
+umap_adata.obs["celltype"] = np.concatenate([query.obs["celltype.l2"].values, adata.obs["celltype.l2"].values])
+umap_adata.obs["dataset"] = np.concatenate([query.shape[0] * ["query"], adata.shape[0] * ["reference"]])
 umap_adata.obsm["X_umap"] = umap_adata.X
 ```
 

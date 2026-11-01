@@ -2,7 +2,7 @@
 
 In this introductory tutorial, we go through the different steps of an scvi-tools workflow. It is the R version of [this](https://docs.scvi-tools.org/en/latest/tutorials/notebooks/quick_start/api_overview.html) python tutorial.
 
-While we focus on scVI in this tutorial, the API is consistent across all models. 
+While we focus on scVI in this tutorial, the API is consistent across all models.
 
 ```python
 library(reticulate)
@@ -14,7 +14,7 @@ library(IRdisplay)
 Before we use reticulate, we will need to point it to the correct conda env we use for the analysis
 
 ```python
-use_condaenv("base", required = TRUE)
+use_condaenv("base", required=TRUE)
 ```
 
 ## Import Python libraries with reticulate
@@ -265,7 +265,7 @@ sc$tl$dendrogram(adata, groupby="cell_type", use_rep="X_scVI")
 ## Session Info Summary
 
 ```python
-#reticulate::py_last_error()
+# reticulate::py_last_error()
 ```
 
 ```python

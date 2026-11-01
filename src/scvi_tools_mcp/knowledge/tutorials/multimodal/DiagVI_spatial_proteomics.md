@@ -108,7 +108,7 @@ adata_protein = sc.read(
 adata_protein
 ```
 
-For continuous data, such as protein intensities, DiagVI expects a transformed (and optionally scaled) expression matrix as input. Optionally, users can provide experimental covariates (e.g., batch annotations) or other confounding variables and cell label annotations. Similar to the RNA AnnData object, the loaded protein AnnData object contains raw protein intensities and cell labels. 
+For continuous data, such as protein intensities, DiagVI expects a transformed (and optionally scaled) expression matrix as input. Optionally, users can provide experimental covariates (e.g., batch annotations) or other confounding variables and cell label annotations. Similar to the RNA AnnData object, the loaded protein AnnData object contains raw protein intensities and cell labels.
 
 Before training DiagVI, these intensities must be transformed and normalized to make them suitable for modeling. This is required due to antibody-based single-cell measurements being relative. For example, cytometry data are typically transformed using functions such as hyperbolic arcsinh (arcsinh), logicle, or biexponential to compress dynamic range and stabilize variance. Subsequently, the data is usually scaled feature-wise to ensure that marker expression values are on comparable scales across all channels (see for instance Liechti et al., 2021, [Nature Immunology](https://doi.org/10.1038/s41590-021-01006-z)).
 
@@ -142,9 +142,7 @@ adata_protein.layers["scaled"] = sp.csr_matrix(adata_protein.layers["scaled"])
 We can now inspect the transformed and scaled protein expression.
 
 ```python
-cytovi.plot_histogram(
-    adata_protein, layer_key="scaled", marker=["CD8A", "CD3E", "CD68", "CD45RA", "CD45RO", "PTEN"]
-)
+cytovi.plot_histogram(adata_protein, layer_key="scaled", marker=["CD8A", "CD3E", "CD68", "CD45RA", "CD45RO", "PTEN"])
 ```
 
 ## Preparing a guidance graph
@@ -371,14 +369,10 @@ After training scVI, we initialize and train scANVI based on the fitted scVI mod
 adata_combined.obs["annotation_scanvi"] = adata_combined.obs["annotation_l2"].copy()
 
 # add Unknown category
-adata_combined.obs["annotation_scanvi"] = adata_combined.obs[
-    "annotation_scanvi"
-].cat.add_categories(["Unknown"])
+adata_combined.obs["annotation_scanvi"] = adata_combined.obs["annotation_scanvi"].cat.add_categories(["Unknown"])
 
 # assign to protein cells
-adata_combined.obs.loc[adata_combined.obs["modality"] == "protein", "annotation_scanvi"] = (
-    "Unknown"
-)
+adata_combined.obs.loc[adata_combined.obs["modality"] == "protein", "annotation_scanvi"] = "Unknown"
 ```
 
 ```python
