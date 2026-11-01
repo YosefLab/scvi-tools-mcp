@@ -34,11 +34,11 @@ import os
 import random
 import tempfile
 import scvi
-import numpy as np  
-import scanpy as sc  
-import scviva  
-import torch  
-from rich import print  
+import numpy as np
+import scanpy as sc
+import scviva
+import torch
+from rich import print
 ```
 
 ```python

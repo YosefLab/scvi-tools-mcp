@@ -521,8 +521,8 @@ mask2 = np.logical_and(
 #)
 _ = destvi_utils.de_genes(
     st_model, mask=mask, mask2=mask2, threshold=ct_thresholds[ct], ct=ct, key="IFN_rich",
-    st_adata=st_adata,                                                                                                                                                                                                                                                                                  
-) 
+    st_adata=st_adata,
+)
 ```
 
 ```python
