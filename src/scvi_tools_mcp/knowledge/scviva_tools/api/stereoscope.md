@@ -44,6 +44,8 @@ adata. None of the data in adata are modified. Only adds fields to adata.
 
 Parameters
 ----------
+adata
+    AnnData object. Rows represent cells, columns represent features.
 labels_key
     key in `adata.obs` for label information. Categories will automatically be converted into
     integer categories and saved to `adata.obs['_scvi_labels']`. If `None`, assigns the same label
@@ -54,6 +56,8 @@ batch_key
     key in `adata.obs` for batch information. Categories will automatically be converted into
     integer categories and saved to `adata.obs['_scvi_batch']`. If `None`, assigns the same batch
     to all the data.
+**kwargs
+    Keyword args for :meth:`~scvi.data.AnnDataManager.register_fields`.
 
 ### train
 
@@ -149,8 +153,12 @@ adata. None of the data in adata are modified. Only adds fields to adata.
 
 Parameters
 ----------
+adata
+    AnnData object. Rows represent cells, columns represent features.
 layer
     if not `None`, uses this as the key in `adata.layers` for raw count data.
+**kwargs
+    Keyword args for :meth:`~scvi.data.AnnDataManager.register_fields`.
 
 ### train
 
