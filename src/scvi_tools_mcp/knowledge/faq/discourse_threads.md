@@ -3,7 +3,7 @@
 Top 30 threads by views (deduplicated across sources).
 
 ## Macbook M1 M2 mps acceleration with scVI
-**Posts:** 11 | **Views:** 2337
+**Posts:** 11 | **Views:** 2371
 
 **Question**: Has anyone recently gotten scVI (ideally 1.0.4) working with “GPU” (well, “mps”) acceleration with a Apple ARM M1, M2, or M3? I’ve tried a variety of incantations when installing torch and jax and it either doesn’t see the GPU or does and throws a tensor error which suggests something is very borked somewhere in the software chain. ValueError: Expected parameter loc (Tensor of shape (128, 30)) of distribution Normal(loc: torch.Size([128, 30]), scale: torch.Size([128, 30])) to satisfy the constraint Real(), but found invalid values: tensor([[nan, nan, nan, ..., nan, nan, nan], [nan, nan, nan, ..., nan, nan, nan], [nan, nan, nan, ..., nan, nan, nan], ..., [nan, nan, nan, ..., nan, nan, nan], [nan, nan, nan, ..., nan, nan, nan], [nan, nan, nan, ..., nan, nan, nan]], device='mps:0', grad_fn=<L …
 
@@ -16,7 +16,7 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@davemcg)**: Thanks - I’ll keep track of this thread and I hope if anyone gets scVI working on a nightly (or better, stable) branch of pytorch they will report it here!
 
 ## MrVI input and interpretation
-**Posts:** 29 | **Views:** 2222
+**Posts:** 29 | **Views:** 2291
 
 **Question**: @Justin_Hong Thanks so much for the MrVI tool and preprint. Really enjoyed reading it. I am just wondering whether the input should be an anndata object of highly variable genes or just the whole cellxgene matrix? I presume hvg selection before hand will bias the analysis depending on what you use as the batch key for hvg selection? Also, any help of further documentation on interpretation of the output would be fab. As I understood it, the distance metrics can compare across samples, clusters or other condition variable, but it wasn’t clear if I can account for sample variation and across disease states at the same time? Thanks for any insight you can offer.
 
@@ -29,12 +29,12 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@Nusob888)**: Thats great, thanks Justin. I have performed a test run. However, due to the sparse documentation, it is difficult for me to gauge how best to plot/cluster the data. Do you have idea how far things are from a guided tutorial?
 
 ## About the scvi-tools category
-**Posts:** 1 | **Views:** 1257
+**Posts:** 1 | **Views:** 1271
 
 **Question**: For questions about using scvi-tools .
 
 ## How to install solo-sc or use hashsolo from scvi?
-**Posts:** 6 | **Views:** 945
+**Posts:** 6 | **Views:** 971
 
 **Question**: When I attempt to install solo in conda environment lately, I have been encountering the following error. pip install solo-sc Collecting solo-sc Using cached solo-sc-1.3.tar.gz (18 kB) Preparing metadata (setup.py) ... done Collecting ConfigArgParse (from solo-sc) Obtaining dependency information for ConfigArgParse from https://files.pythonhosted.org/packages/6f/b3/b4ac838711fd74a2b4e6f746703cf9dd2cf5462d17dac07e349234e21b97/ConfigArgParse-1.7-py3-none-any.whl.metadata Using cached ConfigArgParse-1.7-py3-none-any.whl.metadata (23 kB) Collecting pandas (from solo-sc) Obtaining dependency information for pandas from https://files.pythonhosted.org/packages/4a/f6/f620ca62365d83e663a255a41b08d2fc2eaf304e0b8b21bb6d62a7390fe3/pandas-2.0.3-cp310-cp310-macosx_11_0_arm64.whl.metadata Downloading pan …
 
@@ -47,7 +47,7 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@hmnzo5gy)**: Thank you. It worked for my dataset. The semicolon might be a typo. The code is as the following: import scanpy as sc adata=sc.read_10x_h5("filtered_feature_bc_matrix.h5",gex_only=False) htos = list(adata.var[adata.var["feature_types"] == "Multiplexing Capture"].index.unique()) for hto in htos: adata.obs[hto] = adata.X[:,adata.var.index == hto].toarray() import scanpy.external as sce sce.pp.hashsolo(adata, ['hash1', 'hash2', 'hash3','hash4'])
 
 ## Using ResolVI’s Unsupervised Mode for Cell Annotation
-**Posts:** 10 | **Views:** 724
+**Posts:** 10 | **Views:** 775
 
 **Question**: Hello, I apologize for reposting here—I initially submitted this as a GitHub issue, but was kindly redirected to ask usage questions on Discourse. I’m working with Xenium spatial transcriptomics data without any prior cell‐type labels. My core question is: Can ResolVI’s unsupervised mode serve as a reliable foundation for cell annotation? For datasets where no reference labels exist, what is the recommended workflow to apply ResolVI for accurate, unsupervised cell‐type identification? Any guidance on best practices, downstream clustering strategies, or examples of how others have approached annotation in a fully unsupervised setting would be greatly appreciated.
 
@@ -60,7 +60,7 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@cane11)**: Yes. However, keep in mind that for scVIVA you will identify erroneous signal if segmentation is not optimized. We start there with optimized segmentation. Replacing scANVI with resolVI in scVIVA is safe though and if your segmentation is reasonably good this pipeline makes sense.
 
 ## Predict cell type with scANVI for spatial transcriptomics data (Xenium)
-**Posts:** 8 | **Views:** 692
+**Posts:** 8 | **Views:** 755
 
 **Question**: Hi, Thanks so much for the amazing tools! I was hoping someone could help me. I have an in-house dataset of Xenium 5k data and I would like to predict the cell types using a reference dataset. As such, I am also trying to use scANVI to perform label transfer to improve the accuracy. However, I have a few questions and problems. Questions for scANVI: Should I be subsetting my reference data on just the HVG to improve the accuracy? Should I be subseting my reference data to only include the genes also found in my STx experiment? How the difference in raw counts for the scRNAseq reference and raw counts for the STx that have different expression/number of genes impacting the model? Can the model handle this? How can I adjust for these differences? Is there a better tool or approach I should b …
 
@@ -73,7 +73,7 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@spatts14)**: def scVI_integration(config, adata_ref, adata, module_dir): """Integrates STx data with a reference scRNA-seq dataset using scVI. This function performs harmonizes a reference single-cell dataset (e.g., HLCA) to a STx dataset (e.g., Xenium). Args: config (SimpleNamespace or dict): Configuration object containing module-specific parameters, including the module name used to construct figure filenames. adata_ref (anndata.AnnData): Reference scRNA-seq AnnData object containing precomputed embeddings (PCA or UMAP) and cell-type annotations. Should have matching genes with adata_ingest. adata (anndata.AnnData): Spatial dataset formatted for integration, aligned by gene set with the reference (same genes, same order). module_dir (Path): Output directory for saving results Returns: tuple: (adata_ …
 
 ## Domain adaptation to pre-train batch correction model using paired data
-**Posts:** 13 | **Views:** 401
+**Posts:** 13 | **Views:** 438
 
 **Question**: Good afternoon scvi team! I am very new to the scvi tool and moslty have been working with scRNA-seq data within R environment. I came around a specific issue which scvi could potentially be well suited for so I would love to learn more and would appreciate any guidance. I would like to adapt scVI to learn a transformation between two batches being RNA sequencing protocols. I have data where both protocols were applied to cells from the same samples (so I have “ideal” comparison pairs between batches). Ideally, I’d like to pre-train a model on these “ideal” matched samples that could take the sample of one batch and map it into the “space” of another batch. I want to then save this model for further use on non-ideal/regular data to map it from one protocol space to the other. If this works …
 
@@ -85,17 +85,8 @@ Top 30 threads by views (deduplicated across sources).
 
 **Reply (@Valerie)**: I see — I’ll definitely look into those suggestions! I think what I’m aiming for might be slightly different: I’d like to treat the paired samples as a kind of ideal supervision — where a sample from one protocol (e.g., batch 1 ) can be directly compared to its counterpart from the other protocol ( batch 2 ) because they come from the same individual. Rather than treating sample_id as a batch effect, I was thinking of using it to guide the model — so that batch 1 and batch 2 representations from the same sample are explicitly aligned or used in a loss. The unmatched samples from different individuals wouldn’t really need to “see” each other at all — the focus would just be on learning a mapping via those matched pairs. Does that sound reasonable, or would that require deeper customization? …
 
-## Unstable result
-**Posts:** 3 | **Views:** 386
-
-**Question**: Hello, I’m going to analyze the single-cell RNA sequencing data using the scVI framework. After training the scVI model, I found that the result of model.differential_expression is unstable (specifically, it varies from seed to seed). I’ve been trying to solve this problem, but I still haven’t. Please tell me the expected cause. Thank you in advance.
-
-**Reply (@maheshworpaudel5001)**: I am using scvi version 1.4.1 and I am facing the same problem. Any help would be really appreciated.
-
-**Reply (@ori-kron-wis)**: GwangWooKim: Hello, I’m going to analyze the single-cell RNA sequencing data using the scVI framework. After training the scVI model, I found that the result of model.differential_expression is unstable (specifically, it varies from seed to seed). I’ve been trying to solve this problem, but I still haven’t. Please tell me the expected cause. Thank you in advance. The DE analysis is based on sampling, so there will be variability between runs. But given your model converged (check it) and that there is a real biological signal in the data (not just noise, do HVG) - you can run more MC samples to expect more stable results between seeds. Is it version-dependent?
-
 ## Best practices for downstream analysis of Resolvi-corrected data
-**Posts:** 3 | **Views:** 362
+**Posts:** 3 | **Views:** 405
 
 **Question**: Dear scverse team, Thank you for all your efforts in creating this incredible software library. I have a question about resolvi, which I am using to analyze and corrected batch effects for a set of Xenium datasets. Variants of this question have been asked before but from reading the responses I am still left a bit unsure. I have trained my resolvi model, something like this. import scvi from scvi.external import RESOLVI RESOLVI.setup_anndata(adata, layer='counts', batch_key="sample") resolvi = RESOLVI(adata, n_latent=30, semisupervised=False) resolvi.train(max_epochs=100, enable_progress_bar=True,accelerator="gpu") adata.obsm["X_resolVI"] = resolvae.get_latent_representation() # Create a name for your model folder model_dir = "resolvi_model_2M_cells" # Save the model resolvi.save(model_di …
 
@@ -104,7 +95,7 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@cane11)**: Hi Sam, to clean things up here. Throughout the manuscript we use posterior predictive samples (similar to model.posterior_predictive_sample in scVI). This generated data contains count data and then requires analogous steps to raw data such as count normalization and square root transformation. import numpy as np resolvae=resolvi samples_corr = resolvae.sample_posterior( model=resolvae.module.model_corrected,batch_size=65536, return_sites=["obs"], summary_fun={"post_sample_q50": np.median}, num_samples=3, summary_frequency=30, ) import pandas as pd samples_corr = pd.DataFrame(samples_corr).T adata.layers["generated_expression"] = samples_corr.loc["post_sample_q50", "px_rate"] ``` Instead px_rate are dense count normalized estimates of gene expression (analogous to get_normalized_expressio …
 
 ## Getting normalized expression
-**Posts:** 14 | **Views:** 319
+**Posts:** 14 | **Views:** 399
 
 **Question**: Hi, I am working on a big sized scRNAseq atlas with 2 million cells. I want to get the normalized expression. However, since it returns a data frame/numpy array, I run out of memory every time I am trying to retrieve the normalized expressions. I need it for performing DE. Is there any other way to get it? or perform DE between clusters without using it? Thanks, Kam
 
@@ -116,8 +107,17 @@ Top 30 threads by views (deduplicated across sources).
 
 **Reply (@Kray)**: Thanks a lot! I am looking for cell specific markers so I have generated clusters and performing DE between each cluster vs other clusters.
 
+## Unstable result
+**Posts:** 3 | **Views:** 393
+
+**Question**: Hello, I’m going to analyze the single-cell RNA sequencing data using the scVI framework. After training the scVI model, I found that the result of model.differential_expression is unstable (specifically, it varies from seed to seed). I’ve been trying to solve this problem, but I still haven’t. Please tell me the expected cause. Thank you in advance.
+
+**Reply (@maheshworpaudel5001)**: I am using scvi version 1.4.1 and I am facing the same problem. Any help would be really appreciated.
+
+**Reply (@ori-kron-wis)**: GwangWooKim: Hello, I’m going to analyze the single-cell RNA sequencing data using the scVI framework. After training the scVI model, I found that the result of model.differential_expression is unstable (specifically, it varies from seed to seed). I’ve been trying to solve this problem, but I still haven’t. Please tell me the expected cause. Thank you in advance. The DE analysis is based on sampling, so there will be variability between runs. But given your model converged (check it) and that there is a real biological signal in the data (not just noise, do HVG) - you can run more MC samples to expect more stable results between seeds. Is it version-dependent?
+
 ## Shared cell types not mixing when integrating datasets from different species
-**Posts:** 5 | **Views:** 317
+**Posts:** 5 | **Views:** 332
 
 **Question**: Hello, I am attempting to integrate datasets of the same tissue from different species. Some of the datasets are single-cell while some are single-nucleus. I thought that SCVI would work well for this task, however, as seen in the UMAPs below there is almost no integration of the different datasets, even from the same species. Using the consolidated cell-type labels from the original datasets, it seems shared cell types are in the same region of the umap, but the common cells from the different datasets do not mix (bottom umap). Below I have the code I used to make the umaps, where I used Sample and Method (single-cell vs. single-nuc) as categorical covariates. However, I have also tried other models such as: scvi.model.SCVI.setup_anndata(adata, layer = "counts", categorical_covariate_keys …
 
@@ -130,7 +130,7 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@sandcell10)**: Hi @cane11 , thank you for this information, it is very helpful! I was checking out sysVI and it looks like it will be better suited for these datasets. A few follow up questions: With regards to your comment about adding many continuous covariates, are you saying that sometimes more continuous covariates leads to worse integration? Does the same go with multiple categorical covariates? Basically, is it sometimes more beneficial to go with a simpler model? With regards to your comment about Harmony, would you say that Harmony prioritizes integration at the expense of real variation between batches? If so, would this be considered a bad thing? I would imagine it would depend on what the goals of the integration are, but would love some perspective. Feel free to let me know your thoughts and …
 
 ## Is older advice for estimating optimal number of epochs for model training of scVI still recommended?
-**Posts:** 7 | **Views:** 258
+**Posts:** 7 | **Views:** 298
 
 **Question**: Hi Team, Earlier docs for scVI mention that the number of epochs should scale downwards with number of obs/cells. E.g: “([For] > 100,000 cells) you may only need ~10 epochs.” I cannot find similar advice on the modern docs. Is this advice still valid and should even fewer epochs be used for even larger datasets? docs.scvi-tools.org test_size - 1. Introduction to single-cell Variational Inference (scVI) — scVI... In this introductory tutorial, we go through the different steps of a scVI workflow Thank you in advance, Tim
 
@@ -143,14 +143,14 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@cane11)**: Also for models trained on 30 million cells of the CELLxGENE census going below 10 epochs was not good for results. We saw little improvement beyond 10 epochs though but decided to train for 20 epochs.
 
 ## Excluding Ig and ribosomal genes from HVG selection in scVI, best practice?
-**Posts:** 2 | **Views:** 248
+**Posts:** 2 | **Views:** 267
 
 **Question**: Hi everyone, I’m working with single-cell RNA-seq data from CD45⁺ immune cells (mostly lymphoid lineages) and integrating multiple batches using scVI , which so far has given the best batch correction results. We’re now reprocessing the data after adjusting QC thresholds, and I came across some recent papers where they state: “Prior to PCA, nearest neighbor clustering, and UMAP representations, some genes were filtered from inclusion including those associated with Ig loci (Igk, Igl, or Igh), ribosomal proteins (Rps or Rpl), mitochondrial (mt-), sex (Xist),…” My questions are: Would it make sense to exclude these genes before computing HVGs , so that they never influence the latent space learned by scVI? Or is it better to compute HVGs normally, then remove these specific genes after HVG s …
 
 **Reply (@ori-kron-wis)**: Hey, Generally, the latter is the way to go to not affect the biological signal and other downstream tasks, such as DE. So, keeping them, but not letting them affect the latent space. However, the decision may also be influenced by the problem you are trying to solve. I think you can only gain by performing this, considering (1). In any case, you can always compare the different strategies by running scib-metrics on the generated latent space(s) and DE to validate your expected results.
 
 ## Ablating latent variables in LinearSCVI
-**Posts:** 6 | **Views:** 245
+**Posts:** 6 | **Views:** 263
 
 **Question**: Hello, and thank you for these amazing and very useful packages. I have trained a series of LDVAE models and suspect that a particular latent variable is driving performance in a subset of evaluation cells. To test this hypothesis, I would like to set that latent variable equal to zero and attempt reconstruction, to see how reconstruction error changes. However, when I naively tried to write my own modifiable reconstruction script, trying to match get_normalized_expression, with something like: latent_rep = np.array(model.get_latent_representation(adata)) loadings = np.array(model.get_loadings()) reconstruction = latent_rep @ loadings.T # as in Svensson 2020 I found that the resulting reconstruction values, which in my understanding are \rho, would often be negative; these appear not to be …
 
@@ -163,7 +163,7 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@nbnbhwyy)**: I apologize for bothering you here, and thank you for the excellent tool your team developed. I urgently need to solve this problem. The first step is to match the results of get_normalized_expression . I’ve browsed many related questions, but none have provided a good solution. Therefore, I chose to ask the question in the place that best matches my problem. I’m using the following code to reproduce the results of get_normalized_expression : model.module.generative( z=latent_tensor, library=library_tensor, batch_index=batch_tensor) where z is extracted from the trained scVILD model using the get_latent_representation() function. model.module.generative has four outputs, where px_rate should be the reconstructed representation I need. I’m getting inconsistent results and have encountered s …
 
 ## Deconvolute spatial transcriptomics (visium) with unannotated single-cell (10x)
-**Posts:** 4 | **Views:** 239
+**Posts:** 4 | **Views:** 252
 
 **Question**: I have a spatial transcriptomics dataset (10x visium) of a tumour microarray and some of the samples have matched single-cell RNA-seq data (10x). I would like to annotate my spatial data with the single-cell data. However the single-cell data is not annotated. Can this be done with any scverse tool?
 
@@ -173,15 +173,19 @@ Top 30 threads by views (deduplicated across sources).
 
 **Reply (@ori-kron-wis)**: cell_kc: The matched single-cell data does not have any annotations and is just processed to GEX count matrices. I understand that this needs to be annotated first in order to transfer labels? Yes. I suggested that it will be annotated using a model like scanvi (if you have similar annotated data as references) or cellassign (if you know whether or not each given gene is a marker of different cell types you think you have). cell_kc: Does cell2location annotate spatial data based on a single-cell reference? Yes. that will be the 2nd part , if your RNA-seq data will be annotated you will be able to use it and estimate the annotation of the spatial part with cell2location based on location of cells. I guess there are other tools for that.
 
-## How to handle batch effects within the query dataset when using scArches + SCVI?
-**Posts:** 2 | **Views:** 208
+## Mapping 10X Xenium 5k data to scRNA-seq reference
+**Posts:** 4 | **Views:** 239
 
-**Question**: Hello everyone, I’m new to scArches and currently exploring how it works in combination with SCVI , particularly for integrating new datasets into a reference atlas. I’m following this tutorial , where a SCVI model is first trained on a reference dataset and then extended using treeArches to incorporate a new query dataset. From what I understand, the entire query dataset is treated as a single new batch during this “surgery” step when adapting the model. Also, it seems that SCVI expects raw count data for both training and mapping steps. This leads me to a my question: What if my query dataset contains multiple batches itself (for example, samples from different sources or sequencing runs)? Should I split the query dataset by batch and integrate each one individually into the reference? O …
+**Question**: Hello everyone, I’m desperately trying to create a latent space from my scRNA-seq reference and map my Xenium cells to that. “Reference mapping with scvi-tools” worked well for each dataset individually, but together, results in basically both UMAPs next to each other. Does anyone have any suggestions on how to embed my Xenium data into my scRNA-seq reference UMAP? Thank you so much for any suggestions and experiences! Best regards,
 
-**Reply (@ori-kron-wis)**: Hey, I think the tutorial you linked to is a bit old and perhaps confusing (it uses batch column as “batch_key” but this column is also equal to “study” column, which is used to separate query and reference). Anyway, You can check this tutorial: Reference mapping with SCVI-Tools — scvi-tools Where the query dataset consists of several “tech” batches, and they are all used together as the query data. Obviously your query data should be close to your reference (in terms of species, tissue, cell types and so on) for good reference mapping (“surgery”). However, there are more models beyond SCVI, that might be helpful for you if you want to integrate a query that is very different, such as SysVI. It might help in your flow (however scarches not fully supported in this model yet)
+**Reply (@ori-kron-wis)**: Not so sure why to query Xenium cells from scRNA-seq reference and not train a new model from scratch, but you can do several things that might improve your integration (if not done already): Make sure to use the same gene list. Use SCVI.prepare_query_anndata to align the Xenium gene names to the reference. If the Xenium assay measures many fewer genes than the reference, consider down-sampling the reference gene set to the intersection to avoid poor performance. Make sure the reference model converged afterwards. When calling SCVI.load_query_data , set unfrozen=True or selectively unfreeze parts of the network (e.g. freeze_expression=False , freeze_batchnorm_encoder=False ). This allows more of the network to adapt to Xenium‐specific effects instead of only fitting the newly‑added weights …
+
+**Reply (@Furbelox)**: @ori-kron-wis Thank you! My goal was to improve the notoriously flawed Xenium annotations and “dusty” UMAP by using a single cell RNA-seq reference, annotating that first, then mapping the Xenium cells to that and annotating them via scANVI or a nearest neighbor approach to get cleaner cluster separation (from scRNA-seq) and more valid and finer cell type and cell state annotations. This is a summary of the 2 approaches i tried so far: For the first approach i used the scANVI reference mapping, with a shared embedding space of Xenium and scRNA-seq (HVG 2000 and subsampled to shared genes). vae_ref = scvi.model.SCVI.load(X…”scvi_model_scseq", adata=adata_ref) scanvi_ref = scvi.model.SCANVI.from_scvi_model(vae_ref, labels_key=“celltype”, unlabeled_category=“Unknown”) scanvi_ref.train(acceler …
+
+**Reply (@cane11)**: To address these bleed (or “diffusion”) errors, we developed the resolVI model. However, resolVI doesn’t allow mapping single-cell to spatial data and in my hands this doesn’t work quite well. So instead of relying on this, I usually recomputed cell-type annotations on the spatial data. I have seen convincing applications using scArches to map spatial on single-cells and guess that segmentation errors were minor for these scenarios. However, I did not access raw data there and can’t provide good guidance.
 
 ## Allowed downstream analysis with get_normalized_expression?
-**Posts:** 7 | **Views:** 205
+**Posts:** 7 | **Views:** 230
 
 **Question**: Greetings all, Hope I won’t be redundant with this issue. I am interested in finding an integration tool which returns a full gene-space batch-corrected matrix to use for downstream analysis, and I bumped into scVI’s get_normalized_expression . Reading from other issues , I fully get how this matrix is obtained and what it mathematically means, but the potential usability remains unclear to me. Is this matrix meant to be used for visualization/exploratory analysis only, or can it be used to perform some more advanced downstream tasks at the gene level, such as DE or CNV inference ( as suggested here , even if most methods assume raw counts)? Best, Gabriele
 
@@ -193,43 +197,15 @@ Top 30 threads by views (deduplicated across sources).
 
 **Reply (@gboscagli)**: I understood the difference between the two approaches. Is it then possible to compute “integrated” clusters on the matrix extracted with get_normalized_expression() and use them as input for differential_expression() in a one-vs-all fashion?
 
-## Resolvi differential test does not converge (?)
-**Posts:** 6 | **Views:** 202
+## How to handle batch effects within the query dataset when using scArches + SCVI?
+**Posts:** 2 | **Views:** 224
 
-**Question**: Hi, Thanks for the great tool! I have been using Resolvi to correct for batch effects in my single cell spatial transcriptomics data. Additionally, I m also using it to check for differences between the nuclei-expanded and cellpose-segmented sample datasets. The concatenated dataset is quite large ~ 1553536 cells. After training the model, I tried computing differential expression testing on leiden clusters but even after ~2 hours compute was not done. Additionally, the progress bar shows nothing. *In this screenshot I reran the cell after specifying group1. Is this to be expected since the dataset is large or is there something abnormal happening? Just to mention, I don’t see a spike/change in my GPU/CPU usage after running differential test. Thank you so much for your help!
+**Question**: Hello everyone, I’m new to scArches and currently exploring how it works in combination with SCVI , particularly for integrating new datasets into a reference atlas. I’m following this tutorial , where a SCVI model is first trained on a reference dataset and then extended using treeArches to incorporate a new query dataset. From what I understand, the entire query dataset is treated as a single new batch during this “surgery” step when adapting the model. Also, it seems that SCVI expects raw count data for both training and mapping steps. This leads me to a my question: What if my query dataset contains multiple batches itself (for example, samples from different sources or sequencing runs)? Should I split the query dataset by batch and integrate each one individually into the reference? O …
 
-**Reply (@zimmerma)**: I also have the same problem. Then, I ran scVIVA on the same set of cells (using the resolVI embeddings as suggested in another post) and was able to run differential expression in a much shorter amount of time.
-
-**Reply (@ori-kron-wis)**: It shouldn’t be that slow, but can you verify if you run without batch_correction=True (the default is False)
-
-**Reply (@jairaj-mathur)**: I have experienced the same, differential expression takes 9 hours, where as the step before, resolvi training finishes in 1.5 hours. About 300k cells x 5000 genes
-
-**Reply (@jairaj-mathur)**: @zimmerma Could you please elaborate on how you ran scViva on resolvi for running differential expression?
-
-## Mapping 10X Xenium 5k data to scRNA-seq reference
-**Posts:** 4 | **Views:** 193
-
-**Question**: Hello everyone, I’m desperately trying to create a latent space from my scRNA-seq reference and map my Xenium cells to that. “Reference mapping with scvi-tools” worked well for each dataset individually, but together, results in basically both UMAPs next to each other. Does anyone have any suggestions on how to embed my Xenium data into my scRNA-seq reference UMAP? Thank you so much for any suggestions and experiences! Best regards,
-
-**Reply (@ori-kron-wis)**: Not so sure why to query Xenium cells from scRNA-seq reference and not train a new model from scratch, but you can do several things that might improve your integration (if not done already): Make sure to use the same gene list. Use SCVI.prepare_query_anndata to align the Xenium gene names to the reference. If the Xenium assay measures many fewer genes than the reference, consider down-sampling the reference gene set to the intersection to avoid poor performance. Make sure the reference model converged afterwards. When calling SCVI.load_query_data , set unfrozen=True or selectively unfreeze parts of the network (e.g. freeze_expression=False , freeze_batchnorm_encoder=False ). This allows more of the network to adapt to Xenium‐specific effects instead of only fitting the newly‑added weights …
-
-**Reply (@Furbelox)**: @ori-kron-wis Thank you! My goal was to improve the notoriously flawed Xenium annotations and “dusty” UMAP by using a single cell RNA-seq reference, annotating that first, then mapping the Xenium cells to that and annotating them via scANVI or a nearest neighbor approach to get cleaner cluster separation (from scRNA-seq) and more valid and finer cell type and cell state annotations. This is a summary of the 2 approaches i tried so far: For the first approach i used the scANVI reference mapping, with a shared embedding space of Xenium and scRNA-seq (HVG 2000 and subsampled to shared genes). vae_ref = scvi.model.SCVI.load(X…”scvi_model_scseq", adata=adata_ref) scanvi_ref = scvi.model.SCANVI.from_scvi_model(vae_ref, labels_key=“celltype”, unlabeled_category=“Unknown”) scanvi_ref.train(acceler …
-
-**Reply (@cane11)**: To address these bleed (or “diffusion”) errors, we developed the resolVI model. However, resolVI doesn’t allow mapping single-cell to spatial data and in my hands this doesn’t work quite well. So instead of relying on this, I usually recomputed cell-type annotations on the spatial data. I have seen convincing applications using scArches to map spatial on single-cells and guess that segmentation errors were minor for these scenarios. However, I did not access raw data there and can’t provide good guidance.
-
-## Question about get_normalized_expression computation
-**Posts:** 4 | **Views:** 193
-
-**Question**: I have trained a TOTALVI model and I am using the get_normalized_expression function to get imputed values for one gene and one protein. It is using mostly CPUs (128 threads) and not the GPU (Volatile GPU-Util = 8%, 2391 Mb). Is it correct that it is a CPU instead of GPU heavy calculation?
-
-**Reply (@ori-kron-wis)**: Generally, yes, but the ratio of how much CPU will work vs GPU depends on the get_normalized_expression function parameters. If, for example, you increase the batch_size and reduce the n_samples, I expect you will see more traffic on GPU than CPU. But it also depends on other parameters such as: transform_batch, indices,… anything really. You can follow it if you set the silent parameter to False and track CPU and GPU usage.
-
-**Reply (@racng)**: Thanks for the suggestion. I have increased batch size and have noticed more traffic on GPU than CPU. CPU usage is now around the n_samples, and there is more GPU memory being used. Is silent a parameter for get_normalized_expression or some other function? I am also concerned that get_normalized_expression might use mdata[‘rna’].X instead of mdata[‘rna’].layers[rna_layer] (whatever rna_layer we specified when we called scvi.model.TOTALVI.setup_mudata ). On github , it says: post = self._make_data_loader(adata=adata, indices=indices, batch_size=batch_size) ... for tensors in post: x = tensors[REGISTRY_KEYS.X_KEY] y = tensors[REGISTRY_KEYS.PROTEIN_EXP_KEY] I think REGISTRY_KEYS.X_KEY = ‘X’? Does self._make_data_loader know to load the specified rna_layer ?
-
-**Reply (@ori-kron-wis)**: silent is for get_normalized_expression, it will just show you the progress bar of the function, as it works per batch; it might correlate to the GPU and CPU usage. Its ok in terms of the backend. REGISTRY_KEYS.X_KEY = ‘X’ indeed, but it is used with the tensors (or data loading) object, not the mudata. This can be done after model was registered and setup with the mudata/adata, so we know how to map RNA/protein data from this structure to the actual data loading and tensors (the actual thing that flows in the network).
+**Reply (@ori-kron-wis)**: Hey, I think the tutorial you linked to is a bit old and perhaps confusing (it uses batch column as “batch_key” but this column is also equal to “study” column, which is used to separate query and reference). Anyway, You can check this tutorial: Reference mapping with SCVI-Tools — scvi-tools Where the query dataset consists of several “tech” batches, and they are all used together as the query data. Obviously your query data should be close to your reference (in terms of species, tissue, cell types and so on) for good reference mapping (“surgery”). However, there are more models beyond SCVI, that might be helpful for you if you want to integrate a query that is very different, such as SysVI. It might help in your flow (however scarches not fully supported in this model yet)
 
 ## CPU memory usage in multi-GPU training
-**Posts:** 7 | **Views:** 190
+**Posts:** 7 | **Views:** 220
 
 **Question**: Hello, I’ve been exploring multi-GPU training in the hopes it’ll speed analysis of our larger (~15-20 million nuclei) datasets. In my initial testing in scvi-tools version 1.4.2, it seems activating multi-GPU training duplicates the process under the hood. For a node with 8 GPUs, CPU memory usage also increases roughly 8-fold. It looks like 8 independent processes are being initialized based on repeated printing of things like the scvi-tools version. Is that the expected behavior? If so, could you explain why its necessary/if there are workarounds? Here is the basic script I’m using: ###################### Load packages ###################### import scvi import torch import scanpy as sc import numpy as np import pandas as pd from datetime import datetime import warnings ################### …
 
@@ -241,8 +217,21 @@ Top 30 threads by views (deduplicated across sources).
 
 **Reply (@ktravaglini)**: Awesome. I’ll look through/try all three and let you know how it goes/if I have any questions. Thank you! -Kyle
 
+## Resolvi differential test does not converge (?)
+**Posts:** 6 | **Views:** 220
+
+**Question**: Hi, Thanks for the great tool! I have been using Resolvi to correct for batch effects in my single cell spatial transcriptomics data. Additionally, I m also using it to check for differences between the nuclei-expanded and cellpose-segmented sample datasets. The concatenated dataset is quite large ~ 1553536 cells. After training the model, I tried computing differential expression testing on leiden clusters but even after ~2 hours compute was not done. Additionally, the progress bar shows nothing. *In this screenshot I reran the cell after specifying group1. Is this to be expected since the dataset is large or is there something abnormal happening? Just to mention, I don’t see a spike/change in my GPU/CPU usage after running differential test. Thank you so much for your help!
+
+**Reply (@zimmerma)**: I also have the same problem. Then, I ran scVIVA on the same set of cells (using the resolVI embeddings as suggested in another post) and was able to run differential expression in a much shorter amount of time.
+
+**Reply (@ori-kron-wis)**: It shouldn’t be that slow, but can you verify if you run without batch_correction=True (the default is False)
+
+**Reply (@jairaj-mathur)**: I have experienced the same, differential expression takes 9 hours, where as the step before, resolvi training finishes in 1.5 hours. About 300k cells x 5000 genes
+
+**Reply (@jairaj-mathur)**: @zimmerma Could you please elaborate on how you ran scViva on resolvi for running differential expression?
+
 ## ResolVI Corrected Counts for Segmented Visium HD Data
-**Posts:** 4 | **Views:** 189
+**Posts:** 4 | **Views:** 215
 
 **Question**: Hi, I’m trying to understand the correct method for running ResolVI on Visium HD data that has been segmented using proseg as opposed to 8μM bins used in the reproducibility jupyter notebooks. I’m currently following the tutorial which creates the generated expression as follows: samples_corr = resolvi.sample_posterior( model = resolvi.module.model_corrected, return_sites = [‘px_rate’], summary_fun = {‘post_sample_q50’: np.median}, num_samples = 3, summary_frequency = 30, ) samples_corr = pd.DataFrame(samples_corr).T samples = resolvi.sample_posterior( model = resolvi.module.model_residuals, return_sites = [‘mixture_proportions’], summary_fun = {‘post_sample_means’: np.mean}, num_samples = 3, summary_frequency = 100, ) samples = pd.DataFrame(samples).T adata.layers[“generated_expression”] …
 
@@ -253,21 +242,32 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@cane11)**: Almost: samples_corr = resolvae.sample_posterior( model=resolvae.module.model_corrected, return_sites=['obs'], num_samples=10, return_samples=False, batch_size=1000, summary_frequency=10, return_observed=True, summary_fun=summary_fun) Will do the trick, so just setting return_observed and it will output obs (this variable is observed during training - pyro computes a reconstruction loss and returning it has to be manually defined).
 
 ## Corrected count for resolvi
-**Posts:** 2 | **Views:** 189
+**Posts:** 2 | **Views:** 214
 
 **Question**: Hi, I am wondering what would be the right way of generating a corrected count matrix for downstream analysis from resolvi. The tutorial uses the median of px_rate as generated_expression , while the preprint computed corrected_counts by multiplying counts and px_rate_q25 / (1 + px_rate_q25 + mean_poisson) . From my understanding, the corrected_counts should be the right way to go, is it correct? Thanks in advance!
 
 **Reply (@cane11)**: Throughout the manuscript, I’m using p25 of ‚obs‘ using the corrected model, where I sample only from true expression and set diffusion and background to zero. I think this is a good starting point. In the tutorial, I’m outputting estimated counts using px_rate. If you are afraid of removing expression of some genes, the formula for corrected counts might be beneficial.
 
+## Question about get_normalized_expression computation
+**Posts:** 4 | **Views:** 211
+
+**Question**: I have trained a TOTALVI model and I am using the get_normalized_expression function to get imputed values for one gene and one protein. It is using mostly CPUs (128 threads) and not the GPU (Volatile GPU-Util = 8%, 2391 Mb). Is it correct that it is a CPU instead of GPU heavy calculation?
+
+**Reply (@ori-kron-wis)**: Generally, yes, but the ratio of how much CPU will work vs GPU depends on the get_normalized_expression function parameters. If, for example, you increase the batch_size and reduce the n_samples, I expect you will see more traffic on GPU than CPU. But it also depends on other parameters such as: transform_batch, indices,… anything really. You can follow it if you set the silent parameter to False and track CPU and GPU usage.
+
+**Reply (@racng)**: Thanks for the suggestion. I have increased batch size and have noticed more traffic on GPU than CPU. CPU usage is now around the n_samples, and there is more GPU memory being used. Is silent a parameter for get_normalized_expression or some other function? I am also concerned that get_normalized_expression might use mdata[‘rna’].X instead of mdata[‘rna’].layers[rna_layer] (whatever rna_layer we specified when we called scvi.model.TOTALVI.setup_mudata ). On github , it says: post = self._make_data_loader(adata=adata, indices=indices, batch_size=batch_size) ... for tensors in post: x = tensors[REGISTRY_KEYS.X_KEY] y = tensors[REGISTRY_KEYS.PROTEIN_EXP_KEY] I think REGISTRY_KEYS.X_KEY = ‘X’? Does self._make_data_loader know to load the specified rna_layer ?
+
+**Reply (@ori-kron-wis)**: silent is for get_normalized_expression, it will just show you the progress bar of the function, as it works per batch; it might correlate to the GPU and CPU usage. Its ok in terms of the backend. REGISTRY_KEYS.X_KEY = ‘X’ indeed, but it is used with the tensors (or data loading) object, not the mudata. This can be done after model was registered and setup with the mudata/adata, so we know how to map RNA/protein data from this structure to the actual data loading and tensors (the actual thing that flows in the network).
+
 ## Issue with scVI VAE reconstruction: High sensitivity to library size and poor rank preservation
-**Posts:** 2 | **Views:** 174
+**Posts:** 2 | **Views:** 188
 
 **Question**: Hello , I am running scVI VAE tool, with the goal of analyzing both the learned cell embeddings and the reconstructed gene expression. ( i have merfish sample ) I want to verify if the gene ranking is preserved within each reconstructed cell . To do so, i compared the reconstructed profile (R’) vs. Ground Truth (R) for each cell , using Spearman correlation score to assess this rank preservation , and numerous problem arise from that ! the first thing i figure out is that there is a huge bias Toward High Expression/Library Size I observed that the model is extremely sensitive to library size and gene abundance: The higher a gene’s expression (and the higher the cell’s library size), the better the ranking is preserved. ( plot 1 & 2 ) . And overall i have a low rank correlation between R’ a …
 
 **Reply (@ori-kron-wis)**: What you see is largely expected behavior for scVI VAEs on noisy count data like merfish, and given the metric you chose to compare with. The reconstruction loss naturally gives more weight to highly expressed genes, so the model knows to reconstruct them better, while in the lowly expressed ones, relative noise is large. You can, however, tune the KL weight in the loss function to prefer a better reconstruction loss, but as noted, it is also partially an inherent thing with your data (did you select HVG before analysis?). Perhaps also increase the latent space size? Yes, parameters can surely be optimized here better than the default ones. Either way, the model should still be good at batch integration, cell clustering, and noise removal, and you can check it with UMAP, given it converged …
 
 ## Does Decipher require cell type annotation
-**Posts:** 7 | **Views:** 156
+**Posts:** 7 | **Views:** 178
 
 **Question**: Hello, I am planning to use decipher to batch correct my single cell embryo data across developmental stage, and i was wondering if the method requires annotation since i only have an adata.obs column for sample stage.
 
@@ -280,7 +280,7 @@ Top 30 threads by views (deduplicated across sources).
 **Reply (@Justin_Hong)**: Ori is correct in that decipher is not intended to explicitly use a batch key to correct for batch correct. Instead, it relies on the data bottleneck to prioritize biological variation over batch variation. For a biological covariate like developmental stage I would recommend using a different model like scVI to correct these effects.
 
 ## Training not using the full GPU
-**Posts:** 4 | **Views:** 145
+**Posts:** 4 | **Views:** 164
 
 **Question**: So I have been running training couple models recently and I encountered this one problem. scvi has no problem detecting CUDA or the GPU. But the problem is that it is using about 25% of GPU and 20% of VRAMs. Have any of y’all encountered a problem like this? Do you have any tricks to increase the utilization rate? This is a screenshot of nvtop when I am autotuning for hyperparameters. image 1160×770 213 KB
 
@@ -290,8 +290,15 @@ Top 30 threads by views (deduplicated across sources).
 
 **Reply (@ori-kron-wis)**: It’s fine, it is a train parameter. As for the settings batch_size, it is used only if the model’s input is None (the default is a number), but mainly used for the downstream analysis functions. The model expect a valid batch_size, has one as input and you can tune it as you saw. Note to use ray<2.5.1 (as the most recent version has some issue with scvi-tools right now)
 
+## Question about complex experiment
+**Posts:** 2 | **Views:** 147
+
+**Question**: Hi everyone, I’m starting a fairly complex experiment that includes 10x single-cell, single-nucleus, and 10x multiome (snRNA-seq + scATAC-seq from the same nucleus), with control and treatment groups spread across all three modalities. I also have some patients for whom I’ve generated two modalities (sc + sn), in case that could be useful for any type of training or modeling. I’d like to run the standard analyses (integration, differential expression, differential abundance, and differential accessibility), but I’m unsure about the best strategy to handle all modalities together. Any recommendations or best practices would be really helpful.
+
+**Reply (@cane11)**: Hi @dackjames unfortunately there is no guide here. This is a hard experimental setup that I would as a first step try to reconsider. It will require major effort to get it working. MultiVI can train on multi-ome data and might do well and integrate RNA and paired RNA/ATAC data. I’m not sure whether snRNA-sequencing and scRNA-sequencing will be integrated well though and sometimes this is challenging. Some ideas: it’s usually good to select shared HVGs, encoding batch key will be helpful, it’s easier if the cell-type composition is the same across experiments. Trying harmony on this might also be a good chance. Beforehand annotate the data separately to verify meaningful integration. Good luck with your project!
+
 ## Does MultiVI support using tile matrix directly instead of peak calling for ATAC input?
-**Posts:** 3 | **Views:** 138
+**Posts:** 3 | **Views:** 146
 
 **Question**: Hi all, I’m working with 10x multiome data and have processed the ATAC and RNA modalities separately: For ATAC, I used tile matrix (e.g., 5kb bins) and trained a peakVI model. For RNA, I used scVI. Now, I’m planning to use MultiVI for integrative analysis. I have two options: Option A: Use the clusters derived from peakVI to perform peak calling per cluster, merge the peaks, build a unified peak matrix across all cells, and then feed that into MultiVI. Option B (preferred): Skip peak calling entirely, and directly use the tile matrix as input for MultiVI. My questions are: Does MultiVI officially support the use of tile matrix as input for ATAC modality? Would the integration performance or downstream analyses (e.g., latent space, cell type separation) be significantly affected? Any insigh …
 
@@ -299,25 +306,20 @@ Top 30 threads by views (deduplicated across sources).
 
 **Reply (@Captain_Pam)**: Thank you for your suggestion. I will try both.
 
-## Question about complex experiment
-**Posts:** 2 | **Views:** 133
+## Regarding resolvi reproducibility scripts and fov for xenium
+**Posts:** 3 | **Views:** 144
 
-**Question**: Hi everyone, I’m starting a fairly complex experiment that includes 10x single-cell, single-nucleus, and 10x multiome (snRNA-seq + scATAC-seq from the same nucleus), with control and treatment groups spread across all three modalities. I also have some patients for whom I’ve generated two modalities (sc + sn), in case that could be useful for any type of training or modeling. I’d like to run the standard analyses (integration, differential expression, differential abundance, and differential accessibility), but I’m unsure about the best strategy to handle all modalities together. Any recommendations or best practices would be really helpful.
+**Question**: Hi, I was going through the resolvi reproducibilty scripts, and for xenium, it seems like fov as batch was used. I was wondering how you were able to get that information in your anndata object, as the table from spatial object from import segmentation does not have fov attached to the obs. Thank you and warm regards Jairaj Mathur
 
-**Reply (@cane11)**: Hi @dackjames unfortunately there is no guide here. This is a hard experimental setup that I would as a first step try to reconsider. It will require major effort to get it working. MultiVI can train on multi-ome data and might do well and integrate RNA and paired RNA/ATAC data. I’m not sure whether snRNA-sequencing and scRNA-sequencing will be integrated well though and sometimes this is challenging. Some ideas: it’s usually good to select shared HVGs, encoding batch key will be helpful, it’s easier if the cell-type composition is the same across experiments. Trying harmony on this might also be a good chance. Beforehand annotate the data separately to verify meaningful integration. Good luck with your project!
+**Reply (@cane11)**: Hi, I’m not sure what “as the table from spatial object from import segmentation” refers to. I’m pretty sure that I didn’t do anything fancy to get the FOV information and believe it was just part of the download from 10X. Did they change the underlying files maybe? In terms of results it does not really matter here and running it without FOV should yield very comparable results.
 
-## Scvi 1.4.0. model.differential_expression outputs
-**Posts:** 2 | **Views:** 128
+**Reply (@jairaj-mathur)**: To clarify, when the spatialdata object is created from sdata_io.xenium, the table (anndata object) within that spatialdata object doesnt seem to have the FOV information associated with each cell. I was wondering how did you insert the fov column into the anndata object, which you eventually passed to resolvi.
 
-**Question**: Hello, I am using the scvi version 1.4.0.post1. The model.differential_expression function gives proba_m1, proba_m2, bayes_factor, scale1, scale2, raw_mean1, raw_mean2, non_zeros_proportion1, non_zeros_proportion2, raw_normalized_mean1, raw_normalized_mean2 as output without is_de_fdr_0.05 and lfc_mean columns. How can I filter the results? I have tried the following, which filtered out all of the genes. I appreciate any help, thanks! scvi_de[‘lfc’] = np.log2((scvi_de[‘raw_mean1’] + 1e-6) / (scvi_de[‘raw_mean2’] + 1e-6)) scvi_de[‘proba_de’] = 1 - np.exp(-scvi_de[‘bayes_factor’]) scvi_de[‘pseudo_pval’] = 1 - scvi_de[‘proba_de’] scvi_de[‘pseudo_fdr’] = multipletests(scvi_de[‘pseudo_pval’], method=‘fdr_bh’)[1]
+## Data scaling for cytovi
+**Posts:** 3 | **Views:** 144
 
-**Reply (@ori-kron-wis)**: You can run it with mode=“change” (default is “vanilla”), it will give you proba_de, lfc, etc and is_de_fdr_0.05, which is how we usually filter by.
+**Question**: Hi guys, In cytovi tutorial, i see a data scaling step for each batch cytovi.scale(adata_batch1) which by default scale the data to range between 0-1 using sklearn’s MinMaxScaler . Post correction, what is the best way to “untransform” the range to match the original range? One can run transform using the fitted MinMaxScaler object, but then should we: Run transform per batch using the MinMaxScaler object fitted for that batch? Or Fit (but not transform) a new MinMaxScaler object based on data from all batches, then post correction run transform using this fitted MinMaxScaler object? Or Some other suggestion Thanks!
 
-## Correct way to run SOLO for doublet detection
-**Posts:** 3 | **Views:** 122
+**Reply (@ori-kron-wis)**: In my opinion, you should save MinMaxScaler objects per batch before you continue to use the internal cytovi scale function, then you can use them to untransform per batch, post-analysis. Of course, you can also have this kind of object for all data put together; it all depends on what you want to do following it. @florianingelfinger , any other thoughts?
 
-**Question**: Hi everyone, I am trying to run SOLO for doublet detection. However, I am not sure what is the correct way. At first, I thought I have to run Solo after sc.pp.highly_variable_genes(adata), but later I realized it makes more sense if I ran Solo in the unfiltered raw dataset. Also, I was not sure if I had to remove the empty droplets, and if this has an effect in the solo training. Another thing I did since I do not have much resources is to train solo in 30 percent of the data and then transfer the training weights to predict the doublets in the whole dataset. Is this a reliable option? Could someone help me to clarify this matter?
-
-**Reply (@ori-kron-wis)**: Remove empty droplets. Try to increase the data you use as much as possible. Limited resources in what way? If you mean it’s a too large adata to fit your memory - you can run with adata backed from disk or use a custom dataloader. Otherwise, if it’s the GPU memory, decrease the batch size. Also just use the raw counts, so no metadata is needed in adata (take more space) Of course, you can split your data to train and test and predict doublets on test. No need to transfer weights. Check you training and validation curves to see if your model works with no overfit. But even then I would choose at least 60% for training (20% validation,20% test).
-
-**Reply (@cane11)**: To add to this, you can definitely run hvg and run SOLO on this smaller data. Keeping all genes is not a requirement of SOLO and might actually be bad for its performance.
+**Reply (@SofieVG)**: The problem with untransforming per batch, post-analysis, is that then differences between batches are re-introduced (i.e. by applying a different transformation on each batch, the batches will not look similar anymore, even if they were well aligned by cytovi). What we are considering now, is to apply batch specific scaling, do the alignment with cytovi, and then untransform with the scaler object from one of the batches. In theory, if you suggest that can be used on the data from that specific batch, it should also be suited to untransform the others as those will look very similar after the alignment. This avoids learning a separate scaler, and feels closer to the recommended pipeline of first applying a scaling step per batch rather than doing a single scaling across all samples. Furth …
