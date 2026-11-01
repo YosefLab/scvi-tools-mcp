@@ -1,7 +1,26 @@
-"""Scrape a snapshot of GitHub issues and Discourse threads for the FAQ knowledge base.
+"""Scrape GitHub issues, pull requests, Discussions and Discourse threads for the FAQ knowledge base.
+
+All three snapshots are *accumulative*: each run merges newly fetched content into
+the existing markdown files instead of overwriting them. An entry is only removed
+once its last activity is older than ``RETENTION_DAYS`` (3 years), because by then
+it is likely obsolete. Entries are never dropped because they fell out of a
+listing, a ranking, or because a fetch failed.
+
+* Discourse: the scvi-tools category and the ``scvi`` tag are listed (newest activity
+  first) and every thread with posts since the newest stored thread is (re-)fetched
+  with all its posts. The first run builds a baseline of the whole retention window.
+Both are incremental, so after the first (baseline) run the monthly refresh only
+fetches what changed since the previous run.
+
+* GitHub (every repo in ``GITHUB_REPOS``): issues and PRs (bots excluded) are fetched
+  incrementally, oldest update first, starting from the newest ``Last activity`` already
+  stored for that repo. If the API rate limit is hit, progress so far is saved and the
+  next run resumes from there. Discussions are fetched via GraphQL (needs a token) for
+  repos that have them enabled.
 
 Requires: requests (included in dev extras)
-GitHub token recommended: set GITHUB_TOKEN env var for higher rate limits.
+GitHub token recommended: set GITHUB_TOKEN env var for higher rate limits
+(e.g. ``GITHUB_TOKEN=$(gh auth token) python scripts/scrape_external.py``).
 
 Usage:
     python scripts/scrape_external.py
@@ -9,27 +28,46 @@ Usage:
 
 from __future__ import annotations
 
+import dataclasses
+import datetime as dt
 import html
 import os
 import re
 import time
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 import requests
 
 KNOWLEDGE_FAQ = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/faq"
-GITHUB_REPO = "scverse/scvi-tools"
-GITHUB_ISSUES_URL = f"https://api.github.com/repos/{GITHUB_REPO}/issues"
-DISCOURSE_URLS = [
-    "https://discourse.scverse.org/c/help/scvi-tools/7.json",
-    "https://discourse.scverse.org/tag/scvi.json",
+
+# Keep every entry with activity in this window; older entries may be pruned as obsolete.
+RETENTION_DAYS = 3 * 365
+
+# Repos whose issues, PRs and (when enabled) Discussions are snapshotted. Smaller repos come
+# first so that, if the shared API rate limit runs out, they are not starved by scvi-tools.
+GITHUB_REPOS = [
+    "YosefLab/scvi-hub-models",
+    "scverse/scvi-colab",
+    "YosefLab/scviva-tools",
+    "YosefLab/scib-metrics",
+    "scverse/scvi-tutorials",
+    "scverse/scvi-tools",
 ]
-MAX_ISSUES = 100
-MAX_THREADS = 30
+GITHUB_API = "https://api.github.com"
+GITHUB_GRAPHQL = f"{GITHUB_API}/graphql"
+# Snapshot files written before multi-repo support; folded into the scvi-tools files.
+LEGACY_GITHUB_FILES = {"github_issues.md": ("scverse/scvi-tools", "issues")}
+DISCOURSE_BASE = "https://discourse.scverse.org"
+DISCOURSE_URLS = [
+    f"{DISCOURSE_BASE}/c/help/scvi-tools/7.json",
+    f"{DISCOURSE_BASE}/tag/scvi.json",
+]
+DISCOURSE_MAX_PAGES = 200  # safety cap on listing pagination (30 topics/page)
+GITHUB_MAX_PAGES = 200  # safety cap on listing pagination (100 items/page)
+
 MAX_BODY_CHARS = 1500
 MAX_COMMENT_CHARS = 800
-MAX_COMMENTS_PER_ISSUE = 5
-MAX_POSTS_PER_THREAD = 5
 
 
 def _strip_html(text: str) -> str:
@@ -45,144 +83,647 @@ def _trim(text: str, limit: int) -> str:
     return text
 
 
-def fetch_github_issues() -> str:
-    token = os.environ.get("GITHUB_TOKEN", "")
-    headers = {"Accept": "application/vnd.github.v3+json"}
-    if token:
-        headers["Authorization"] = f"token {token}"
+def _parse_ts(value: str | None) -> dt.datetime | None:
+    if not value:
+        return None
+    try:
+        return dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
-    params = {"state": "open", "per_page": MAX_ISSUES, "sort": "comments", "direction": "desc"}
-    resp = requests.get(GITHUB_ISSUES_URL, headers=headers, params=params, timeout=30)
-    resp.raise_for_status()
-    issues = [i for i in resp.json() if "pull_request" not in i]
+
+def _fmt_ts(value: dt.datetime | None) -> str:
+    return value.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if value else "unknown"
+
+
+# ---------------------------------------------------------------------------
+# Accumulative snapshot files
+#
+# Each file is "# header" followed by "## title" sections. A section carries a
+# metadata line such as
+#     **Topic:** 3949 | **Last activity:** 2026-04-23T09:29:07Z
+#     **Issue:** #3010 | **Last activity:** ...
+#     **PR:** #3011 | **Last activity:** ...
+#     **Discussion:** #12 | **Last activity:** ...
+# which is used to match it against freshly fetched content and to apply the
+# retention window. Sections without it (written by older versions of this
+# script) are matched by title and never expire.
+#
+# Issue/PR/discussion bodies often contain their own "## Summary"-style headings,
+# so a "## " line only starts a new section when the next line is a metadata
+# line (current format) or the first line of the legacy formats.
+# ---------------------------------------------------------------------------
+
+_SECTION_RE = re.compile(
+    r"^## (?P<title>.+)\n(?=\*\*(?:Topic|Issue|PR|Discussion|Posts|State):\*\* )",
+    re.MULTILINE,
+)
+_META_RE = re.compile(r"\*\*(?:Topic|Issue|PR|Discussion):\*\* #?(?P<id>\d+) \| \*\*Last activity:\*\* (?P<last>\S+)")
+
+
+@dataclasses.dataclass
+class SnapshotEntry:
+    """One ``## title`` section of a snapshot file."""
+
+    title: str
+    body: str  # everything after the "## title" line
+    item_id: int | None = None  # None for legacy sections written before ids were recorded
+    last_activity: dt.datetime | None = None
+
+    @property
+    def key(self) -> str:
+        return f"id:{self.item_id}" if self.item_id is not None else f"title:{self.title.strip().lower()}"
+
+    def render(self) -> str:
+        return f"## {self.title}\n{self.body.strip()}\n"
+
+
+def parse_snapshot(text: str) -> list[SnapshotEntry]:
+    """Split an existing snapshot file into its sections."""
+    matches = list(_SECTION_RE.finditer(text))
+    entries: list[SnapshotEntry] = []
+    for i, m in enumerate(matches):
+        body_end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        body = text[m.end() : body_end]
+        meta = _META_RE.search(body)
+        entries.append(
+            SnapshotEntry(
+                title=m.group("title").strip(),
+                body=body,
+                item_id=int(meta.group("id")) if meta else None,
+                last_activity=_parse_ts(meta.group("last")) if meta else None,
+            )
+        )
+    return entries
+
+
+def merge_entries(
+    existing: Iterable[SnapshotEntry],
+    fetched: Iterable[SnapshotEntry],
+    now: dt.datetime,
+    retention_days: int = RETENTION_DAYS,
+) -> list[SnapshotEntry]:
+    """Merge freshly fetched entries into an existing snapshot.
+
+    * a fetched entry replaces the existing section with the same id (or, for a
+      legacy section without an id, the same title);
+    * existing entries that were not re-fetched are kept unchanged;
+    * the only entries dropped are those whose last activity is known and older
+      than the retention window.
+    """
+    cutoff = now - dt.timedelta(days=retention_days)
+    merged: dict[str, SnapshotEntry] = {e.key: e for e in existing}
+    for entry in fetched:
+        merged.pop(f"title:{entry.title.strip().lower()}", None)  # upgrade a legacy section
+        merged[entry.key] = entry
+
+    kept = [e for e in merged.values() if e.last_activity is None or e.last_activity >= cutoff]
+
+    epoch = dt.datetime.min.replace(tzinfo=dt.timezone.utc)
+    # Most recently active first; legacy sections (unknown date) last, in their original order.
+    return sorted(kept, key=lambda e: e.last_activity or epoch, reverse=True)
+
+
+def render_snapshot(title: str, description: str, entries: list[SnapshotEntry]) -> str:
+    header = f"# {title}\n\n{len(entries)} {description}\n\n"
+    text = header + "\n".join(e.render() for e in entries)
+    # LF endings, no trailing whitespace, single final newline (matches the pre-commit hooks).
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    return "\n".join(line.rstrip() for line in lines).strip("\n") + "\n"
+
+
+def _retention_note(noun: str) -> str:
+    return (
+        f"with activity in the last {RETENTION_DAYS // 365} years, most recently active first. "
+        f"This snapshot accumulates across refreshes; {noun} are only removed once they age out of that window."
+    )
+
+
+# ---------------------------------------------------------------------------
+# HTTP
+# ---------------------------------------------------------------------------
+
+
+class RateLimitedError(RuntimeError):
+    """Raised when the GitHub API rate limit is exhausted."""
+
+
+def _get(
+    url: str,
+    params: dict | list | None = None,
+    headers: dict | None = None,
+    retries: int = 4,
+    is_rate_limited: Callable[[requests.Response], bool] | None = None,
+) -> requests.Response:
+    """GET with exponential back-off on transient errors (429/5xx, connection errors)."""
+    delay = 2.0
+    for attempt in range(retries + 1):
+        try:
+            resp = requests.get(url, params=params, headers=headers, timeout=30)
+        except requests.RequestException:
+            if attempt == retries:
+                raise
+            time.sleep(delay)
+            delay *= 2
+            continue
+        if is_rate_limited is not None and is_rate_limited(resp):
+            raise RateLimitedError(f"rate limited on {url}: {resp.status_code} {resp.text[:200]}")
+        if (resp.status_code == 429 or resp.status_code >= 500) and attempt < retries:
+            try:
+                retry_after = float(resp.headers.get("Retry-After", 0))
+            except ValueError:
+                retry_after = 0.0
+            time.sleep(max(delay, retry_after))
+            delay *= 2
+            continue
+        resp.raise_for_status()
+        return resp
+    raise RuntimeError("unreachable")
+
+
+# ---------------------------------------------------------------------------
+# GitHub issues + pull requests
+# ---------------------------------------------------------------------------
+
+GITHUB_KINDS = ("issues", "pulls", "discussions")
+
+
+def github_snapshot_name(repo: str, kind: str) -> str:
+    return f"github_{repo.split('/')[1]}_{kind}.md"
+
+
+def _github_headers() -> dict:
+    headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def _github_rate_limited(resp: requests.Response) -> bool:
+    if resp.status_code not in (403, 429):
+        return False
+    return resp.headers.get("X-RateLimit-Remaining") == "0" or "rate limit" in resp.text.lower()
+
+
+def _github_get(url: str, params: dict | None = None) -> requests.Response:
+    return _get(url, params=params, headers=_github_headers(), is_rate_limited=_github_rate_limited)
+
+
+def _github_graphql(query: str, variables: dict) -> dict:
+    delay = 2.0
+    for attempt in range(5):
+        resp = requests.post(
+            GITHUB_GRAPHQL, json={"query": query, "variables": variables}, headers=_github_headers(), timeout=60
+        )
+        if _github_rate_limited(resp):
+            raise RateLimitedError(f"GraphQL rate limited: {resp.status_code} {resp.text[:200]}")
+        if (resp.status_code == 429 or resp.status_code >= 500) and attempt < 4:
+            time.sleep(delay)
+            delay *= 2
+            continue
+        resp.raise_for_status()
+        payload = resp.json()
+        errors = payload.get("errors")
+        if errors:
+            if any(err.get("type") == "RATE_LIMITED" for err in errors):
+                raise RateLimitedError(f"GraphQL rate limited: {errors}")
+            raise RuntimeError(f"GraphQL errors: {errors}")
+        return payload["data"]
+    raise RuntimeError("unreachable")
+
+
+def _is_bot(user: dict | None) -> bool:
+    user = user or {}
+    return user.get("type") == "Bot" or str(user.get("login", "")).endswith("[bot]")
+
+
+def _fetch_github_comments(repo: str, number: int) -> list[dict]:
+    comments: list[dict] = []
+    url: str | None = f"{GITHUB_API}/repos/{repo}/issues/{number}/comments"
+    params: dict | None = {"per_page": 100}
+    while url:
+        resp = _github_get(url, params=params)
+        comments.extend(resp.json())
+        url = resp.links.get("next", {}).get("url")
+        params = None  # the "next" link already carries the query string
+    return comments
+
+
+def build_github_entry(item: dict, comments: list[dict]) -> SnapshotEntry:
+    """Render one GitHub issue or PR (as returned by the issues API) into a snapshot section."""
+    number = item["number"]
+    is_pr = "pull_request" in item
+    state = item.get("state", "")
+    if is_pr and (item.get("pull_request") or {}).get("merged_at"):
+        state = "merged"
+    labels = ", ".join(lb["name"] for lb in item.get("labels", []))
+    author = (item.get("user") or {}).get("login", "unknown")
+    last_activity = _parse_ts(item.get("updated_at")) or _parse_ts(item.get("created_at"))
+    human_comments = [c for c in comments if not _is_bot(c.get("user"))]
 
     lines = [
-        "# scvi-tools GitHub Issues Q&A",
-        "",
-        f"Top {len(issues)} issues by discussion volume (PRs excluded).",
+        f"**{'PR' if is_pr else 'Issue'}:** #{number} | **Last activity:** {_fmt_ts(last_activity)}",
+        f"**State:** {state} | **Author:** @{author} | **Comments:** {len(human_comments)}"
+        f" | **Created:** {(item.get('created_at') or '')[:10]}"
+        + (f" | **Labels:** {labels}" if labels else "")
+        + f" | **URL:** {item.get('html_url', '')}",
         "",
     ]
+    body = _trim(item.get("body") or "", MAX_BODY_CHARS)
+    if body:
+        lines += [body, ""]
+    for comment in human_comments:
+        cauthor = (comment.get("user") or {}).get("login", "unknown")
+        cbody = _trim(comment.get("body") or "", MAX_COMMENT_CHARS)
+        if cbody:
+            lines += [f"**@{cauthor}:** {cbody}", ""]
 
-    for issue in issues:
-        title = issue.get("title", "")
-        number = issue.get("number", "")
-        n_comments = issue.get("comments", 0)
-        state = issue.get("state", "")
-        body = _trim(issue.get("body") or "", MAX_BODY_CHARS)
-        labels = ", ".join(lb["name"] for lb in issue.get("labels", []))
-
-        lines += [
-            f"## #{number}: {title}",
-            f"**State:** {state} | **Comments:** {n_comments}" + (f" | **Labels:** {labels}" if labels else ""),
-            "",
-        ]
-        if body:
-            lines += [body, ""]
-
-        # Fetch comments for issues with discussion
-        if n_comments > 0:
-            try:
-                time.sleep(0.3)
-                comments_url = f"https://api.github.com/repos/{GITHUB_REPO}/issues/{number}/comments"
-                cr = requests.get(
-                    comments_url, headers=headers, params={"per_page": MAX_COMMENTS_PER_ISSUE}, timeout=30
-                )
-                cr.raise_for_status()
-                for comment in cr.json():
-                    author = comment.get("user", {}).get("login", "unknown")
-                    cbody = _trim(comment.get("body") or "", MAX_COMMENT_CHARS)
-                    if cbody:
-                        lines += [f"**@{author}:** {cbody}", ""]
-            except Exception as e:
-                print(f"  WARN: Could not fetch comments for #{number}: {e}")
-
-    return "\n".join(lines)
+    return SnapshotEntry(
+        title=f"#{number}: {(item.get('title') or '').strip()}",
+        body="\n" + "\n".join(lines),
+        item_id=number,
+        last_activity=last_activity,
+    )
 
 
-def fetch_discourse_threads() -> str:
-    seen: set[int] = set()
-    all_topics: list[dict] = []
+def _since(existing: Iterable[SnapshotEntry], now: dt.datetime) -> dt.datetime:
+    known = [e.last_activity for e in existing if e.item_id is not None and e.last_activity is not None]
+    return max(known) if known else now - dt.timedelta(days=RETENTION_DAYS)
 
-    for url in DISCOURSE_URLS:
+
+def fetch_github_issues_and_pulls(
+    repo: str, existing: list[SnapshotEntry], now: dt.datetime
+) -> tuple[list[SnapshotEntry], list[SnapshotEntry]]:
+    """Fetch a repo's issues and PRs updated since the newest entry already stored.
+
+    Items are processed oldest update first, so if a run stops early everything up
+    to that point can be saved and the next run resumes from the newest stored
+    ``Last activity``. Errors propagate as :class:`PartialFetchError` carrying the
+    progress made so far.
+    """
+    since = _since(existing, now)
+    print(f"  {repo}: issues/PRs updated since {_fmt_ts(since)}")
+    issues: list[SnapshotEntry] = []
+    pulls: list[SnapshotEntry] = []
+    params = {"state": "all", "sort": "updated", "direction": "asc", "since": _fmt_ts(since), "per_page": 100}
+    try:
+        for page in range(1, GITHUB_MAX_PAGES + 1):
+            resp = _github_get(f"{GITHUB_API}/repos/{repo}/issues", params={**params, "page": page})
+            for item in resp.json():
+                if _is_bot(item.get("user")):
+                    continue
+                comments = _fetch_github_comments(repo, item["number"]) if item.get("comments", 0) > 0 else []
+                (pulls if "pull_request" in item else issues).append(build_github_entry(item, comments))
+                time.sleep(0.2)
+            if not resp.links.get("next"):
+                break
+    except Exception as e:
+        raise PartialFetchError(e, issues, pulls) from e
+    return issues, pulls
+
+
+class PartialFetchError(RuntimeError):
+    """A fetch stopped early; ``partial`` holds what was fetched before the error."""
+
+    def __init__(self, cause: Exception, *partial: list[SnapshotEntry]):
+        super().__init__(str(cause))
+        self.cause = cause
+        self.partial = partial
+
+
+_DISCUSSIONS_QUERY = """
+query($owner: String!, $name: String!, $after: String) {
+  repository(owner: $owner, name: $name) {
+    hasDiscussionsEnabled
+    discussions(first: 25, after: $after, orderBy: {field: UPDATED_AT, direction: DESC}) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number title url body createdAt updatedAt
+        author { login }
+        category { name }
+        answer { id }
+        comments(first: 100) {
+          nodes {
+            id body author { login }
+            replies(first: 50) { nodes { body author { login } } }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def build_discussion_entry(node: dict) -> SnapshotEntry:
+    """Render one GitHub Discussion (GraphQL node) into a snapshot section."""
+    number = node["number"]
+    last_activity = _parse_ts(node.get("updatedAt")) or _parse_ts(node.get("createdAt"))
+    answer_id = (node.get("answer") or {}).get("id")
+    author = (node.get("author") or {}).get("login", "unknown")
+    comments = (node.get("comments") or {}).get("nodes", [])
+    lines = [
+        f"**Discussion:** #{number} | **Last activity:** {_fmt_ts(last_activity)}",
+        f"**Category:** {(node.get('category') or {}).get('name', '')} | **Author:** @{author}"
+        f" | **Comments:** {len(comments)} | **Answered:** {'yes' if answer_id else 'no'}"
+        f" | **Created:** {(node.get('createdAt') or '')[:10]} | **URL:** {node.get('url', '')}",
+        "",
+    ]
+    body = _trim(node.get("body") or "", MAX_BODY_CHARS)
+    if body:
+        lines += [body, ""]
+    for comment in comments:
+        cauthor = (comment.get("author") or {}).get("login", "unknown")
+        marker = " (accepted answer)" if answer_id and comment.get("id") == answer_id else ""
+        cbody = _trim(comment.get("body") or "", MAX_COMMENT_CHARS)
+        if cbody:
+            lines += [f"**@{cauthor}{marker}:** {cbody}", ""]
+        for reply in (comment.get("replies") or {}).get("nodes", []):
+            rauthor = (reply.get("author") or {}).get("login", "unknown")
+            rbody = _trim(reply.get("body") or "", MAX_COMMENT_CHARS)
+            if rbody:
+                lines += [f"> **@{rauthor}:** {rbody}", ""]
+    return SnapshotEntry(
+        title=f"#{number}: {(node.get('title') or '').strip()}",
+        body="\n" + "\n".join(lines),
+        item_id=number,
+        last_activity=last_activity,
+    )
+
+
+def fetch_github_discussions(repo: str, existing: list[SnapshotEntry], now: dt.datetime) -> list[SnapshotEntry]:
+    """Fetch Discussions updated since the newest stored one (newest first; all-or-nothing)."""
+    if not os.environ.get("GITHUB_TOKEN"):
+        print(f"  {repo}: skipping Discussions (GraphQL needs GITHUB_TOKEN)")
+        return []
+    since = _since(existing, now)
+    owner, name = repo.split("/")
+    fetched: list[SnapshotEntry] = []
+    after = None
+    while True:
+        repo_data = _github_graphql(_DISCUSSIONS_QUERY, {"owner": owner, "name": name, "after": after})["repository"]
+        if not repo_data.get("hasDiscussionsEnabled"):
+            return []
+        conn = repo_data["discussions"]
+        for node in conn["nodes"]:
+            updated = _parse_ts(node.get("updatedAt"))
+            if updated is not None and updated < since:
+                return fetched
+            fetched.append(build_discussion_entry(node))
+        if not conn["pageInfo"]["hasNextPage"]:
+            return fetched
+        after = conn["pageInfo"]["endCursor"]
+        time.sleep(0.5)
+
+
+def _github_header(repo: str, kind: str) -> tuple[str, str]:
+    noun = {"issues": "issues", "pulls": "PRs", "discussions": "discussions"}[kind]
+    what = {
+        "issues": "issues (open and closed, bots excluded)",
+        "pulls": "pull requests (open, closed and merged, bots excluded)",
+        "discussions": "GitHub Discussions",
+    }[kind]
+    title = {"issues": "Issues Q&A", "pulls": "Pull Requests", "discussions": "Discussions Q&A"}[kind]
+    return f"{repo} GitHub {title}", f"{what} from {repo} " + _retention_note(noun)
+
+
+def refresh_github_repo(
+    repo: str, texts: dict[str, str], now: dt.datetime | None = None
+) -> tuple[dict[str, str], bool]:
+    """Refresh one repo's snapshots.
+
+    ``texts`` maps kind ("issues", "pulls", "discussions") to the existing file text.
+    Returns ``(new_texts, rate_limited)``; ``new_texts`` only contains kinds that
+    have at least one entry, so no empty files are created.
+    """
+    now = now or dt.datetime.now(dt.timezone.utc)
+    existing = {kind: parse_snapshot(texts.get(kind, "")) for kind in GITHUB_KINDS}
+    fetched: dict[str, list[SnapshotEntry]] = {kind: [] for kind in GITHUB_KINDS}
+    rate_limited = False
+
+    try:
+        fetched["issues"], fetched["pulls"] = fetch_github_issues_and_pulls(
+            repo, existing["issues"] + existing["pulls"], now
+        )
+    except PartialFetchError as e:
+        fetched["issues"], fetched["pulls"] = e.partial
+        rate_limited = isinstance(e.cause, RateLimitedError)
+        print(f"  WARN: {repo} issues/PRs stopped early ({e.cause}); saving progress, next run resumes from here")
+
+    if not rate_limited:
         try:
-            resp = requests.get(url, timeout=30)
-            resp.raise_for_status()
-            data = resp.json()
-            for topic in data.get("topic_list", {}).get("topics", []):
-                tid = topic.get("id")
-                if tid not in seen:
-                    seen.add(tid)
-                    all_topics.append(topic)
+            fetched["discussions"] = fetch_github_discussions(repo, existing["discussions"], now)
         except Exception as e:
-            print(f"  WARN: Discourse list fetch failed for {url}: {e}")
+            # Discussions are fetched newest first, so a partial result would leave a gap: discard it.
+            rate_limited = isinstance(e, RateLimitedError)
+            print(f"  WARN: {repo} Discussions fetch failed ({e}); keeping existing snapshot")
+
+    print(
+        f"  {repo}: fetched {len(fetched['issues'])} issues, {len(fetched['pulls'])} PRs,"
+        f" {len(fetched['discussions'])} discussions"
+    )
+    out: dict[str, str] = {}
+    for kind in GITHUB_KINDS:
+        merged = merge_entries(existing[kind], fetched[kind], now)
+        if merged:
+            out[kind] = render_snapshot(*_github_header(repo, kind), merged)
+    return out, rate_limited
+
+
+def refresh_github(faq_dir: Path, now: dt.datetime | None = None) -> None:
+    """Refresh the snapshot files of every repo in ``GITHUB_REPOS`` inside ``faq_dir``."""
+    legacy: dict[tuple[str, str], str] = {}
+    for fname, target in LEGACY_GITHUB_FILES.items():
+        legacy[target] = _read(faq_dir / fname)
+
+    for repo in GITHUB_REPOS:
+        texts = {}
+        for kind in GITHUB_KINDS:
+            text = _read(faq_dir / github_snapshot_name(repo, kind))
+            extra = legacy.get((repo, kind), "")
+            texts[kind] = text + ("\n" + extra if extra else "")
+        try:
+            out, rate_limited = refresh_github_repo(repo, texts, now)
+        except Exception as e:
+            print(f"  WARN: {repo} refresh failed: {e}")
+            continue
+        for kind, md in out.items():
+            path = faq_dir / github_snapshot_name(repo, kind)
+            path.write_text(md, encoding="utf-8")
+            print(f"  wrote {path.name} ({len(md)} chars)")
+        if rate_limited:
+            print("  GitHub rate limit reached; remaining repos will be refreshed on the next run")
+            break
         time.sleep(1)
 
-    # Sort by views descending, take top N
-    all_topics = sorted(all_topics, key=lambda t: t.get("views", 0), reverse=True)[:MAX_THREADS]
+    # Legacy files have been folded into the per-repo files above.
+    for fname, target in LEGACY_GITHUB_FILES.items():
+        legacy_path = faq_dir / fname
+        if legacy_path.exists() and (faq_dir / github_snapshot_name(*target)).exists():
+            legacy_path.unlink()
+            print(f"  removed legacy {fname} (merged into {github_snapshot_name(*target)})")
+
+
+# ---------------------------------------------------------------------------
+# Discourse
+# ---------------------------------------------------------------------------
+
+DISCOURSE_TITLE = "scvi-tools Discourse Forum Q&A"
+
+
+def _discourse_json(url: str, params: dict | list | None = None) -> dict:
+    return _get(url, params=params).json()
+
+
+def _topic_activity(topic: dict) -> dt.datetime | None:
+    for field in ("last_posted_at", "bumped_at", "created_at"):
+        value = _parse_ts(topic.get(field))
+        if value is not None:
+            return value
+    return None
+
+
+def list_discourse_topics(since: dt.datetime, max_pages: int = DISCOURSE_MAX_PAGES) -> dict[int, dict]:
+    """Collect topic stubs active since ``since`` from every Discourse listing, deduplicated by id.
+
+    Listings are ordered by latest activity (pinned topics first), so paging stops at
+    the first page whose non-pinned topics are all older than ``since``.
+    """
+    topics: dict[int, dict] = {}
+    for url in DISCOURSE_URLS:
+        for page in range(max_pages):
+            try:
+                data = _discourse_json(url, params={"page": page})
+            except Exception as e:
+                print(f"  WARN: Discourse list fetch failed for {url} page {page}: {e}")
+                break
+            topic_list = data.get("topic_list", {})
+            page_topics = topic_list.get("topics", [])
+            for topic in page_topics:
+                tid = topic.get("id")
+                activity = _topic_activity(topic)
+                if tid is not None and (activity is None or activity >= since):
+                    topics.setdefault(tid, topic)
+            unpinned = [t for t in page_topics if not t.get("pinned")]
+            reached_older = bool(unpinned) and all((_topic_activity(t) or since) < since for t in unpinned)
+            if not page_topics or reached_older or not topic_list.get("more_topics_url"):
+                break
+            time.sleep(0.5)
+    return topics
+
+
+def _fetch_all_posts(topic_id: int, thread: dict) -> list[dict]:
+    """Return every post of a thread (Discourse only inlines the first ~20)."""
+    post_stream = thread.get("post_stream", {})
+    posts = list(post_stream.get("posts", []))
+    have = {p.get("id") for p in posts}
+    missing = [pid for pid in post_stream.get("stream", []) if pid not in have]
+    for i in range(0, len(missing), 20):
+        time.sleep(0.5)
+        chunk = missing[i : i + 20]
+        data = _discourse_json(
+            f"{DISCOURSE_BASE}/t/{topic_id}/posts.json", params=[("post_ids[]", pid) for pid in chunk]
+        )
+        posts.extend(data.get("post_stream", {}).get("posts", []))
+    return sorted(posts, key=lambda p: p.get("post_number", 0))
+
+
+def fetch_discourse_thread(topic_id: int) -> SnapshotEntry:
+    """Fetch and render a single thread with all of its posts."""
+    thread = _discourse_json(f"{DISCOURSE_BASE}/t/{topic_id}.json")
+    posts = _fetch_all_posts(topic_id, thread)
+    last_activity = _parse_ts(thread.get("last_posted_at")) or _parse_ts(thread.get("created_at"))
+    slug = thread.get("slug") or "topic"
 
     lines = [
-        "# scvi-tools Discourse Forum Q&A",
-        "",
-        f"Top {len(all_topics)} threads by views (deduplicated across sources).",
+        f"**Topic:** {topic_id} | **Last activity:** {_fmt_ts(last_activity)}",
+        f"**Posts:** {thread.get('posts_count', len(posts))} | **Views:** {thread.get('views', 0)}"
+        f" | **Created:** {(thread.get('created_at') or '')[:10]} | **URL:** {DISCOURSE_BASE}/t/{slug}/{topic_id}",
         "",
     ]
+    for post in posts:
+        cooked = post.get("cooked") or post.get("raw") or ""
+        text = _trim(_strip_html(cooked), MAX_COMMENT_CHARS)
+        author = post.get("username", "unknown")
+        role = "**Question**" if post.get("post_number") == 1 else f"**Reply (@{author})**"
+        if text:
+            lines += [f"{role}: {text}", ""]
 
-    for topic in all_topics:
-        title = topic.get("title", "")
-        posts_count = topic.get("posts_count", 0)
-        views = topic.get("views", 0)
-        topic_id = topic.get("id")
-
-        lines += [
-            f"## {title}",
-            f"**Posts:** {posts_count} | **Views:** {views}",
-            "",
-        ]
-
-        # Fetch the actual thread content
-        if topic_id:
-            try:
-                time.sleep(0.5)
-                thread_url = f"https://discourse.scverse.org/t/{topic_id}.json"
-                tr = requests.get(thread_url, timeout=30)
-                tr.raise_for_status()
-                posts = tr.json().get("post_stream", {}).get("posts", [])[:MAX_POSTS_PER_THREAD]
-                for i, post in enumerate(posts):
-                    cooked = post.get("cooked") or post.get("raw") or ""
-                    text = _trim(_strip_html(cooked), MAX_COMMENT_CHARS)
-                    author = post.get("username", "unknown")
-                    role = "**Question**" if i == 0 else f"**Reply (@{author})**"
-                    if text:
-                        lines += [f"{role}: {text}", ""]
-            except Exception as e:
-                print(f"  WARN: Could not fetch thread {topic_id}: {e}")
-
-    return "\n".join(lines)
+    return SnapshotEntry(
+        title=(thread.get("title") or "").strip(),
+        body="\n" + "\n".join(lines),
+        item_id=topic_id,
+        last_activity=last_activity,
+    )
 
 
-def run() -> None:
-    KNOWLEDGE_FAQ.mkdir(parents=True, exist_ok=True)
+def refresh_discourse(existing_text: str = "", now: dt.datetime | None = None) -> str:
+    """Merge Discourse threads active since the newest stored thread into the snapshot.
 
-    print("Fetching GitHub issues...")
+    The first run (no thread with a ``Last activity`` stored yet) builds a baseline of
+    every thread active in the retention window; later runs only fetch threads with
+    new posts since the previous run, so monthly refreshes stay light.
+    """
+    now = now or dt.datetime.now(dt.timezone.utc)
+    existing = parse_snapshot(existing_text)
+    # Small overlap so posts landing while the previous run was in progress are not missed.
+    since = _since(existing, now) - dt.timedelta(days=1)
+    print(f"  threads active since {_fmt_ts(since)}")
+
+    stubs = list_discourse_topics(since)
+    to_fetch = sorted(stubs, reverse=True)
+    print(f"  fetching {len(to_fetch)} threads")
+
+    fetched: list[SnapshotEntry] = []
+    for tid in to_fetch:
+        try:
+            time.sleep(0.5)
+            fetched.append(fetch_discourse_thread(tid))
+        except Exception as e:
+            print(f"  WARN: Could not fetch thread {tid}: {e} (keeping existing copy, if any)")
+
+    merged = merge_entries(existing, fetched, now)
+    return render_snapshot(
+        DISCOURSE_TITLE,
+        "threads from the scvi-tools category and `scvi` tag " + _retention_note("threads"),
+        merged,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+
+def _read(path: Path) -> str:
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def run(faq_dir: Path = KNOWLEDGE_FAQ) -> None:
+    faq_dir.mkdir(parents=True, exist_ok=True)
+
+    print("Fetching GitHub issues, pull requests and discussions...")
     try:
-        issues_md = fetch_github_issues()
-        (KNOWLEDGE_FAQ / "github_issues.md").write_text(issues_md, encoding="utf-8")
-        print(f"  wrote github_issues.md ({len(issues_md)} chars)")
+        refresh_github(faq_dir)
     except Exception as e:
-        print(f"  WARN: GitHub fetch failed: {e}")
+        print(f"  WARN: GitHub refresh failed: {e}")
 
     time.sleep(1)
 
     print("Fetching Discourse threads...")
+    discourse_path = faq_dir / "discourse_threads.md"
     try:
-        discourse_md = fetch_discourse_threads()
-        (KNOWLEDGE_FAQ / "discourse_threads.md").write_text(discourse_md, encoding="utf-8")
-        print(f"  wrote discourse_threads.md ({len(discourse_md)} chars)")
+        discourse_md = refresh_discourse(_read(discourse_path))
+        discourse_path.write_text(discourse_md, encoding="utf-8")
+        print(f"  wrote {discourse_path.name} ({len(discourse_md)} chars)")
     except Exception as e:
-        print(f"  WARN: Discourse fetch failed: {e}")
+        print(f"  WARN: Discourse refresh failed: {e}")
 
     print("Done.")
 
 
 if __name__ == "__main__":
-    run()
+    import sys
+
+    run(Path(sys.argv[1]) if len(sys.argv) > 1 else KNOWLEDGE_FAQ)

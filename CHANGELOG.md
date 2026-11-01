@@ -9,6 +9,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-11-01
+
+### Fixed
+
+- `scripts/scrape_external.py` no longer drops community knowledge on each monthly refresh. Previously it kept
+  only the top 30 Discourse threads by views from the first listing page (so e.g. "Correct way to run SOLO for
+  doublet detection" fell out) and overwrote `github_issues.md`, which had been empty since June.
+- `refresh_knowledge.yaml` change detection now also picks up newly created (untracked) snapshot files.
+
+### Added
+
+- `scripts/sync_websites.py`: blog posts and pages of the scvi-tools (`scverse/scvi-tools-site`) and scviva-tools
+  (`YosefLab/scviva-tools-website`) websites in `knowledge/websites/`, searchable via `search_knowledge`. Run monthly
+  by `refresh_knowledge.yaml`; files are added or updated, never deleted.
+
+### Changed
+
+- Discourse, GitHub issue, PR and Discussion snapshots are now accumulative: every run merges into the existing files,
+  and entries are only pruned once their last activity is more than 3 years old.
+- Both scrapers are incremental: the first run builds a 3-year baseline, later runs only fetch what changed since
+  the newest stored entry, so monthly refreshes are light.
+- Discourse: every thread is stored with all of its posts.
+- GitHub: open and closed issues, PRs (bots excluded) and Discussions with all comments, fetched incrementally and
+  resuming after rate limits, for scvi-tools, scvi-tutorials, scviva-tools, scib-metrics, scvi-colab and
+  scvi-hub-models. Snapshots are written per repo to `knowledge/faq/github_<repo>_{issues,pulls,discussions}.md`;
+  the old `github_issues.md` is folded into the scvi-tools files.
+
 ## [0.1.6] - 2026-09-10
 
 ### Added
