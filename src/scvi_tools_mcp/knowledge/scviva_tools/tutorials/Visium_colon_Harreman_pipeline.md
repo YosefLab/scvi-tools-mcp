@@ -22,6 +22,21 @@ The analysis is organized into three stages:
 10. Inferring cell-type-agnostic metabolic crosstalk.
 11. Grouping spatially co-localized metabolites into metabolite groups.
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
+```python
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+```
+
 ## Loading the dataset
 
 We work with a **mouse colon dataset** from Parigi et al. (*Nature Communications*, 2022), profiled with 10x Visium (55 µm spots, 6,168 spots in total across two sections). The experiment used a Dextran Sulfate Sodium (DSS)-induced colitis model:
@@ -52,7 +67,6 @@ from scipy.stats import zscore
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from sklearn.utils import resample
-import rapids_singlecell as rsc
 
 import warnings
 import gc
@@ -63,13 +77,20 @@ from scviva.tools.harreman.datasets import load_visium_mouse_colon_dataset
 ```
 
 ```python
+HAS_RSC = False
 try:
+    import cupy as cp
     import rapids_singlecell as rsc
 
-    print("RAPIDS SingleCell is installed and can be imported")
-    HAS_RSC = True
-except ImportError:
+    # rapids_singlecell can be importable without a usable GPU (e.g. a CPU runtime on Google Colab)
+    HAS_RSC = cp.cuda.runtime.getDeviceCount() > 0
+except Exception:  # ImportError, or a CUDA error when no GPU/driver is present
     HAS_RSC = False
+
+if HAS_RSC:
+    print("RAPIDS SingleCell is installed and a GPU is available, using rapids_singlecell")
+else:
+    print("RAPIDS SingleCell (or a GPU) is not available, falling back to scanpy")
 ```
 
 ```python

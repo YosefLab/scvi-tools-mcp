@@ -59,6 +59,8 @@ Call once for ``adata_seq`` and once for ``adata_spatial`` before constructing t
 
 Parameters
 ----------
+adata
+    AnnData object. Rows represent cells, columns represent features.
 batch_key
     key in `adata.obs` for batch information. Categories will automatically be converted into
     integer categories and saved to `adata.obs['_scvi_batch']`. If `None`, assigns the same batch
@@ -69,6 +71,8 @@ labels_key
     to all the data.
 layer
     if not `None`, uses this as the key in `adata.layers` for raw count data.
+**kwargs
+    Keyword args for :meth:`~scvi.data.AnnDataManager.register_fields`.
 
 ## train
 

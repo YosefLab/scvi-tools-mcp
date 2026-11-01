@@ -2,9 +2,23 @@
 
 ## Imputing missing genes in spatial data from sequencing data with gimVI
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
+```python
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+```
+
 ```python
 import tempfile
-import rapids_singlecell as rsc
 
 import anndata
 import matplotlib.pyplot as plt
@@ -12,12 +26,28 @@ import numpy as np
 import scanpy as sc
 import scvi
 import scviva
-import scviva
 import seaborn as sns
 import torch
 from scipy.stats import spearmanr
 from scvi.data import cortex, smfish
 from scviva.model import GIMVI
+```
+
+```python
+HAS_RSC = False
+try:
+    import cupy as cp
+    import rapids_singlecell as rsc
+
+    # rapids_singlecell can be importable without a usable GPU (e.g. a CPU runtime on Google Colab)
+    HAS_RSC = cp.cuda.runtime.getDeviceCount() > 0
+except Exception:  # ImportError, or a CUDA error when no GPU/driver is present
+    HAS_RSC = False
+
+if HAS_RSC:
+    print("RAPIDS SingleCell is installed and a GPU is available, using rapids_singlecell")
+else:
+    print("RAPIDS SingleCell (or a GPU) is not available, falling back to scanpy")
 ```
 
 ```python
@@ -108,8 +138,12 @@ latent_labels = (["seq"] * latent_seq.shape[0]) + (["spatial"] * latent_spatial.
 latent_adata.obs["labels"] = latent_labels
 
 # compute umap
-rsc.pp.neighbors(latent_adata, use_rep="X")
-rsc.tl.umap(latent_adata)
+if HAS_RSC:
+    rsc.pp.neighbors(latent_adata, use_rep="X")
+    rsc.tl.umap(latent_adata)
+else:
+    sc.pp.neighbors(latent_adata, use_rep="X")
+    sc.tl.umap(latent_adata)
 
 # save umap representations to original seq and spatial_datasets
 seq_data.obsm["X_umap"] = latent_adata.obsm["X_umap"][: seq_data.shape[0]]

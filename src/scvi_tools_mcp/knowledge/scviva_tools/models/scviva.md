@@ -112,6 +112,28 @@ continuous_covariate_keys
     nuisance factors (i.e., the model tries to minimize their effects on the latent space). Thus,
     these should not be used for biologically-relevant factors that you do _not_ want to correct
     for.
+sample_key
+    key in `adata.obs` for sample information. Categories will automatically be converted into
+    integer categories and saved to `adata.obs['_scvi_sample']`. If `None`, assigns the same sample
+    to all the data.
+cell_coordinates_key
+    Key in ``adata.obsm`` for the spatial coordinates of each cell.
+expression_embedding_key
+    Key in ``adata.obsm`` for the cell expression embedding (e.g. scVI latent means).
+expression_embedding_niche_key
+    Key in ``adata.obsm`` for the average expression embedding per cell type in each
+    cell's niche, as computed by :meth:`~scviva.model.SCVIVA.preprocessing_anndata`.
+niche_composition_key
+    Key in ``adata.obsm`` for the cell-type composition of each cell's niche, as computed
+    by :meth:`~scviva.model.SCVIVA.preprocessing_anndata`.
+niche_indexes_key
+    Key in ``adata.obsm`` for the indices of each cell's nearest spatial neighbors, as
+    computed by :meth:`~scviva.model.SCVIVA.preprocessing_anndata`.
+niche_distances_key
+    Key in ``adata.obsm`` for the distances to each cell's nearest spatial neighbors, as
+    computed by :meth:`~scviva.model.SCVIVA.preprocessing_anndata`.
+**kwargs
+    Keyword args for :meth:`~scvi.data.AnnDataManager.register_fields`.
 
 ## train
 

@@ -15,8 +15,20 @@ Visium spots (55 µm) typically contain several cells. Most deconvolution method
 6. Perform cell-type-specific differential expression (B cells example).
 7. Integrate DestVI proportions with Harreman to infer cell-type-aware metabolic cell-cell communication (CCC).
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
 ```python
-#!pip install --quiet --force-reinstall --no-deps git+https://github.com/yoseflab/destvi_utils.git@main
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+    !pip install --quiet git+https://github.com/yoseflab/destvi_utils.git@main
 ```
 
 ```python
@@ -40,13 +52,20 @@ torch.cuda.empty_cache()
 ```
 
 ```python
+HAS_RSC = False
 try:
+    import cupy as cp
     import rapids_singlecell as rsc
 
-    print("RAPIDS SingleCell is installed and can be imported")
-    HAS_RSC = True
-except ImportError:
+    # rapids_singlecell can be importable without a usable GPU (e.g. a CPU runtime on Google Colab)
+    HAS_RSC = cp.cuda.runtime.getDeviceCount() > 0
+except Exception:  # ImportError, or a CUDA error when no GPU/driver is present
     HAS_RSC = False
+
+if HAS_RSC:
+    print("RAPIDS SingleCell is installed and a GPU is available, using rapids_singlecell")
+else:
+    print("RAPIDS SingleCell (or a GPU) is not available, falling back to scanpy")
 ```
 
 ```python

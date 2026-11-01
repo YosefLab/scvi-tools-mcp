@@ -20,6 +20,21 @@ In this tutorial, we analyse a publicly available Visium dataset of the human ly
 
 ![Figure 1.](https://raw.githubusercontent.com/BayraktarLab/cell2location/master/docs/images/FigS1_cell2location_workflow.png)
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
+```python
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+```
+
 ## Loading packages <a class="anchor" id="Loading_packages"></a>
 
 ```python
@@ -37,7 +52,6 @@ from cell2location.models import Cell2location, RegressionModel
 from cell2location.plt import plot_spatial
 from cell2location.utils import select_slide
 from cell2location.utils.filtering import filter_genes
-import rapids_singlecell as rsc
 ```
 
 ```python

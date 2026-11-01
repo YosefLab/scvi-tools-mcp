@@ -14,6 +14,21 @@ This notebook demonstrates a standard, standalone VISION pipeline (gene signatur
 5. Spatial visualization of the most autocorrelated KEGG pathway.
 6. Further VISION capabilities beyond the core pipeline: spatial autocorrelation of non-signature metadata, signature clustering, gene importance, one-vs-one differential expression, and the `results` typed accessor (sections 7 onward).
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
+```python
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+```
+
 ## 0 · Imports
 
 ```python
@@ -33,13 +48,20 @@ from scviva.tools.vision import VisionAnalysis
 ```
 
 ```python
+HAS_RSC = False
 try:
+    import cupy as cp
     import rapids_singlecell as rsc
 
-    print("RAPIDS SingleCell is installed and can be imported")
-    HAS_RSC = True
-except ImportError:
+    # rapids_singlecell can be importable without a usable GPU (e.g. a CPU runtime on Google Colab)
+    HAS_RSC = cp.cuda.runtime.getDeviceCount() > 0
+except Exception:  # ImportError, or a CUDA error when no GPU/driver is present
     HAS_RSC = False
+
+if HAS_RSC:
+    print("RAPIDS SingleCell is installed and a GPU is available, using rapids_singlecell")
+else:
+    print("RAPIDS SingleCell (or a GPU) is not available, falling back to scanpy")
 ```
 
 ```python

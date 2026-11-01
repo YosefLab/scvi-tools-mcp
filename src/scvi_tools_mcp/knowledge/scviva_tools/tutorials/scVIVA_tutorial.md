@@ -13,23 +13,49 @@ Plan for this tutorial:
 %autoreload 2
 ```
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
 ```python
-# Install from GitHub for now
-!pip install --quiet scviva-tools
-!pip install --quiet adjustText
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+    !pip install --quiet adjustText
 ```
 
 ```python
 import os
 import random
 import tempfile
-import rapids_singlecell as rsc
 import scvi
 import numpy as np
 import scanpy as sc
 import scviva
 import torch
 from rich import print
+```
+
+```python
+HAS_RSC = False
+try:
+    import cupy as cp
+    import rapids_singlecell as rsc
+
+    # rapids_singlecell can be importable without a usable GPU (e.g. a CPU runtime on Google Colab)
+    HAS_RSC = cp.cuda.runtime.getDeviceCount() > 0
+except Exception:  # ImportError, or a CUDA error when no GPU/driver is present
+    HAS_RSC = False
+
+if HAS_RSC:
+    print("RAPIDS SingleCell is installed and a GPU is available, using rapids_singlecell")
+else:
+    print("RAPIDS SingleCell (or a GPU) is not available, falling back to scanpy")
 ```
 
 ```python
@@ -177,8 +203,12 @@ adata.obsm["X_scVIVA"] = nichevae.get_latent_representation()
 We may visualize the latent space in UMAP coordinates, coloring by cell type.
 
 ```python
-rsc.pp.neighbors(adata, use_rep="X_scVIVA", n_neighbors=30)
-rsc.tl.umap(adata)
+if HAS_RSC:
+    rsc.pp.neighbors(adata, use_rep="X_scVIVA", n_neighbors=30)
+    rsc.tl.umap(adata)
+else:
+    sc.pp.neighbors(adata, use_rep="X_scVIVA", n_neighbors=30)
+    sc.tl.umap(adata)
 
 sc.pl.umap(adata, color="cell_type", frameon=False)
 ```
@@ -197,8 +227,12 @@ print(adata_endothelial)
 We perform coarse Leiden clustering on the endothelial latent space, in a bid to find spatially confined populations of endothelial cells.
 
 ```python
-rsc.pp.neighbors(adata_endothelial, use_rep="X_scVIVA", n_neighbors=30, random_state=42)
-rsc.tl.umap(adata_endothelial)
+if HAS_RSC:
+    rsc.pp.neighbors(adata_endothelial, use_rep="X_scVIVA", n_neighbors=30, random_state=42)
+    rsc.tl.umap(adata_endothelial)
+else:
+    sc.pp.neighbors(adata_endothelial, use_rep="X_scVIVA", n_neighbors=30, random_state=42)
+    sc.tl.umap(adata_endothelial)
 sc.tl.leiden(
     adata_endothelial,
     key_added="leiden_scVIVA",

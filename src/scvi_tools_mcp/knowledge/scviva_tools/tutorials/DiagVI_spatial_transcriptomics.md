@@ -8,15 +8,19 @@ We use two publicly available datasets:
 - Dissociated scRNA-seq data from [Pijuan-Sala et al.](https://www.nature.com/articles/s41586-019-0933-9), profiling 166,312 cells between embryonic days E6.5 and E8.5, and providing a comprehensive reference atlas of early mouse development.
 
 ```{note}
-Running the following cell will install tutorial dependencies on Google Colab and in the currently active environment when running outside of Google Colab.
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
 ```
 
 ```python
-!pip install --quiet scvi-colab
-!pip install --quiet cellmapper
-from scvi_colab import install
+import sys
 
-install()
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+    !pip install --quiet cellmapper
 ```
 
 ## Imports and data loading
@@ -36,6 +40,23 @@ import torch
 from cellmapper import CellMapper
 from scib_metrics.benchmark import Benchmarker
 from scviva.external.diagvi import DIAGVI
+```
+
+```python
+HAS_RSC = False
+try:
+    import cupy as cp
+    import rapids_singlecell as rsc
+
+    # rapids_singlecell can be importable without a usable GPU (e.g. a CPU runtime on Google Colab)
+    HAS_RSC = cp.cuda.runtime.getDeviceCount() > 0
+except Exception:  # ImportError, or a CUDA error when no GPU/driver is present
+    HAS_RSC = False
+
+if HAS_RSC:
+    print("RAPIDS SingleCell is installed and a GPU is available, using rapids_singlecell")
+else:
+    print("RAPIDS SingleCell (or a GPU) is not available, falling back to scanpy")
 ```
 
 ```python
@@ -263,14 +284,17 @@ Then we use the DiagVI latent space, to recalculate and plot the joint embedding
 ```python
 PCA_LATENT_KEY = "X_joint_pca"
 DIAGVI_UMAP_KEY = "X_umap_diagvi"
-import rapids_singlecell as rsc
 
 sc.tl.pca(combined, key_added=PCA_LATENT_KEY)
 ```
 
 ```python
-rsc.pp.neighbors(combined, use_rep=DIAGVI_LATENT_KEY, metric="cosine")
-rsc.tl.umap(combined, key_added=DIAGVI_UMAP_KEY)
+if HAS_RSC:
+    rsc.pp.neighbors(combined, use_rep=DIAGVI_LATENT_KEY, metric="cosine")
+    rsc.tl.umap(combined, key_added=DIAGVI_UMAP_KEY)
+else:
+    sc.pp.neighbors(combined, use_rep=DIAGVI_LATENT_KEY, metric="cosine")
+    sc.tl.umap(combined, key_added=DIAGVI_UMAP_KEY)
 sc.pl.embedding(
     combined,
     basis="umap_diagvi",
@@ -427,8 +451,12 @@ embedding_keys = {
 }
 
 for _, (latent_key, umap_key) in embedding_keys.items():
-    rsc.pp.neighbors(combined, use_rep=latent_key, metric="cosine")
-    rsc.tl.umap(combined, key_added=umap_key)
+    if HAS_RSC:
+        rsc.pp.neighbors(combined, use_rep=latent_key, metric="cosine")
+        rsc.tl.umap(combined, key_added=umap_key)
+    else:
+        sc.pp.neighbors(combined, use_rep=latent_key, metric="cosine")
+        sc.tl.umap(combined, key_added=umap_key)
 ```
 
 ```python
@@ -571,8 +599,12 @@ combined_sub.obsm[SCANVI_LATENT_KEY] = scanvi_sub.get_latent_representation()
 
 ```python
 for _, (latent_key, umap_key) in embedding_keys.items():
-    rsc.pp.neighbors(combined_sub, use_rep=latent_key, metric="cosine")
-    rsc.tl.umap(combined_sub, key_added=umap_key)
+    if HAS_RSC:
+        rsc.pp.neighbors(combined_sub, use_rep=latent_key, metric="cosine")
+        rsc.tl.umap(combined_sub, key_added=umap_key)
+    else:
+        sc.pp.neighbors(combined_sub, use_rep=latent_key, metric="cosine")
+        sc.tl.umap(combined_sub, key_added=umap_key)
 ```
 
 ```python

@@ -9,8 +9,14 @@ Running the following cell will install tutorial dependencies on Google Colab on
 ```
 
 ```python
-!pip install --quiet scviva-tools
+import sys
 
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
 ```
 
 ## Imports and preparing files
