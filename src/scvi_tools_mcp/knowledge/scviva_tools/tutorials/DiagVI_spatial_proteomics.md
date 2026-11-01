@@ -13,15 +13,19 @@ Overview of this tutorial:
 5. Transfering cell type labels
 
 ```{note}
-Running the following cell will install tutorial dependencies on Google Colab and in the currently active environment when running outside of Google Colab.
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
 ```
 
 ```python
-!pip install --quiet scvi-colab
-!pip install --quiet cellmapper
-from scvi_colab import install
+import sys
 
-install()
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+    !pip install --quiet cellmapper
 ```
 
 ```{note}
@@ -45,13 +49,23 @@ from scib_metrics.benchmark import BatchCorrection, Benchmarker, BioConservation
 from scviva.external.diagvi import DIAGVI
 from scvi.external import cytovi
 from scviva.external.diagvi._utils import compute_foscttm
+```
 
+```python
+HAS_RSC = False
 try:
+    import cupy as cp
     import rapids_singlecell as rsc
 
-    HAS_RSC = True
-except ImportError:
+    # rapids_singlecell can be importable without a usable GPU (e.g. a CPU runtime on Google Colab)
+    HAS_RSC = cp.cuda.runtime.getDeviceCount() > 0
+except Exception:  # ImportError, or a CUDA error when no GPU/driver is present
     HAS_RSC = False
+
+if HAS_RSC:
+    print("RAPIDS SingleCell is installed and a GPU is available, using rapids_singlecell")
+else:
+    print("RAPIDS SingleCell (or a GPU) is not available, falling back to scanpy")
 ```
 
 ```python

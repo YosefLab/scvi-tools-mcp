@@ -7,10 +7,24 @@ In this notebook, we present the workflow to run Stereoscope within the scvi-too
 
 You can access the raw count matrices as 'anndata' objects at www.heartcellatlas.org.
 
+```{note}
+Running the following cell will install tutorial dependencies on Google Colab only. It will have no effect on environments other than Google Colab.
+```
+
+```python
+import sys
+
+if "google.colab" in sys.modules:
+    !pip install --quiet scvi-colab
+    from scvi_colab import install
+
+    install(for_tutorials=False)
+    !pip install --quiet "scviva-tools[tutorials]"
+```
+
 ```python
 import os
 import tempfile
-import rapids_singlecell as rsc
 
 import matplotlib.pyplot as plt
 import numpy as np
