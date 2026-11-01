@@ -42,7 +42,7 @@ Notes
 -----
 See further usage examples in the following tutorials:
 
-1. :doc:`/tutorials/notebooks/spatial/gimvi_tutorial`
+1. `gimVI: Imputing Missing Spatial Genes <https://scviva-tools.readthedocs.io/en/latest/tutorials/gimvi_tutorial.html>`__
 
 ## setup_anndata
 
