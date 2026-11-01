@@ -603,3 +603,36 @@ def test_complete_discussion_paginates_comments_and_replies(monkeypatch):
     for text in ("c1", "c2", "r1", "r2"):
         assert text in rendered
     assert "**Comments:** 2" in rendered
+
+
+def test_build_discussion_entry_skips_bot_comments_but_keeps_human_replies():
+    from scripts.scrape_external import build_discussion_entry
+
+    node = {
+        "number": 7,
+        "title": "Q",
+        "updatedAt": "2026-10-01T00:00:00Z",
+        "author": {"login": "asker", "__typename": "User"},
+        "comments": {
+            "nodes": [
+                {
+                    "id": "C1",
+                    "body": "automated triage message",
+                    "author": {"login": "github-actions", "__typename": "Bot"},
+                    "replies": {
+                        "nodes": [
+                            {"body": "human follow-up", "author": {"login": "dev", "__typename": "User"}},
+                            {"body": "bot reply", "author": {"login": "helper[bot]", "__typename": "User"}},
+                        ]
+                    },
+                },
+                {"id": "C2", "body": "real answer", "author": {"login": "maint", "__typename": "User"}},
+            ]
+        },
+    }
+
+    rendered = build_discussion_entry(node).render()
+
+    assert "automated triage message" not in rendered and "bot reply" not in rendered
+    assert "> **@dev:** human follow-up" in rendered and "**@maint:** real answer" in rendered
+    assert "**Comments:** 1" in rendered

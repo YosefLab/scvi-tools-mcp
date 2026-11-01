@@ -9,6 +9,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- `release.yaml`: the GitHub release step no longer fails when the release already exists (e.g. created via "Draft a
+  new release" in the GitHub UI, which also pushes the triggering tag); it then attaches the built distributions
+  instead of trying to create the release again.
+- GitHub Discussions snapshots now exclude bot-authored discussions, comments and replies, like issues and PRs
+  (human replies to a bot comment are kept).
+- Docs: recency-weighted ranking is documented as applying to the Discourse/GitHub snapshots only (website pages are
+  searched like other docs and are not part of `get_faq`), and the refresh examples export `GITHUB_TOKEN` so every
+  command, including single-repo refreshes, also updates Discussions.
+
 ## [0.1.7] - 2026-11-01
 
 ### Fixed

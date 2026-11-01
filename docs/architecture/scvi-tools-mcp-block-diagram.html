@@ -671,8 +671,10 @@
             <span class="kicker">Troubleshooting · _troubleshooting.py</span>
             <h3>Troubleshooting &amp; FAQ</h3>
             <p>
-              Surfaces FAQ answers from Discourse community threads and runs broad
-              keyword search across all knowledge files.
+              Curated FAQ plus broad keyword search across all knowledge files. Community
+              snapshots (GitHub issues/PRs/discussions, Discourse) are ranked per entry by
+              relevance &times; recency (<code>_community.py</code>), so newer answers rank first
+              and are listed separately from curated docs.
             </p>
             <div class="chips">
               <span class="chip tool-chip">get_faq</span>
@@ -782,8 +784,17 @@
 
           <div class="k-card">
             <span class="kicker">faq/</span>
-            <h3>FAQ</h3>
-            <p>Discourse thread extracts. Community-sourced answers to common scvi-tools questions.</p>
+            <h3>Community (FAQ)</h3>
+            <p>Accumulative 3-year snapshots: Discourse threads with all posts, plus GitHub issues, PRs (with
+               reviews) and discussions of scvi-tools, scvi-tutorials, scviva-tools, scib-metrics, scvi-colab and
+               scvi-hub-models.</p>
+          </div>
+
+          <div class="k-card">
+            <span class="kicker">websites/</span>
+            <h3>Websites</h3>
+            <p>Blog posts and pages of the scvi-tools and scviva-tools websites. Accumulative: added or updated,
+               never deleted.</p>
           </div>
 
         </div>
@@ -808,9 +819,16 @@
 
           <div class="s-card">
             <span class="kicker">scripts/scrape_external.py</span>
-            <h3>External Scraper</h3>
-            <p>Scrapes upstream documentation (ReadTheDocs, Discourse, GitHub) into
-               <code>background/</code> and <code>faq/</code> knowledge.</p>
+            <h3>Community Scraper</h3>
+            <p>Merges Discourse threads and GitHub issues/PRs/discussions (6 repos) into <code>faq/</code>.
+               Incremental after a 3-year baseline; entries are only pruned after 3 years of inactivity.</p>
+          </div>
+
+          <div class="s-card">
+            <span class="kicker">scripts/sync_websites.py</span>
+            <h3>Website Sync</h3>
+            <p>Sparse-clones <code>scverse/scvi-tools-site</code> and <code>YosefLab/scviva-tools-website</code>
+               and copies blog posts and pages into <code>websites/</code>.</p>
           </div>
 
           <div class="s-card">
