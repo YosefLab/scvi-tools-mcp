@@ -274,7 +274,9 @@ print(data_and_attributes)
 ```
 
 ```python
-adl = AnnDataLoader(adata_manager, shuffle=False, batch_size=10, data_and_attributes=data_and_attributes)
+adl = AnnDataLoader(
+    adata_manager, shuffle=False, batch_size=10, data_and_attributes=data_and_attributes
+)
 data_batch = next(tensors for tensors in adl)
 
 # by default data has the dtype np.float32
@@ -286,7 +288,9 @@ Finally, if the `data_and_attributes` parameter is used, it will only load the k
 
 ```python
 data_and_attributes = {"x": float}
-adl = AnnDataLoader(adata_manager, shuffle=False, batch_size=10, data_and_attributes=data_and_attributes)
+adl = AnnDataLoader(
+    adata_manager, shuffle=False, batch_size=10, data_and_attributes=data_and_attributes
+)
 data_batch = next(iter(adl))
 
 print(data_batch.keys())
@@ -415,14 +419,20 @@ def setup_anndata(
     batch_key: Optional[str] = None,
     **kwargs,  # Used when loading a model with a new AnnData object.
 ):
-    setup_method_args = cls._get_setup_method_args(**locals())  # Used for saving/loading purposes.
+    setup_method_args = cls._get_setup_method_args(
+        **locals()
+    )  # Used for saving/loading purposes.
     anndata_fields = [
         LayerField(REGISTRY_KEYS.X_KEY, layer, is_count_data=True),
         CategoricalObsField(REGISTRY_KEYS.BATCH_KEY, batch_key),
     ]
-    adata_manager = AnnDataManager(fields=anndata_fields, setup_method_args=setup_method_args)
+    adata_manager = AnnDataManager(
+        fields=anndata_fields, setup_method_args=setup_method_args
+    )
     adata_manager.register_fields(adata, **kwargs)
-    cls.register_manager(adata_manager)  # Stores the AnnDataManager in a class-specific manager store.
+    cls.register_manager(
+        adata_manager
+    )  # Stores the AnnDataManager in a class-specific manager store.
 ```
 
 The `setup_anndata()` function itself is quite simple since any complexity in preprocessing is contained within the `AnnDataField` functions. By factorizing the preprocessing steps into each subclass, model developers can easily extend and reuse logic across models and fields.
@@ -434,13 +444,14 @@ See more [here](https://docs.scvi-tools.org/en/stable/user_guide/use_case/custom
 
 In SCVI-tools a custom dataloader class is a LightningDataModule inherited class which should create batches of data from an external source and feed them into a scvi pytorch model during training and inference.
 
-Beucase it is tailored made for a specific data source, custom dataloders differ from each other.
+Beucase it is tailored made for a specific data source, custom dataloders differ from each other. 
 Nevertheless, there are some common bulding blocks that are required in order to create it:
 - a 'linkage' to the data source that the custom data loder need to query from.
-- `batch_key` is the key for batch information.
-- `labels_key` is the key for label information.
-- `unlabeled_category` is the key for the unlabeled groyp information.
+- `batch_key` is the key for batch information. 
+- `labels_key` is the key for label information. 
+- `unlabeled_category` is the key for the unlabeled groyp information. 
 - `train_dataloader` a function to create a training set pytorch Dataloder
 - `val_dataloader` a function to create a validation set pytorch Dataloder
 - `registry` its the manual implementaion of the scvi tools registry as a dict filled with information taken from the datamodule itself.
   Note that each datamodule will have its own registry implementation and also it should be extended to work with other models (currently only SCVI and SCANVI are supported, but it should be generic enough to work with any model)
+

@@ -143,7 +143,7 @@ sc.pl.umap(adata, color="batch")
 
 ## Training a CytoVI model
 
-We observe that the technical variability between the two different batches virtually obsecurs a joint downstream analysis. Therefore, we will next train a CytoVI model that explicitly controls for the technical variation between batches. For this we will register the `scaled` layer as the input expression to the model and the `batch_key`.
+We observe that the technical variability between the two different batches virtually obsecurs a joint downstream analysis. Therefore, we will next train a CytoVI model that explicitly controls for the technical variation between batches. For this we will register the `scaled` layer as the input expression to the model and the `batch_key`. 
 
 Optionally, the user can specify a `label_key` during AnnData setup, that can be used to weakly inform the model about a priori known cell type labels or we can specify a `sample_key`, indicating which cell came e.g. from which donor. Here we will showcase the simplest case of only specifying a `batch_key`.
 
@@ -191,10 +191,14 @@ adata.layers["imputed"] = model.get_normalized_expression()
 Next, we can visualize the uncorrected and corrected protein expression for two markers that showed a strong batch effect.
 
 ```python
-g = cytovi.plot_histogram(adata, marker=["CD127", "TBET"], layer_key="scaled", groupby="batch", return_plot=True)
+g = cytovi.plot_histogram(
+    adata, marker=["CD127", "TBET"], layer_key="scaled", groupby="batch", return_plot=True
+)
 g.fig.suptitle("Uncorrected expression", fontsize=16)
 
-h = cytovi.plot_histogram(adata, marker=["CD127", "TBET"], layer_key="imputed", groupby="batch", return_plot=True)
+h = cytovi.plot_histogram(
+    adata, marker=["CD127", "TBET"], layer_key="imputed", groupby="batch", return_plot=True
+)
 h.fig.suptitle("Corrected expression", fontsize=16)
 ```
 
@@ -282,7 +286,9 @@ cluster_counts
 ```
 
 ```python
-celltype_colors = dict(zip(adata.obs["cell_type"].cat.categories, adata.uns["cell_type_colors"], strict=False))
+celltype_colors = dict(
+    zip(adata.obs["cell_type"].cat.categories, adata.uns["cell_type_colors"], strict=False)
+)
 
 colors = [celltype_colors[ct] for ct in cluster_counts.index]
 
