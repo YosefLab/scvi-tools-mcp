@@ -94,21 +94,24 @@ ______________________________________________________________________
 
 All knowledge is baked into the package as Markdown files at build time. No network calls at tool-call time.
 
-| Directory                            | Content                                                   |
-| ------------------------------------ | --------------------------------------------------------- |
-| `knowledge/models/`                  | One `.md` per model — description, use case, parameters   |
-| `knowledge/tutorials/`               | 60+ tutorials converted from `.ipynb` (code + prose only) |
-| `knowledge/api/`                     | Extracted class signatures and docstrings                 |
-| `knowledge/hub/models.json`          | Normalized Hugging Face Hub model registry snapshot       |
-| `knowledge/hub/summary.md`           | Searchable summary of Hub model classes and modalities    |
-| `knowledge/user_guide/`              | Narrative documentation from the scvi-tools user guide    |
-| `knowledge/scviva_tools/models/`     | scviva-tools model docs (ResolVI, DestVI, scVIVA, …)      |
-| `knowledge/scviva_tools/api/`        | Extracted scviva-tools class signatures and docstrings    |
-| `knowledge/scviva_tools/tutorials/`  | scviva-tools tutorials converted from `.ipynb`            |
-| `knowledge/scib_metrics/api/`        | Extracted scib-metrics function/class signatures          |
-| `knowledge/scib_metrics/tutorials/`  | scib-metrics tutorials converted from `.ipynb`            |
-| `knowledge/faq/github_issues.md`     | Top GitHub issues snapshot                                |
-| `knowledge/faq/discourse_threads.md` | Discourse forum thread snapshot                           |
+| Directory                                    | Content                                                               |
+| -------------------------------------------- | --------------------------------------------------------------------- |
+| `knowledge/models/`                          | One `.md` per model — description, use case, parameters               |
+| `knowledge/tutorials/`                       | 60+ tutorials converted from `.ipynb` (code + prose only)             |
+| `knowledge/api/`                             | Extracted class signatures and docstrings                             |
+| `knowledge/hub/models.json`                  | Normalized Hugging Face Hub model registry snapshot                   |
+| `knowledge/hub/summary.md`                   | Searchable summary of Hub model classes and modalities                |
+| `knowledge/user_guide/`                      | Narrative documentation from the scvi-tools user guide                |
+| `knowledge/scviva_tools/models/`             | scviva-tools model docs (ResolVI, DestVI, scVIVA, …)                  |
+| `knowledge/scviva_tools/api/`                | Extracted scviva-tools class signatures and docstrings                |
+| `knowledge/scviva_tools/tutorials/`          | scviva-tools tutorials converted from `.ipynb`                        |
+| `knowledge/scib_metrics/api/`                | Extracted scib-metrics function/class signatures                      |
+| `knowledge/scib_metrics/tutorials/`          | scib-metrics tutorials converted from `.ipynb`                        |
+| `knowledge/faq/github_<repo>_issues.md`      | GitHub issues snapshot per repo (last 3 years, accumulative)          |
+| `knowledge/faq/github_<repo>_pulls.md`       | GitHub pull requests snapshot per repo (last 3 years, accumulative)   |
+| `knowledge/faq/github_<repo>_discussions.md` | GitHub Discussions snapshot per repo (last 3 years, accumulative)     |
+| `knowledge/faq/discourse_threads.md`         | Discourse threads snapshot (last 3 years, accumulative)               |
+| `knowledge/websites/<site>/`                 | scvi-tools / scviva-tools website blog posts and pages (accumulative) |
 
 ______________________________________________________________________
 
@@ -118,7 +121,7 @@ Automated GitHub Actions jobs keep knowledge current — each opens a PR if a di
 
 | Workflow                           | Schedule     | What it does                                                |
 | ---------------------------------- | ------------ | ----------------------------------------------------------- |
-| `refresh_knowledge.yaml`           | 1st of month | Re-scrapes GitHub issues + Discourse threads                |
+| `refresh_knowledge.yaml`           | 1st of month | Merges GitHub issues/PRs/discussions, Discourse, websites   |
 | `sync_tutorials.yaml`              | 1st of month | Fetches new `.ipynb` from scvi-tools, converts to `.md`     |
 | `sync_model_knowledge.yaml`        | 1st of month | Checks CHANGELOG, regenerates model docs for changed models |
 | `sync_huggingface_hub.yaml`        | Quarterly    | Refreshes the scvi-tools Hugging Face Hub model registry    |

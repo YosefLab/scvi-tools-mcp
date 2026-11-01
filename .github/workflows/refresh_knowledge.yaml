@@ -11,8 +11,9 @@ permissions:
 
 jobs:
   refresh:
-    name: Re-scrape GitHub issues + Discourse threads
+    name: Refresh GitHub issues/PRs/discussions, Discourse threads and websites
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -31,10 +32,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/scrape_external.py
 
+      - name: Sync project websites (blog posts + pages)
+        run: python scripts/sync_websites.py
+
       - name: Check for changes
         id: diff
         run: |
-          git diff --quiet src/scvi_tools_mcp/knowledge/faq/ && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+          # --porcelain also reports untracked files (e.g. a newly created snapshot file)
+          if [ -z "$(git status --porcelain -- src/scvi_tools_mcp/knowledge/faq/ src/scvi_tools_mcp/knowledge/websites/)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create pull request
         if: steps.diff.outputs.changed == 'true'
@@ -45,9 +54,17 @@ jobs:
           branch: chore/refresh-knowledge-${{ github.run_id }}
           title: "chore: refresh external knowledge snapshot (${{ env.MONTH }})"
           body: |
-            Monthly automated refresh of GitHub issues and Discourse thread snapshots.
+            Monthly automated refresh of the GitHub issues, pull requests and Discussions snapshots
+            (scvi-tools, scvi-tutorials, scviva-tools, scib-metrics, scvi-colab, scvi-hub-models), the Discourse
+            thread snapshot, and the scvi-tools / scviva-tools website blog posts and pages.
 
-            Run `scripts/scrape_external.py` locally to reproduce.
+            The snapshots accumulate: existing entries are kept and updated, new ones are added, and entries are
+            only removed once their last activity is more than 3 years old. GitHub is fetched incrementally and
+            resumes from the newest stored entry if a run hits the API rate limit.
+
+            Website files are only added or updated, never deleted.
+
+            Run `scripts/scrape_external.py` and `scripts/sync_websites.py` locally to reproduce.
           labels: automated
         env:
           MONTH: ${{ github.event.schedule && 'scheduled' || 'manual' }}

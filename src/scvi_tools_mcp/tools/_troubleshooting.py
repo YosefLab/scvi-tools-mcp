@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from scvi_tools_mcp.mcp import mcp
-from scvi_tools_mcp.tools import utils
+from scvi_tools_mcp.tools import _community, utils
 
 FAQ_CONTENT: dict[str, str] = {
     "training": """# Training FAQ
@@ -120,6 +120,9 @@ adata = anndata.read_h5ad("file.h5ad", backed="r")
 }
 
 
+COMMUNITY_RESULTS = 6
+
+
 class TroubleshootResult(BaseModel):
     content: str | None = None
     truncated: bool = False
@@ -144,17 +147,15 @@ def get_faq(
         knowledge_dir = utils.get_knowledge_dir()
         faq_dir = knowledge_dir / "faq"
         extras: list[str] = []
-        if faq_dir.exists():
-            for faq_file in sorted(faq_dir.glob("*.md")):
-                text = faq_file.read_text(encoding="utf-8")
-                if topic.lower() in text.lower() or topic.replace("_", " ") in text.lower():
-                    for i, line in enumerate(text.splitlines()):
-                        if topic.replace("_", " ") in line.lower() or topic in line.lower():
-                            chunk = "\n".join(text.splitlines()[max(0, i - 1) : i + 5])
-                            extras.append(chunk)
-                            break
+        keywords = _community.keywords_from_query(topic.replace("_", " "))
+        for _, entry in _community.rank_entries(_community.load_entries(faq_dir), keywords, limit=3):
+            extras.append("\n".join(_community.format_entry(entry, keywords)))
         if extras:
-            content += "\n\n---\n\n## From Community\n\n" + "\n\n".join(extras[:3])
+            content += (
+                "\n\n---\n\n## From Community (most relevant, recent first)\n\n"
+                + "\n".join(extras)
+                + "\n\nUse search_knowledge() with specific terms for more community threads."
+            )
         if not content:
             return TroubleshootResult(error=f"No FAQ content for topic '{topic}'.")
         result = utils.truncate(content)
@@ -175,14 +176,14 @@ def search_knowledge(query: str) -> TroubleshootResult:
         query: Free-text question or keywords (e.g. 'how to save a model', 'ELBO explanation').
     """
     try:
-        keywords = [k.lower() for k in query.split() if len(k) > 2]
+        keywords = _community.keywords_from_query(query)
         if not keywords:
             return TroubleshootResult(error="Query too short. Please provide at least one keyword.")
         knowledge_dir = utils.get_knowledge_dir()
         results: list[tuple[int, str, str]] = []
         for md in sorted(knowledge_dir.rglob("*.md")):
-            if ".gitkeep" in md.name:
-                continue
+            if ".gitkeep" in md.name or _community.is_snapshot_file(md):
+                continue  # community snapshots are ranked per entry below
             try:
                 content = md.read_text(encoding="utf-8")
             except Exception:
@@ -227,12 +228,19 @@ def search_knowledge(query: str) -> TroubleshootResult:
             except Exception:
                 pass
         results.sort(key=lambda x: x[0], reverse=True)
+        community = _community.rank_entries(
+            _community.load_entries(knowledge_dir / "faq"), keywords, limit=COMMUNITY_RESULTS
+        )
         lines = [f"# Knowledge Search: '{query}'", ""]
         for _, name, excerpt in results[:8]:
             lines.append(f"- **{name}**")
             if excerpt:
                 lines.append(f"  > {excerpt}")
-        if not results:
+        if community:
+            lines += ["", "## Community: GitHub issues/PRs/discussions and Discourse (relevance x recency)", ""]
+            for _, entry in community:
+                lines += _community.format_entry(entry, keywords)
+        if not results and not community:
             lines += [
                 "No results found.",
                 "",
