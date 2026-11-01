@@ -14,6 +14,8 @@ adata
     AnnData object that has been registered via :meth:`~scviva.model.ResolVI.setup_anndata`.
 n_hidden
     Number of nodes per hidden layer.
+n_hidden_encoder
+    Number of nodes per hidden layer in the encoder.
 n_latent
     Dimensionality of the latent space.
 n_layers
@@ -30,6 +32,21 @@ gene_likelihood
 
     * ``'nb'`` - Negative binomial distribution
     * ``'poisson'`` - Poisson distribution
+background_ratio
+    Prior for the background proportion. If ``None``, estimated from the data via
+    :meth:`compute_dataset_dependent_priors`.
+median_distance
+    Kernel size in the RBF kernel used to weight distances between cells and their
+    neighbors. If ``None``, estimated from the data via
+    :meth:`compute_dataset_dependent_priors`.
+semisupervised
+    Whether to use a semi-supervised model using the labels registered via
+    ``labels_key``.
+mixture_k
+    Number of components in the Mixture-of-Gaussian prior.
+downsample_counts
+    Whether to downsample counts during training using a log-normal library size
+    distribution estimated from the data.
 **model_kwargs
     Keyword args for :class:`~scviva.module.RESOLVAE`
 
@@ -82,6 +99,8 @@ prepare_data_kwargs
     Keyword args for :meth:`_prepare_data` (e.g. ``n_neighbors``, ``spatial_rep``).
 unlabeled_category
     value in `adata.obs[labels_key]` that indicates unlabeled observations.
+**kwargs
+    Keyword args for :meth:`~scvi.data.AnnDataManager.register_fields`.
 
 ## train
 
