@@ -2,7 +2,8 @@
 
 An MCP (Model Context Protocol) server that gives LLMs structured access to [scvi-tools](https://scvi-tools.org)
 knowledge: model documentation, tutorials, API reference, workflow templates, pretrained Hugging Face Hub models,
-and community FAQ.
+and community knowledge — Discourse forum threads, GitHub issues, pull requests and discussions of the scvi-tools
+ecosystem repos, and the scvi-tools / scviva-tools website blogs.
 
 No runtime model execution — pure knowledge layer. Works with Claude Desktop, Cursor, and any MCP-compatible client.
 
@@ -85,8 +86,8 @@ ______________________________________________________________________
 | `get_scib_metric`             | API reference for one scib-metrics metric or benchmark  |
 | `list_scib_metrics_tutorials` | Browse scib-metrics tutorials                           |
 | `get_scib_metrics_tutorial`   | Paginated scib-metrics tutorial content                 |
-| `get_faq`                     | Curated FAQ from docs, GitHub issues, and Discourse     |
-| `search_knowledge`            | Cross-search all knowledge (catch-all)                  |
+| `get_faq`                     | Curated FAQ plus top community threads for a topic      |
+| `search_knowledge`            | Cross-search all knowledge, incl. ranked community hits |
 
 ______________________________________________________________________
 
@@ -112,6 +113,13 @@ All knowledge is baked into the package as Markdown files at build time. No netw
 | `knowledge/faq/github_<repo>_discussions.md` | GitHub Discussions snapshot per repo (last 3 years, accumulative)     |
 | `knowledge/faq/discourse_threads.md`         | Discourse threads snapshot (last 3 years, accumulative)               |
 | `knowledge/websites/<site>/`                 | scvi-tools / scviva-tools website blog posts and pages (accumulative) |
+
+Community snapshots cover the scvi-tools Discourse forum and the GitHub repos scvi-tools, scvi-tutorials,
+scviva-tools, scib-metrics, scvi-colab and scvi-hub-models (issues, PRs with review comments, and discussions; bots
+excluded). They only grow: each refresh adds new and updated entries, and an entry is removed only once its last
+activity is more than three years old (website content is never removed). `search_knowledge` and `get_faq` rank
+community entries individually by relevance × recency, so the most recent answer to a question comes first, and list
+them separately from the curated docs.
 
 ______________________________________________________________________
 
@@ -154,8 +162,14 @@ python scripts/convert_notebooks.py /path/to/scvi-tools/docs/tutorials/notebooks
 pip install -e ".[scvi]"
 python scripts/extract_api_docs.py
 
-# Re-scrape external knowledge
-python scripts/scrape_external.py
+# Refresh community knowledge (incremental; a token avoids GitHub rate limits)
+GITHUB_TOKEN=$(gh auth token) python scripts/scrape_external.py
+#   --only github|discourse   refresh one source
+#   --repo OWNER/NAME         limit GitHub to one repo (repeatable)
+#   --since 2023-11-01T00:00:00Z   re-fetch GitHub from a date (backfill)
+
+# Sync the scvi-tools / scviva-tools website blog posts and pages
+python scripts/sync_websites.py
 
 # Refresh Hugging Face Hub model registry snapshot
 python scripts/scrape_huggingface_hub.py

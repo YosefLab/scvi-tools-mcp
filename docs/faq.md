@@ -12,7 +12,8 @@ guidance. To actually train a model, install scvi-tools and run the code that th
 
 GitHub Actions jobs handle this automatically and open PRs when diffs are found:
 
-- `refresh_knowledge.yaml` — re-scrapes GitHub issues + Discourse
+- `refresh_knowledge.yaml` — merges new Discourse threads and GitHub issues/PRs/discussions into the community
+  snapshots, and syncs the scvi-tools / scviva-tools website blog posts and pages
 - `sync_tutorials.yaml` — syncs tutorial notebooks from scvi-tools
 - `sync_model_knowledge.yaml` — updates model docs from the scvi-tools CHANGELOG
 - `sync_huggingface_hub.yaml` — refreshes the Hugging Face Hub model registry quarterly
@@ -22,12 +23,36 @@ GitHub Actions jobs handle this automatically and open PRs when diffs are found:
 You can also trigger them manually via `workflow_dispatch` or run the scripts locally:
 
 ```bash
-python scripts/scrape_external.py
+GITHUB_TOKEN=$(gh auth token) python scripts/scrape_external.py   # incremental community refresh
+python scripts/sync_websites.py
 python scripts/convert_notebooks.py --src /path/to/scvi-tutorials --dst src/scvi_tools_mcp/knowledge/tutorials
 python scripts/extract_api_docs.py
 python scripts/scrape_huggingface_hub.py
 python scripts/extract_scviva_api_docs.py --docs-dir /path/to/scviva-tools/docs/user_guide
 python scripts/extract_scib_metrics_api_docs.py
+```
+
+## What community knowledge is included, and how is it searched?
+
+The server bundles accumulative snapshots of:
+
+- the scvi-tools Discourse forum (scvi-tools category and `scvi` tag), every thread with all of its posts;
+- GitHub issues, pull requests (including review comments) and discussions of scvi-tools, scvi-tutorials,
+  scviva-tools, scib-metrics, scvi-colab and scvi-hub-models (bots excluded);
+- blog posts and pages of the scvi-tools and scviva-tools websites.
+
+Snapshots only grow: each monthly refresh adds new and updated entries, and an entry is only removed once its last
+activity is more than three years old (website content is never removed). `search_knowledge` and `get_faq` rank
+these entries individually by relevance and recency, so when several threads answer the same question the most
+recent answer comes first, while a clearly better older match can still win.
+
+The first run builds a three-year baseline; later runs only fetch what changed since the newest stored entry. To
+re-fetch GitHub data from a given date (e.g. after adding a new field), or to refresh a single source or repo:
+
+```bash
+GITHUB_TOKEN=$(gh auth token) python scripts/scrape_external.py --only github --since 2023-11-01T00:00:00Z
+python scripts/scrape_external.py --only discourse
+python scripts/scrape_external.py --only github --repo scverse/scvi-tools
 ```
 
 ## Which models are covered?

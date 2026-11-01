@@ -9,6 +9,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- `release.yaml`: the GitHub release step no longer fails when the release already exists (e.g. created via "Draft a
+  new release" in the GitHub UI, which also pushes the triggering tag); it then attaches the built distributions
+  instead of trying to create the release again.
+
 ## [0.1.7] - 2026-11-01
 
 ### Fixed
