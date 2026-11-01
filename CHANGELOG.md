@@ -27,6 +27,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - The `ruff`/`ruff-format` pre-commit hooks no longer touch `src/scvi_tools_mcp/knowledge/`: they rewrote Python code
   blocks quoted in GitHub/Discourse posts (e.g. `'counts'` -> `"counts"`), altering user code and causing churn on
   every refresh. Affected snapshots were re-scraped verbatim.
+- GitHub Discussions: comments and replies are now fully paginated. Previously a discussion with more than 100
+  comments or 50 replies to one comment was silently truncated, and the truncated copy replaced the stored entry.
 
 ### Added
 

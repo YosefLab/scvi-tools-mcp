@@ -540,3 +540,66 @@ def test_build_github_entry_includes_pr_reviews_and_inline_comments_in_time_orde
     third = rendered.index("**@a:** third")
     assert first < second < third
     assert "noise" not in rendered
+
+
+def test_complete_discussion_paginates_comments_and_replies(monkeypatch):
+    import scripts.scrape_external as se
+
+    calls: list = []
+
+    def fake_graphql(query, variables):
+        calls.append(variables)
+        if variables["id"] == "D1":  # second page of comments
+            return {
+                "node": {
+                    "comments": {
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                        "nodes": [
+                            {
+                                "id": "C2",
+                                "body": "c2",
+                                "author": {"login": "b"},
+                                "replies": {"pageInfo": {"hasNextPage": False}, "nodes": []},
+                            }
+                        ],
+                    }
+                }
+            }
+        return {  # second page of replies of C1
+            "node": {
+                "replies": {
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    "nodes": [{"body": "r2", "author": {"login": "c"}}],
+                }
+            }
+        }
+
+    monkeypatch.setattr(se, "_github_graphql", fake_graphql)
+    monkeypatch.setattr(se.time, "sleep", lambda s: None)
+    node = {
+        "id": "D1",
+        "number": 5,
+        "title": "Long discussion",
+        "updatedAt": "2026-10-01T00:00:00Z",
+        "comments": {
+            "pageInfo": {"hasNextPage": True, "endCursor": "cur-c"},
+            "nodes": [
+                {
+                    "id": "C1",
+                    "body": "c1",
+                    "author": {"login": "a"},
+                    "replies": {
+                        "pageInfo": {"hasNextPage": True, "endCursor": "cur-r"},
+                        "nodes": [{"body": "r1", "author": {"login": "c"}}],
+                    },
+                }
+            ],
+        },
+    }
+
+    rendered = se.build_discussion_entry(se.complete_discussion(node)).render()
+
+    assert {"id": "D1", "after": "cur-c"} in calls and {"id": "C1", "after": "cur-r"} in calls
+    for text in ("c1", "c2", "r1", "r2"):
+        assert text in rendered
+    assert "**Comments:** 2" in rendered

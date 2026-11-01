@@ -452,14 +452,15 @@ query($owner: String!, $name: String!, $after: String) {
     discussions(first: 25, after: $after, orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        number title url body createdAt updatedAt
+        id number title url body createdAt updatedAt
         author { login }
         category { name }
         answer { id }
         comments(first: 100) {
+          pageInfo { hasNextPage endCursor }
           nodes {
             id body author { login }
-            replies(first: 50) { nodes { body author { login } } }
+            replies(first: 100) { pageInfo { hasNextPage endCursor } nodes { body author { login } } }
           }
         }
       }
@@ -467,6 +468,72 @@ query($owner: String!, $name: String!, $after: String) {
   }
 }
 """
+
+# Follow-up queries for discussions with more comments / replies than fit in the first page.
+_DISCUSSION_COMMENTS_QUERY = """
+query($id: ID!, $after: String) {
+  node(id: $id) {
+    ... on Discussion {
+      comments(first: 100, after: $after) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          id body author { login }
+          replies(first: 100) { pageInfo { hasNextPage endCursor } nodes { body author { login } } }
+        }
+      }
+    }
+  }
+}
+"""
+
+_COMMENT_REPLIES_QUERY = """
+query($id: ID!, $after: String) {
+  node(id: $id) {
+    ... on DiscussionComment {
+      replies(first: 100, after: $after) {
+        pageInfo { hasNextPage endCursor }
+        nodes { body author { login } }
+      }
+    }
+  }
+}
+"""
+
+
+def _paginate_connection(conn: dict, fetch_next: Callable[[str], dict]) -> list[dict]:
+    """All nodes of a GraphQL connection, following ``pageInfo`` with ``fetch_next(cursor) -> connection``."""
+    nodes = list(conn.get("nodes") or [])
+    page_info = conn.get("pageInfo") or {}
+    while page_info.get("hasNextPage"):
+        time.sleep(0.3)
+        conn = fetch_next(page_info["endCursor"])
+        nodes.extend(conn.get("nodes") or [])
+        page_info = conn.get("pageInfo") or {}
+    return nodes
+
+
+def complete_discussion(node: dict) -> dict:
+    """Fill in every comment and reply of a discussion node (nested connections are paginated).
+
+    Without this a long discussion would be truncated and, since a fetched entry replaces
+    the stored one, the missing answers would be dropped permanently.
+    """
+
+    def more_comments(cursor: str) -> dict:
+        data = _github_graphql(_DISCUSSION_COMMENTS_QUERY, {"id": node["id"], "after": cursor})
+        return data["node"]["comments"]
+
+    comments = _paginate_connection(node.get("comments") or {}, more_comments)
+    for comment in comments:
+
+        def more_replies(cursor: str, comment_id: str = comment["id"]) -> dict:
+            data = _github_graphql(_COMMENT_REPLIES_QUERY, {"id": comment_id, "after": cursor})
+            return data["node"]["replies"]
+
+        replies = _paginate_connection(comment.get("replies") or {}, more_replies)
+        comment["replies"] = {"nodes": replies}
+    node["comments"] = {"nodes": comments}
+    return node
 
 
 def build_discussion_entry(node: dict) -> SnapshotEntry:
@@ -523,7 +590,7 @@ def fetch_github_discussions(repo: str, existing: list[SnapshotEntry], now: dt.d
             updated = _parse_ts(node.get("updatedAt"))
             if updated is not None and updated < since:
                 return fetched
-            fetched.append(build_discussion_entry(node))
+            fetched.append(build_discussion_entry(complete_discussion(node)))
         if not conn["pageInfo"]["hasNextPage"]:
             return fetched
         after = conn["pageInfo"]["endCursor"]
