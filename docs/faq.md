@@ -38,19 +38,23 @@ The server bundles accumulative snapshots of:
 
 - the scvi-tools Discourse forum (scvi-tools category and `scvi` tag), every thread with all of its posts;
 - GitHub issues, pull requests (including review comments) and discussions of scvi-tools, scvi-tutorials,
-  scviva-tools, scib-metrics, scvi-colab and scvi-hub-models (bots excluded);
+  scviva-tools, scib-metrics, scvi-colab and scvi-hub-models (content written by bots is excluded);
 - blog posts and pages of the scvi-tools and scviva-tools websites.
 
-Snapshots only grow: each monthly refresh adds new and updated entries, and an entry is only removed once its last
-activity is more than three years old (website content is never removed). `search_knowledge` and `get_faq` rank
-these entries individually by relevance and recency, so when several threads answer the same question the most
-recent answer comes first, while a clearly better older match can still win.
+Snapshots only grow: each monthly refresh adds new and updated entries, and a Discourse or GitHub entry is only
+removed once its last activity is more than three years old (website content is never removed).
+
+`search_knowledge` and `get_faq` rank the Discourse and GitHub entries individually by relevance and recency, so when
+several threads answer the same question the most recent answer comes first, while a clearly better older match can
+still win. Website pages are searched by `search_knowledge` like the other documentation (keyword relevance, no
+recency weighting) and are not part of `get_faq`.
 
 The first run builds a three-year baseline; later runs only fetch what changed since the newest stored entry. To
 re-fetch GitHub data from a given date (e.g. after adding a new field), or to refresh a single source or repo:
 
 ```bash
-GITHUB_TOKEN=$(gh auth token) python scripts/scrape_external.py --only github --since 2023-11-01T00:00:00Z
+export GITHUB_TOKEN=$(gh auth token)  # needed for Discussions (GraphQL) and higher rate limits
+python scripts/scrape_external.py --only github --since 2023-11-01T00:00:00Z
 python scripts/scrape_external.py --only discourse
 python scripts/scrape_external.py --only github --repo scverse/scvi-tools
 ```

@@ -115,11 +115,12 @@ All knowledge is baked into the package as Markdown files at build time. No netw
 | `knowledge/websites/<site>/`                 | scvi-tools / scviva-tools website blog posts and pages (accumulative) |
 
 Community snapshots cover the scvi-tools Discourse forum and the GitHub repos scvi-tools, scvi-tutorials,
-scviva-tools, scib-metrics, scvi-colab and scvi-hub-models (issues, PRs with review comments, and discussions; bots
-excluded). They only grow: each refresh adds new and updated entries, and an entry is removed only once its last
-activity is more than three years old (website content is never removed). `search_knowledge` and `get_faq` rank
-community entries individually by relevance × recency, so the most recent answer to a question comes first, and list
-them separately from the curated docs.
+scviva-tools, scib-metrics, scvi-colab and scvi-hub-models (issues, PRs with review comments, and discussions;
+content written by bots is excluded). They only grow: each refresh adds new and updated entries, and an entry is
+removed only once its last activity is more than three years old. `search_knowledge` and `get_faq` rank these
+Discourse/GitHub entries individually by relevance × recency, so the most recent answer to a question comes first,
+and list them separately from the curated docs. Website pages are never removed and are searched like the other
+documentation (no recency weighting).
 
 ______________________________________________________________________
 
@@ -162,8 +163,10 @@ python scripts/convert_notebooks.py /path/to/scvi-tools/docs/tutorials/notebooks
 pip install -e ".[scvi]"
 python scripts/extract_api_docs.py
 
-# Refresh community knowledge (incremental; a token avoids GitHub rate limits)
-GITHUB_TOKEN=$(gh auth token) python scripts/scrape_external.py
+# Refresh community knowledge (incremental). The token is needed for GitHub Discussions
+# (GraphQL) and avoids REST rate limits; export it so the flag variants below also get it.
+export GITHUB_TOKEN=$(gh auth token)
+python scripts/scrape_external.py
 #   --only github|discourse   refresh one source
 #   --repo OWNER/NAME         limit GitHub to one repo (repeatable)
 #   --since 2023-11-01T00:00:00Z   re-fetch GitHub from a date (backfill)

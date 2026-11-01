@@ -453,14 +453,14 @@ query($owner: String!, $name: String!, $after: String) {
       pageInfo { hasNextPage endCursor }
       nodes {
         id number title url body createdAt updatedAt
-        author { login }
+        author { login __typename }
         category { name }
         answer { id }
         comments(first: 100) {
           pageInfo { hasNextPage endCursor }
           nodes {
-            id body author { login }
-            replies(first: 100) { pageInfo { hasNextPage endCursor } nodes { body author { login } } }
+            id body author { login __typename }
+            replies(first: 100) { pageInfo { hasNextPage endCursor } nodes { body author { login __typename } } }
           }
         }
       }
@@ -477,8 +477,8 @@ query($id: ID!, $after: String) {
       comments(first: 100, after: $after) {
         pageInfo { hasNextPage endCursor }
         nodes {
-          id body author { login }
-          replies(first: 100) { pageInfo { hasNextPage endCursor } nodes { body author { login } } }
+          id body author { login __typename }
+          replies(first: 100) { pageInfo { hasNextPage endCursor } nodes { body author { login __typename } } }
         }
       }
     }
@@ -492,7 +492,7 @@ query($id: ID!, $after: String) {
     ... on DiscussionComment {
       replies(first: 100, after: $after) {
         pageInfo { hasNextPage endCursor }
-        nodes { body author { login } }
+        nodes { body author { login __typename } }
       }
     }
   }
@@ -536,17 +536,27 @@ def complete_discussion(node: dict) -> dict:
     return node
 
 
+def _is_graphql_bot(author: dict | None) -> bool:
+    author = author or {}
+    return author.get("__typename") == "Bot" or str(author.get("login", "")).endswith("[bot]")
+
+
 def build_discussion_entry(node: dict) -> SnapshotEntry:
-    """Render one GitHub Discussion (GraphQL node) into a snapshot section."""
+    """Render one GitHub Discussion (GraphQL node) into a snapshot section.
+
+    Bot-authored comments and replies are skipped, like on issues and PRs (replies by
+    people to a bot comment are kept).
+    """
     number = node["number"]
     last_activity = _parse_ts(node.get("updatedAt")) or _parse_ts(node.get("createdAt"))
     answer_id = (node.get("answer") or {}).get("id")
     author = (node.get("author") or {}).get("login", "unknown")
     comments = (node.get("comments") or {}).get("nodes", [])
+    n_human = sum(1 for c in comments if not _is_graphql_bot(c.get("author")))
     lines = [
         f"**Discussion:** #{number} | **Last activity:** {_fmt_ts(last_activity)}",
         f"**Category:** {(node.get('category') or {}).get('name', '')} | **Author:** @{author}"
-        f" | **Comments:** {len(comments)} | **Answered:** {'yes' if answer_id else 'no'}"
+        f" | **Comments:** {n_human} | **Answered:** {'yes' if answer_id else 'no'}"
         f" | **Created:** {(node.get('createdAt') or '')[:10]} | **URL:** {node.get('url', '')}",
         "",
     ]
@@ -557,9 +567,11 @@ def build_discussion_entry(node: dict) -> SnapshotEntry:
         cauthor = (comment.get("author") or {}).get("login", "unknown")
         marker = " (accepted answer)" if answer_id and comment.get("id") == answer_id else ""
         cbody = _trim(comment.get("body") or "", MAX_COMMENT_CHARS)
-        if cbody:
+        if cbody and not _is_graphql_bot(comment.get("author")):
             lines += [f"**@{cauthor}{marker}:** {cbody}", ""]
         for reply in (comment.get("replies") or {}).get("nodes", []):
+            if _is_graphql_bot(reply.get("author")):
+                continue
             rauthor = (reply.get("author") or {}).get("login", "unknown")
             rbody = _trim(reply.get("body") or "", MAX_COMMENT_CHARS)
             if rbody:
@@ -590,6 +602,8 @@ def fetch_github_discussions(repo: str, existing: list[SnapshotEntry], now: dt.d
             updated = _parse_ts(node.get("updatedAt"))
             if updated is not None and updated < since:
                 return fetched
+            if _is_graphql_bot(node.get("author")):
+                continue
             fetched.append(build_discussion_entry(complete_discussion(node)))
         if not conn["pageInfo"]["hasNextPage"]:
             return fetched
