@@ -1,0 +1,12 @@
+/* Sidebar: larger, centered project title */
+.bd-sidebar-primary .navbar-brand {
+    justify-content: center;
+    width: 100%;
+}
+
+.bd-sidebar-primary .navbar-brand .logo__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 0 auto;
+}
