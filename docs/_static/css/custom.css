@@ -1,0 +1,6 @@
+/* Landing page: larger, centered main title */
+section#scvi-tools-mcp > h1 {
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}

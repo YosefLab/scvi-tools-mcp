@@ -1,6 +1,6 @@
 # Citation
 
-scVI-Tools MCP gives LLMs access to scvi-tools. If it helped your work, please cite scvi-tools:
+scvi-tools MCP gives LLMs access to scvi-tools. If it helped your work, please cite scvi-tools:
 
 > **A Python library for probabilistic analysis of single-cell omics data**
 >

@@ -1,4 +1,4 @@
-# scVI-Tools MCP
+# scvi-tools MCP
 
 An MCP (Model Context Protocol) server that gives LLMs structured access to [scvi-tools](https://scvi-tools.org) — a Python library for deep probabilistic analysis of single-cell omics data.
 
@@ -8,7 +8,7 @@ scib-metrics integration-benchmarking metrics.
 
 ```{toctree}
 :caption: Getting started
-:hidden: true
+:hidden:
 :maxdepth: 1
 
 installation
@@ -16,9 +16,9 @@ installation
 
 ```{toctree}
 :caption: Guides
-:hidden: true
+:hidden:
 :maxdepth: 2
-:titlesonly: true
+:titlesonly:
 
 faq
 architecture/index
@@ -26,9 +26,9 @@ architecture/index
 
 ```{toctree}
 :caption: Reference
-:hidden: true
+:hidden:
 :maxdepth: 2
-:titlesonly: true
+:titlesonly:
 
 api
 references
@@ -36,7 +36,7 @@ references
 
 ```{toctree}
 :caption: Project
-:hidden: true
+:hidden:
 :maxdepth: 1
 
 changelog

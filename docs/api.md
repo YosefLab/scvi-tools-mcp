@@ -1,7 +1,7 @@
 # API reference
 
 This reference documents the Python entry point and the tools exposed by the
-scVI-Tools MCP server. MCP clients discover these tools automatically.
+scvi-tools MCP server. MCP clients discover these tools automatically.
 
 ## Server
 
