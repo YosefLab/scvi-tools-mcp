@@ -9,6 +9,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- The documentation is built with `scverse-doc` on Sphinx 9 (replacing furo), following scverse/scvi-tools#4091:
+  the scverse theme and extension stack, and the shared sidebar layout: Getting started (installation), Guides (FAQ,
+  architecture), Reference (API, model references) and Project (changelog, a new citation page, GitHub, PyPI,
+  Discourse, scvi-tools docs). Intersphinx uses the scverse-doc registry.
+
 ### Fixed
 
 - `release.yaml`: the GitHub release step no longer fails when the release already exists (e.g. created via "Draft a

@@ -36,9 +36,8 @@ dev = [
   "ruff>=0.1",
 ]
 doc = [
-  "furo>=2023",
-  "myst-parser>=2",
-  "sphinx>=7",
+  "scverse-doc[full]>=0.4",
+  "sphinx>=9.1",
 ]
 
 [tool.hatch]

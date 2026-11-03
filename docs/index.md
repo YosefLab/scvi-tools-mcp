@@ -7,13 +7,42 @@ the official scvi-tools Hugging Face Hub model registry, the companion scviva-to
 scib-metrics integration-benchmarking metrics.
 
 ```{toctree}
-:maxdepth: 2
-:caption: Contents
+:caption: Getting started
+:hidden: true
+:maxdepth: 1
 
 installation
-architecture/index
-api
+```
+
+```{toctree}
+:caption: Guides
+:hidden: true
+:maxdepth: 2
+:titlesonly: true
+
 faq
+architecture/index
+```
+
+```{toctree}
+:caption: Reference
+:hidden: true
+:maxdepth: 2
+:titlesonly: true
+
+api
 references
+```
+
+```{toctree}
+:caption: Project
+:hidden: true
+:maxdepth: 1
+
 changelog
+citation
+GitHub <https://github.com/YosefLab/scvi-tools-mcp>
+PyPI <https://pypi.org/project/scvi-tools-mcp/>
+Discourse <https://discourse.scverse.org/c/help/scvi-tools/7>
+scvi-tools docs <https://docs.scvi-tools.org/>
 ```
