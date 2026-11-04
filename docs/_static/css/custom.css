@@ -1,12 +1,13 @@
-/* Sidebar: larger, centered project title */
+/* Sidebar: project logo in place of the package name, centered and full width */
 .bd-sidebar-primary .navbar-brand {
     justify-content: center;
     width: 100%;
+    height: auto;
+    max-height: none;
 }
 
-.bd-sidebar-primary .navbar-brand .logo__title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    text-align: center;
-    margin: 0 auto;
+.bd-sidebar-primary .navbar-brand img.logo__image {
+    width: 100%;
+    height: auto;
+    max-height: none;
 }

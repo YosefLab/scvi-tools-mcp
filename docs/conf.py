@@ -25,5 +25,8 @@ html_extra_path = ["architecture/scvi-tools-mcp-block-diagram.html"]
 # and are not part of the documented API.
 nitpick_ignore_regex = [("py:class", r"scvi_tools_mcp\.tools\._\w+\.\w+")]
 
+html_logo = "_static/logo.png"
+# pydata-sphinx-theme swaps in the dark-mode logo (light text) when the dark colour mode is active.
+html_theme_options = {"logo": {"image_light": "_static/logo.png", "image_dark": "_static/logo-dark.png"}}
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
