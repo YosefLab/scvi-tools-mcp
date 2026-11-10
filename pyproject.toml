@@ -7,6 +7,12 @@ name = "scvi-tools-mcp"
 description = "MCP server for scvi-tools - deep probabilistic analysis of single-cell omics data"
 readme = "README.md"
 license = { file = "LICENSE" }
+maintainers = [
+  { name = "The scvi-tools development team", email = "ori.kronfeld@weizmann.ac.il" },
+]
+authors = [
+  { name = "The scvi-tools development team" },
+]
 requires-python = ">=3.12"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
