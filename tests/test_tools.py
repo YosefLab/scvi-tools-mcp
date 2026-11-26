@@ -576,3 +576,57 @@ def test_search_knowledge_lists_community_entries_separately(mock_knowledge):
     assert "#3949: Correct way to run SOLO" in result.content
     assert "> You can run hvg and run SOLO." in result.content
     assert "**faq/github_scvi-tools_issues**" not in result.content  # not ranked as one big file
+
+
+def test_recommend_model_spatial_task_points_to_scviva(mock_knowledge):
+    from scvi_tools_mcp.tools._model_guidance import recommend_model
+
+    result = recommend_model(
+        task="cell_communication",
+        data_type="spatial",
+        has_protein=False,
+        has_accessibility=False,
+        n_batches=1,
+    )
+    assert result.error is None
+    assert "HARREMAN" in result.content
+    assert "get_scviva_model(model_name='harreman')" in result.content
+
+
+def test_recommend_model_spatial_data_boosts_spatial_models(mock_knowledge):
+    from scvi_tools_mcp.tools._model_guidance import recommend_model
+
+    result = recommend_model(
+        task="batch_integration",
+        data_type="spatial",
+        has_protein=False,
+        has_accessibility=False,
+        n_batches=2,
+    )
+    assert result.error is None
+    ranked = result.content.split("## Ranked Recommendations")[1]
+    assert ranked.index("RESOLVI") < ranked.index("SCVI**")
+
+
+def test_get_api_reference_finds_scviva_tools_symbols(mock_knowledge):
+    from scvi_tools_mcp.tools._api_reference import get_api_reference
+
+    api_dir = mock_knowledge / "scviva_tools" / "api"
+    api_dir.mkdir(parents=True, exist_ok=True)
+    (api_dir / "vision.md").write_text(
+        "# VISION — API Reference\n\n## setup\n\nVisionAnalysis.setup(...)\n\n## compute_signatures\n\nScore.\n",
+        encoding="utf-8",
+    )
+    result = get_api_reference(symbol="VisionAnalysis.compute_signatures")
+    assert result.error is None
+    assert result.content.startswith("## compute_signatures")
+
+
+def test_annotate_pitfalls_inserts_note_after_code_block():
+    from scvi_tools_mcp.tools import utils
+
+    lines = ["text", "```python", "DE.gpc.confident_genes", "```", "more"]
+    out = utils.annotate_pitfalls(lines)
+    assert out[:4] == lines[:4]
+    assert "plot" in out[5]
+    assert out[-1] == "more"

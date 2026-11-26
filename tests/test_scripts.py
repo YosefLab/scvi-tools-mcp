@@ -78,7 +78,7 @@ def test_merge_with_user_guide_appends_when_present(tmp_path):
     assert "Narrative guide for ResolVI." in merged
 
 
-def test_extract_scviva_api_docs_model_classes_cover_all_eight_models():
+def test_extract_scviva_api_docs_model_classes_cover_all_nine_models():
     from scripts.extract_scviva_api_docs import MODEL_CLASSES
 
     assert set(MODEL_CLASSES) == {
@@ -90,6 +90,7 @@ def test_extract_scviva_api_docs_model_classes_cover_all_eight_models():
         "stereoscope",
         "tangram",
         "harreman",
+        "vision",
     }
     assert MODEL_CLASSES["stereoscope"] == [
         "scviva.external.stereoscope.RNAStereoscope",

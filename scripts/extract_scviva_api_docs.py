@@ -8,6 +8,7 @@ Usage:
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 
 try:
@@ -19,7 +20,7 @@ KNOWLEDGE_MODELS = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/
 KNOWLEDGE_API = Path(__file__).parent.parent / "src/scvi_tools_mcp/knowledge/scviva_tools/api"
 
 # scviva-tools does not put every model under `scviva.model` — DiagVI and Tangram live
-# under `scviva.external`, Harreman under `scviva.tools.harreman`, and Stereoscope
+# under `scviva.external`, Harreman and VISION under `scviva.tools`, and Stereoscope
 # exposes two separate classes (RNAStereoscope, SpatialStereoscope) sharing one entry.
 MODEL_CLASSES: dict[str, list[str]] = {
     "resolvi": ["scviva.model.ResolVI"],
@@ -33,9 +34,19 @@ MODEL_CLASSES: dict[str, list[str]] = {
     ],
     "tangram": ["scviva.external.tangram.Tangram"],
     "harreman": ["scviva.tools.harreman.HarremanAnalysis"],
+    "vision": ["scviva.tools.vision.VisionAnalysis"],
 }
 
 EXTRA_METHODS = ("setup_anndata", "train")
+
+# Harreman and VISION are analysis classes, not trainable models: their workflow is
+# setup() / compute_*() rather than setup_anndata() / train(), so render every public
+# method they define instead of the model-oriented EXTRA_METHODS.
+ANALYSIS_MODELS = {"harreman", "vision"}
+
+
+def _public_methods(cls: type) -> tuple[str, ...]:
+    return tuple(name for name, attr in vars(cls).items() if not name.startswith("_") and inspect.isfunction(attr))
 
 
 def run(docs_dir: Path | None = None) -> None:
@@ -48,7 +59,11 @@ def run(docs_dir: Path | None = None) -> None:
         if not classes:
             print(f"  SKIP (not found): {dotted_paths}")
             continue
-        md = render_doc(model_name.upper(), classes, extra_methods=EXTRA_METHODS)
+        if model_name in ANALYSIS_MODELS:
+            extra = tuple(dict.fromkeys(m for cls in classes for m in _public_methods(cls)))
+        else:
+            extra = EXTRA_METHODS
+        md = render_doc(model_name.upper(), classes, extra_methods=extra)
 
         out_api = KNOWLEDGE_API / f"{model_name}.md"
         out_api.write_text(md, encoding="utf-8")

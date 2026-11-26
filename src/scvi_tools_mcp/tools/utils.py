@@ -55,3 +55,31 @@ def list_knowledge_files(subdir: str) -> list[str]:
     if not target.exists():
         return []
     return sorted(p.stem for p in target.glob("*.md"))
+
+
+# Known mismatches between synced upstream tutorials and the current package API.
+# Tutorials are regenerated from upstream notebooks on every sync, so corrections are
+# injected at serve time instead of edited into the knowledge files.
+TUTORIAL_PITFALLS: list[tuple[str, str]] = [
+    (
+        "gpc.confident_genes",
+        "> **Note (scvi-tools-mcp):** `gpc.confident_genes` is not set by "
+        "`differential_expression()`. It is set only as a side effect of calling "
+        "`DE_results.plot(...)`, and is restricted to the genes passed as `filter`. "
+        "Without the plot, use `DE_results.gpc.y_[DE_results.gpc.y_].index` "
+        "(boolean mask: genes DE at the FDR threshold and upregulated in group1 vs "
+        "neighbors1, over all genes) instead.",
+    ),
+]
+
+
+def annotate_pitfalls(lines: list[str]) -> list[str]:
+    """Insert a note after the first code block that uses each known-broken pattern."""
+    out = list(lines)
+    for pattern, note in TUTORIAL_PITFALLS:
+        idx = next((i for i, line in enumerate(out) if pattern in line), None)
+        if idx is None:
+            continue
+        end = next((j for j in range(idx + 1, len(out)) if out[j].strip() == "```"), idx)
+        out[end + 1 : end + 1] = ["", note, ""]
+    return out

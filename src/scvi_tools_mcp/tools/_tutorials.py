@@ -100,7 +100,7 @@ def get_tutorial(tutorial_name: str, page: int = 1, page_size: int = 200) -> Tut
             return TutorialResult(
                 error=f"Tutorial '{tutorial_name}' not found. Call list_tutorials() to see available tutorials."
             )
-        lines = path.read_text(encoding="utf-8").splitlines()
+        lines = utils.annotate_pitfalls(path.read_text(encoding="utf-8").splitlines())
         result = utils.paginate(lines, page=page, page_size=page_size)
         return TutorialResult(
             content="\n".join(result.lines),
