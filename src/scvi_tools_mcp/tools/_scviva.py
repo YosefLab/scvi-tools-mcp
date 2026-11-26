@@ -120,8 +120,8 @@ def get_scviva_tutorial(tutorial_name: str, page: int = 1, page_size: int = 200)
     """
     try:
         base = _scviva_dir() / "tutorials"
-        path = base / f"{tutorial_name}.md"
-        if not path.exists():
+        path = utils.knowledge_file(base, tutorial_name)
+        if path is None:
             return ScvivaResult(
                 error=f"scviva-tools tutorial '{tutorial_name}' not found. Call list_scviva_tutorials() first."
             )

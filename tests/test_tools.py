@@ -688,3 +688,23 @@ def test_annotate_pitfalls_uses_tutorial_variable():
     out = utils.annotate_pitfalls(["```python", "DE_1_0.gpc.confident_genes", "```"])
     assert "`DE_1_0.gpc.y_[DE_1_0.gpc.y_].index`" in out[4]
     assert "DE_results" not in out[4]
+
+
+def test_knowledge_lookups_reject_path_traversal(mock_knowledge):
+    from scvi_tools_mcp.tools._api_reference import get_api_reference
+    from scvi_tools_mcp.tools._scib_metrics import get_scib_metrics_tutorial
+    from scvi_tools_mcp.tools._scviva import get_scviva_tutorial
+    from scvi_tools_mcp.tools._tutorials import get_tutorial
+
+    (mock_knowledge.parent / "secret.md").write_text("TOP SECRET", encoding="utf-8")
+    secret = str(mock_knowledge.parent / "secret")
+    for name in ["../secret", "../../secret", secret]:
+        for result in (
+            get_tutorial(tutorial_name=name),
+            get_scviva_tutorial(tutorial_name=name),
+            get_scib_metrics_tutorial(tutorial_name=name),
+        ):
+            assert result.content is None or "TOP SECRET" not in result.content
+    for symbol in ["../secret", secret, "scvi/../../secret"]:
+        result = get_api_reference(symbol=symbol)
+        assert result.content is None or "TOP SECRET" not in result.content

@@ -38,8 +38,8 @@ def _tutorials_dir() -> Path:
 
 def _find_tutorial(name: str) -> Path | None:
     base = _tutorials_dir()
-    candidate = base / f"{name}.md"
-    if candidate.exists():
+    candidate = utils.knowledge_file(base, name)
+    if candidate is not None:
         return candidate
     stem = name.split("/")[-1]
     for md in base.rglob("*.md"):

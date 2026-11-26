@@ -50,6 +50,18 @@ def paginate(lines: list[str], page: int = 1, page_size: int = 200) -> PaginateR
     return PaginateResult(lines=lines[start:end], page=page, total_pages=total_pages)
 
 
+def knowledge_file(base: Path, name: str) -> Path | None:
+    """Return base/<name>.md if it exists and stays inside base, else None.
+
+    Tool arguments are untrusted: an absolute path or '..' segments in name must not
+    let a caller read files outside the knowledge directory.
+    """
+    candidate = (base / f"{name}.md").resolve()
+    if not candidate.is_relative_to(base.resolve()) or not candidate.is_file():
+        return None
+    return candidate
+
+
 def list_knowledge_files(subdir: str) -> list[str]:
     knowledge_dir = get_knowledge_dir()
     target = knowledge_dir / subdir

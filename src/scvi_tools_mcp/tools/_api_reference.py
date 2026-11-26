@@ -31,15 +31,19 @@ def _api_dirs() -> list[Path]:
 
 
 def _find_symbol(symbol: str) -> Path | None:
-    parts = [_SYMBOL_ALIASES.get(p, p) for p in symbol.lower().split(".")]
+    raw_parts = symbol.lower().split(".")
+    # Symbols are dotted Python names; anything else (path separators, '..') is rejected.
+    if not all(part.isidentifier() for part in raw_parts):
+        return None
+    parts = [_SYMBOL_ALIASES.get(p, p) for p in raw_parts]
     knowledge_dir = utils.get_knowledge_dir()
     search_dirs = [*_api_dirs(), knowledge_dir / "models", knowledge_dir / "scviva_tools" / "models"]
     # For dotted symbols like 'SCANVI.setup_anndata', use the class component
     # to find the file so method-extraction logic can slice the right section.
     for name in parts:
         for directory in search_dirs:
-            candidate = directory / f"{name}.md"
-            if candidate.exists():
+            candidate = utils.knowledge_file(directory, name)
+            if candidate is not None:
                 return candidate
     return None
 
