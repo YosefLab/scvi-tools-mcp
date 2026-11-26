@@ -126,8 +126,8 @@ def get_scib_metrics_tutorial(tutorial_name: str, page: int = 1, page_size: int 
     """
     try:
         base = _scib_metrics_dir() / "tutorials"
-        path = base / f"{tutorial_name}.md"
-        if not path.exists():
+        path = utils.knowledge_file(base, tutorial_name)
+        if path is None:
             return ScibMetricsResult(
                 error=f"scib-metrics tutorial '{tutorial_name}' not found. Call list_scib_metrics_tutorials() first."
             )

@@ -18,6 +18,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- `recommend_model` now proposes the scviva-tools spatial models: new tasks `spatial_denoising` (ResolVI),
+  `niche_analysis` (scVIVA), `cell_communication` (Harreman) and `spatial_signature_scoring` (VISION), and
+  `data_type="spatial"` ranks ResolVI/scVIVA first for integration, embedding, annotation and DE.
+- `get_api_reference` and `search_api` also search the scviva-tools API reference (Harreman, VISION, ResolVI,
+  scVIVA, ...), including class-name lookups such as `VisionAnalysis.compute_signatures`.
+- VISION (`scviva.tools.vision.VisionAnalysis`) added to the scviva-tools knowledge and `get_scviva_model`; the
+  Harreman and VISION API references now include their public methods (`setup`, `compute_*`, ...).
+- scVIVA tutorials served by `get_tutorial`/`get_scviva_tutorial` carry a note that `gpc.confident_genes` is only
+  set by `DifferentialExpressionResults.plot()`, with an equivalent that works without plotting.
 - `release.yaml`: the GitHub release step no longer fails when the release already exists (e.g. created via "Draft a
   new release" in the GitHub UI, which also pushes the triggering tag); it then attaches the built distributions
   instead of trying to create the release again.

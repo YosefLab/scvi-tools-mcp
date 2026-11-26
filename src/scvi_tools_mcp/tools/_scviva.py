@@ -17,6 +17,7 @@ ScvivaModelName = Literal[
     "stereoscope",
     "tangram",
     "harreman",
+    "vision",
 ]
 
 MODEL_DESCRIPTIONS: dict[str, str] = {
@@ -28,6 +29,7 @@ MODEL_DESCRIPTIONS: dict[str, str] = {
     "stereoscope": "Two-stage deconvolution of spatial spots into cell type proportions (RNA + spatial models).",
     "tangram": "Maps single-cell RNA-seq data onto spatial coordinates via constrained optimization.",
     "harreman": "Cell-cell interaction and communication analysis over spatial neighborhoods.",
+    "vision": "Gene-signature scoring and spatial/graph autocorrelation (Python port of R VISION).",
 }
 
 
@@ -48,8 +50,8 @@ def list_scviva_models() -> ScvivaResult:
     """List the spatial transcriptomics models exposed by the scviva-tools package.
 
     scviva-tools is a companion spatial toolkit built on top of scvi-tools, unifying
-    ResolVI, DestVI, scVIVA, GIMVI, DiagVI, Stereoscope, Tangram, and Harreman under
-    one API. Use get_scviva_model for details on any model returned here.
+    ResolVI, DestVI, scVIVA, GIMVI, DiagVI, Stereoscope, Tangram, Harreman, and VISION
+    under one API. Use get_scviva_model for details on any model returned here.
     """
     try:
         lines = ["# scviva-tools Models", ""]
@@ -69,7 +71,7 @@ def get_scviva_model(model_name: ScvivaModelName, page: int = 1, page_size: int 
     and call again with page=2, 3, etc. to read the rest, including the User Guide section.
 
     Args:
-        model_name: One of resolvi, destvi, scviva, gimvi, diagvi, stereoscope, tangram, harreman.
+        model_name: One of resolvi, destvi, scviva, gimvi, diagvi, stereoscope, tangram, harreman, vision.
         page: Page number starting at 1.
         page_size: Lines per page (default 200).
     """
@@ -118,12 +120,12 @@ def get_scviva_tutorial(tutorial_name: str, page: int = 1, page_size: int = 200)
     """
     try:
         base = _scviva_dir() / "tutorials"
-        path = base / f"{tutorial_name}.md"
-        if not path.exists():
+        path = utils.knowledge_file(base, tutorial_name)
+        if path is None:
             return ScvivaResult(
                 error=f"scviva-tools tutorial '{tutorial_name}' not found. Call list_scviva_tutorials() first."
             )
-        lines = path.read_text(encoding="utf-8").splitlines()
+        lines = utils.annotate_pitfalls(path.read_text(encoding="utf-8").splitlines())
         result = utils.paginate(lines, page=page, page_size=page_size)
         return ScvivaResult(
             content="\n".join(result.lines),

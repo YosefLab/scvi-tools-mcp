@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from scvi_tools_mcp.mcp import mcp
 from scvi_tools_mcp.tools import utils
 from scvi_tools_mcp.tools._constants import MODEL_NAMES  # noqa: F401 — re-exported
+from scvi_tools_mcp.tools._scviva import MODEL_DESCRIPTIONS as SCVIVA_DESCRIPTIONS
 
 TASK_MODEL_MAP: dict[str, list[str]] = {
     "batch_integration": ["scvi", "scanvi", "sysvi", "linearscvi"],
@@ -15,6 +16,10 @@ TASK_MODEL_MAP: dict[str, list[str]] = {
     "cell_type_annotation": ["scanvi", "cellassign", "solo"],
     "deconvolution": ["destvi", "stereoscope", "tangram"],
     "spatial_mapping": ["tangram", "destvi", "gimvi", "scviva"],
+    "spatial_denoising": ["resolvi"],
+    "niche_analysis": ["scviva", "resolvi"],
+    "cell_communication": ["harreman", "scviva"],
+    "spatial_signature_scoring": ["vision", "harreman"],
     "chromatin_accessibility": ["peakvi", "poissonvi", "scbasset", "multivi"],
     "multimodal_integration": ["totalvi", "multivi"],
     "reference_mapping": ["scanvi"],
@@ -24,12 +29,35 @@ TASK_MODEL_MAP: dict[str, list[str]] = {
 DATA_TYPE_HINTS: dict[str, str] = {
     "scrna": "For scRNA-seq, start with scVI for batch integration or SCANVI if you have cell type labels.",
     "cite_seq": "For CITE-seq (RNA + protein), use TotalVI.",
-    "spatial": "For spatial transcriptomics, consider DestVI or Tangram for deconvolution.",
+    "spatial": (
+        "For spatial transcriptomics (scviva-tools): spot-based data (Visium) -> DestVI, Stereoscope or "
+        "Tangram for deconvolution; cellular-resolution data (Xenium, MERFISH, CosMx) -> ResolVI to correct "
+        "segmentation errors and background, scVIVA for niche-aware embeddings and niche DE. Harreman for "
+        "cell-cell communication and VISION for gene-signature scoring with spatial autocorrelation."
+    ),
     "atac": "For scATAC-seq, use PeakVI or SCBASSET.",
     "multiome": "For RNA+ATAC multiome data, use MultiVI.",
     "cytometry": "For cytometry data, use CytoVI.",
     "methylation": "For methylation data, use MethylVI or MethylANVI.",
 }
+
+
+# On spatial data, generic tasks are better served by the spatial models: ResolVI
+# integrates, annotates (semi-supervised) and runs DE on cellular-resolution data,
+# and scVIVA adds niche-aware embeddings and niche DE.
+SPATIAL_TASK_MODELS: dict[str, list[str]] = {
+    "batch_integration": ["resolvi", "scviva"],
+    "dimensionality_reduction": ["resolvi", "scviva"],
+    "differential_expression": ["scviva", "resolvi"],
+    "cell_type_annotation": ["resolvi"],
+}
+
+# Analysis tools that live only in scviva-tools (no scvi-tools model page).
+SCVIVA_ONLY = {"harreman", "vision"}
+
+# Tasks only spatial models perform: modality models (TotalVI, MultiVI) may support
+# them but must not outrank the task-specific model.
+SPATIAL_ONLY_TASKS = {"spatial_denoising", "niche_analysis", "cell_communication", "spatial_signature_scoring"}
 
 
 class ModelGuidanceResult(BaseModel):
@@ -53,6 +81,10 @@ def recommend_model(
         "multimodal_integration",
         "reference_mapping",
         "perturbation_modeling",
+        "spatial_denoising",
+        "niche_analysis",
+        "cell_communication",
+        "spatial_signature_scoring",
     ],
     data_type: Literal["scrna", "cite_seq", "spatial", "atac", "multiome", "cytometry", "methylation"],
     has_protein: bool,
@@ -65,8 +97,13 @@ def recommend_model(
     model names with a short rationale for each. Use get_model_overview to get details
     on any recommended model.
 
+    Spatial-specific tasks: spatial_denoising (segmentation / background correction),
+    niche_analysis (cell microenvironment effects), cell_communication (ligand-receptor /
+    metabolite interactions), spatial_signature_scoring (gene-signature scores and spatial
+    autocorrelation).
+
     Args:
-        task: The analysis goal.
+        task: The analysis goal (spatial-specific tasks are described above).
         data_type: The type of single-cell data.
         has_protein: True if the data includes protein (ADT) measurements.
         has_accessibility: True if the data includes chromatin accessibility (ATAC).
@@ -74,10 +111,18 @@ def recommend_model(
     """
     try:
         candidates = list(TASK_MODEL_MAP.get(task, ["scvi"]))
-        if has_protein and "totalvi" not in candidates:
-            candidates = ["totalvi"] + candidates
-        if has_accessibility and "multivi" not in candidates:
-            candidates = ["multivi"] + candidates
+        if data_type == "spatial":
+            boost = SPATIAL_TASK_MODELS.get(task, [])
+            candidates = boost + [c for c in candidates if c not in boost]
+        modality_models = [
+            name
+            for name, present in (("multivi", has_accessibility), ("totalvi", has_protein))
+            if present and name not in candidates
+        ]
+        if task in SPATIAL_ONLY_TASKS:
+            candidates = candidates + modality_models[::-1]
+        else:
+            candidates = modality_models + candidates
         data_hint = DATA_TYPE_HINTS.get(data_type, "")
         lines = [
             "# Model Recommendations",
@@ -90,14 +135,24 @@ def recommend_model(
             "",
         ]
         for i, name in enumerate(candidates[:5], 1):
-            lines.append(f"{i}. **{name.upper()}** — use `get_model_overview(model_name='{name}')` for details.")
-        lines += [
-            "",
-            "## Next Steps",
-            "1. Call `get_model_overview` on your top choice.",
-            "2. Call `get_setup_anndata_guide` to prepare your AnnData object.",
-            "3. Call `get_workflow_template` for a full code template.",
-        ]
+            rationale = f" {SCVIVA_DESCRIPTIONS[name]}" if name in SCVIVA_DESCRIPTIONS else ""
+            if name in SCVIVA_ONLY:
+                pointer = f"Use `get_scviva_model(model_name='{name}')` for details (scviva-tools)."
+            else:
+                pointer = f"Use `get_model_overview(model_name='{name}')` for details."
+            lines.append(f"{i}. **{name.upper()}** —{rationale} {pointer}")
+        if candidates[0] in SCVIVA_ONLY:
+            next_steps = [
+                f"1. Call `get_scviva_model(model_name='{candidates[0]}')` for its API and user guide.",
+                "2. Call `list_scviva_tutorials` and `get_scviva_tutorial` for a worked pipeline.",
+            ]
+        else:
+            next_steps = [
+                "1. Call `get_model_overview` on your top choice.",
+                "2. Call `get_setup_anndata_guide` to prepare your AnnData object.",
+                "3. Call `get_workflow_template` for a full code template.",
+            ]
+        lines += ["", "## Next Steps", *next_steps]
         result = utils.truncate("\n".join(lines))
         return ModelGuidanceResult(content=result.content, truncated=result.truncated)
     except Exception as e:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
@@ -49,9 +50,52 @@ def paginate(lines: list[str], page: int = 1, page_size: int = 200) -> PaginateR
     return PaginateResult(lines=lines[start:end], page=page, total_pages=total_pages)
 
 
+def knowledge_file(base: Path, name: str) -> Path | None:
+    """Return base/<name>.md if it exists and stays inside base, else None.
+
+    Tool arguments are untrusted: an absolute path or '..' segments in name must not
+    let a caller read files outside the knowledge directory.
+    """
+    candidate = (base / f"{name}.md").resolve()
+    if not candidate.is_relative_to(base.resolve()) or not candidate.is_file():
+        return None
+    return candidate
+
+
 def list_knowledge_files(subdir: str) -> list[str]:
     knowledge_dir = get_knowledge_dir()
     target = knowledge_dir / subdir
     if not target.exists():
         return []
     return sorted(p.stem for p in target.glob("*.md"))
+
+
+# Known mismatches between synced upstream tutorials and the current package API.
+# Tutorials are regenerated from upstream notebooks on every sync, so corrections are
+# injected at serve time instead of edited into the knowledge files.
+# Each entry is (regex, note); the regex's `obj` group is substituted into the note so
+# the suggested code uses the tutorial's own variable name.
+TUTORIAL_PITFALLS: list[tuple[str, str]] = [
+    (
+        r"(?P<obj>[A-Za-z_][A-Za-z0-9_]*)\.gpc\.confident_genes",
+        "> **Note (scvi-tools-mcp):** `gpc.confident_genes` is not set by "
+        "`differential_expression()`. It is set only as a side effect of calling "
+        "`{obj}.plot(...)`, and is restricted to the genes passed as `filter`. "
+        "Without the plot, use `{obj}.gpc.y_[{obj}.gpc.y_].index` "
+        "(boolean mask: genes DE at the FDR threshold and upregulated in group1 vs "
+        "neighbors1, over all genes) instead.",
+    ),
+]
+
+
+def annotate_pitfalls(lines: list[str]) -> list[str]:
+    """Insert a note after the first code block that uses each known-broken pattern."""
+    out = list(lines)
+    for pattern, note in TUTORIAL_PITFALLS:
+        found = next(((i, m) for i, line in enumerate(out) if (m := re.search(pattern, line))), None)
+        if found is None:
+            continue
+        idx, match = found
+        end = next((j for j in range(idx + 1, len(out)) if out[j].strip() == "```"), idx)
+        out[end + 1 : end + 1] = ["", note.format(**match.groupdict()), ""]
+    return out
