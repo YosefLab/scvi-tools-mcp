@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -43,6 +44,16 @@ def _find_symbol(symbol: str) -> Path | None:
     return None
 
 
+def _method_section(content: str, method: str) -> str | None:
+    """Return the '## <method>' section, up to the next '## ' heading."""
+    match = re.search(rf"^## {re.escape(method)}[ \t]*$", content, flags=re.MULTILINE | re.IGNORECASE)
+    if match is None:
+        return None
+    nxt = re.search(r"^## ", content[match.end() :], flags=re.MULTILINE)
+    end = match.end() + nxt.start() if nxt else len(content)
+    return content[match.start() : end].rstrip() + "\n"
+
+
 def _available_symbols() -> list[str]:
     return sorted({p.stem.upper() for d in _api_dirs() if d.exists() for p in d.glob("*.md")})
 
@@ -63,13 +74,10 @@ def get_api_reference(symbol: str) -> ApiResult:
         path = _find_symbol(symbol)
         if path is None:
             available = _available_symbols()
-            return ApiResult(error=f"Symbol '{symbol}' not found. Available: {', '.join(available)}.")
+            return ApiResult(error=f"Symbol not found. Available: {', '.join(available)}.")
         content = path.read_text(encoding="utf-8")
         if "." in symbol:
-            method = symbol.split(".")[-1].lower()
-            idx = content.lower().find(f"## {method}")
-            if idx >= 0:
-                content = content[idx : idx + 2000]
+            content = _method_section(content, symbol.split(".")[-1]) or content
         result = utils.truncate(content)
         return ApiResult(content=result.content, truncated=result.truncated)
     except Exception as e:

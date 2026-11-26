@@ -55,6 +55,10 @@ SPATIAL_TASK_MODELS: dict[str, list[str]] = {
 # Analysis tools that live only in scviva-tools (no scvi-tools model page).
 SCVIVA_ONLY = {"harreman", "vision"}
 
+# Tasks only spatial models perform: modality models (TotalVI, MultiVI) may support
+# them but must not outrank the task-specific model.
+SPATIAL_ONLY_TASKS = {"spatial_denoising", "niche_analysis", "cell_communication", "spatial_signature_scoring"}
+
 
 class ModelGuidanceResult(BaseModel):
     content: str | None = None
@@ -110,10 +114,15 @@ def recommend_model(
         if data_type == "spatial":
             boost = SPATIAL_TASK_MODELS.get(task, [])
             candidates = boost + [c for c in candidates if c not in boost]
-        if has_protein and "totalvi" not in candidates:
-            candidates = ["totalvi"] + candidates
-        if has_accessibility and "multivi" not in candidates:
-            candidates = ["multivi"] + candidates
+        modality_models = [
+            name
+            for name, present in (("multivi", has_accessibility), ("totalvi", has_protein))
+            if present and name not in candidates
+        ]
+        if task in SPATIAL_ONLY_TASKS:
+            candidates = candidates + modality_models[::-1]
+        else:
+            candidates = modality_models + candidates
         data_hint = DATA_TYPE_HINTS.get(data_type, "")
         lines = [
             "# Model Recommendations",
@@ -132,13 +141,18 @@ def recommend_model(
             else:
                 pointer = f"Use `get_model_overview(model_name='{name}')` for details."
             lines.append(f"{i}. **{name.upper()}** —{rationale} {pointer}")
-        lines += [
-            "",
-            "## Next Steps",
-            "1. Call `get_model_overview` on your top choice.",
-            "2. Call `get_setup_anndata_guide` to prepare your AnnData object.",
-            "3. Call `get_workflow_template` for a full code template.",
-        ]
+        if candidates[0] in SCVIVA_ONLY:
+            next_steps = [
+                f"1. Call `get_scviva_model(model_name='{candidates[0]}')` for its API and user guide.",
+                "2. Call `list_scviva_tutorials` and `get_scviva_tutorial` for a worked pipeline.",
+            ]
+        else:
+            next_steps = [
+                "1. Call `get_model_overview` on your top choice.",
+                "2. Call `get_setup_anndata_guide` to prepare your AnnData object.",
+                "3. Call `get_workflow_template` for a full code template.",
+            ]
+        lines += ["", "## Next Steps", *next_steps]
         result = utils.truncate("\n".join(lines))
         return ModelGuidanceResult(content=result.content, truncated=result.truncated)
     except Exception as e:
