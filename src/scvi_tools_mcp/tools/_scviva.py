@@ -71,8 +71,7 @@ def get_scviva_model(model_name: ScvivaModelName, page: int = 1, page_size: int 
     and call again with page=2, 3, etc. to read the rest, including the User Guide section.
 
     Args:
-        model_name: One of resolvi, destvi, scviva, gimvi, diagvi, stereoscope, tangram, harreman,
-            vision.
+        model_name: One of resolvi, destvi, scviva, gimvi, diagvi, stereoscope, tangram, harreman, vision.
         page: Page number starting at 1.
         page_size: Lines per page (default 200).
     """

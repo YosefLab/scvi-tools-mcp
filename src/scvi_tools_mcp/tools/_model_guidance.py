@@ -93,11 +93,13 @@ def recommend_model(
     model names with a short rationale for each. Use get_model_overview to get details
     on any recommended model.
 
+    Spatial-specific tasks: spatial_denoising (segmentation / background correction),
+    niche_analysis (cell microenvironment effects), cell_communication (ligand-receptor /
+    metabolite interactions), spatial_signature_scoring (gene-signature scores and spatial
+    autocorrelation).
+
     Args:
-        task: The analysis goal. Spatial-specific goals: spatial_denoising (segmentation /
-            background correction), niche_analysis (cell microenvironment effects),
-            cell_communication (ligand-receptor / metabolite interactions),
-            spatial_signature_scoring (gene-signature scores and spatial autocorrelation).
+        task: The analysis goal (spatial-specific tasks are described above).
         data_type: The type of single-cell data.
         has_protein: True if the data includes protein (ADT) measurements.
         has_accessibility: True if the data includes chromatin accessibility (ATAC).
